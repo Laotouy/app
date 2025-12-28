@@ -69,7 +69,7 @@
           优惠赠送
         </h1>
         <p v-if="cf.code" class="text-[15px]">
-          使用作者专属优惠码: <STRONG>{{ cf.code }}</STRONG>
+          使用作者专属优惠码: <strong>{{ cf.code }}</strong>
         </p>
         <p class="text-[15px]">
           {{ cf.code ? "获得" : "" }}下单赠送7天时长,带游戏内3张风景图好评再送7天
@@ -105,6 +105,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ButtonStyled } from "@modrinth/ui";
 import { isDarkTheme } from "~/plugins/theme/themes.ts";
+import { creators, getCreatorByKey } from "~/config/affiliates";
 
 const router = useRouter();
 const route = useRoute();
@@ -181,125 +182,7 @@ const items = [
   },
 ];
 
-const creaters = {
-  wuye: {
-    name: "吴也MC",
-    link: "https://item.taobao.com/item.htm?ft=t&id=874809176779",
-  },
-  pcl: {
-    name: "PCL2",
-    link: "https://item.taobao.com/item.htm?ft=t&id=881229604563",
-  },
-  cuiguzheng: {
-    name: "脆骨症",
-    link: "https://item.taobao.com/item.htm?ft=t&id=791787996763",
-  },
-  grannixie: {
-    name: "浙水院Minecraft社",
-    link: "https://item.taobao.com/item.htm?ft=t&id=883095512357",
-  },
-  Unknown_Entity_: {
-    name: "Unknown_Entity_",
-    link: "https://item.taobao.com/item.htm?ft=t&id=888196449273",
-  },
-  wutuobang: {
-    name: "乌托邦",
-    link: "https://item.taobao.com/item.htm?ft=t&id=876821726196",
-  },
-  ruoling: {
-    name: "龙之冒险:新征程",
-    link: "https://item.taobao.com/item.htm?ft=t&id=889881824125",
-  },
-  JQKA326: {
-    name: "香草纪元:食旅纪行",
-    code: "香草纪元",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  song_5007: {
-    name: "song_5007",
-    link: "https://item.taobao.com/item.htm?ft=t&id=895854389205",
-  },
-  Puikre: {
-    name: "Puikre",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  snk: {
-    name: "二十二度幻月",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  Karashok_Leo: {
-    name: "咒次元",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  Lovin: {
-    name: "勇者之章",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  JasonQ: {
-    name: "齿轮盛宴",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  Altnoir: {
-    name: "空中厕所2",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  ZangHeRo: {
-    name: "ZangHeRo",
-    link: "https://item.taobao.com/item.htm?id=807034865363&sku_properties=122216883%3A27889",
-  },
-  lmq: {
-    name: "落幕曲",
-    code: "落幕曲",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  thefool: {
-    name: "愚者：The Fool",
-    code: "愚者",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  skillet_man: {
-    name: "平底锅侠",
-    code: "平底锅侠",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  Latxx: {
-    name: "辣某人",
-    code: "沉浸战斗",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  wuwei: {
-    name: "无畏灬大魔王",
-    code: "真实地球",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  martyredroad: {
-    name: "殉道之路",
-    code: "殉道之路",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  ft_wt: {
-    name: "农场物语",
-    code: "农场物语",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  tfg: {
-    name: "锻造之旅",
-    code: "锻造之旅",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  shenhuaqiyuan: {
-    name: "神话：起源4.7重制版",
-    code: "神话起源",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-  "unfinished-path": {
-    name: "未尽之路",
-    code: "未尽之路",
-    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-  },
-};
-
-const cf = ref(creaters[aff]);
+const cf = ref(getCreatorByKey(aff));
 
 onMounted(() => {
   if (cf.value == null) {

@@ -1348,6 +1348,7 @@ import AutomaticAccordion from "~/components/ui/AutomaticAccordion.vue";
 import TranslationPromo from "~/components/ui/TranslationPromo.vue";
 import ServerPromo from "~/components/ui/ServerPromo.vue";
 import { getVersionsToDisplay } from "~/helpers/projects.js";
+import { projectAffiliates } from "~/config/affiliates";
 const data = useNuxtApp();
 const route = useNativeRoute();
 
@@ -1398,43 +1399,7 @@ const gameVersionAccordion = ref();
 const platformAccordion = ref();
 const WikiFatherAccordion = ref();
 
-const affs = ref({
-  YJBkhCZM: "pcl", // PCL2
-  "1p2TFl6X": "wutuobang", // 乌托邦
-  NxtrWNas: "wuye", // 探索自然2
-  Z1Z1xI1K: "wuye", // 自然之旅3
-  Gd9LgTCW: "wuye", // 悠然人生1
-  TJTmchrm: "wuye", // 悠然人生2
-  w71BhsmT: "wuye", // 灾难降临
-  yHBuGZk1: "wuye", // 悠然人生3
-  tFpySPqY: "wuye", // 自然之旅1
-  pC0EfVWW: "wuye", // 探索自然1
-  fZSAKVSg: "cuiguzheng", // 脆骨症
-  dL0Tbr7N: "cuiguzheng", // 脆骨症：黯光
-  r0WJ4XSq: "grannixie", // 群峦：重生
-  hICODOh4: "luge", // 路哥[植物大战僵尸 畸变帝国]
-  tRR4pnOA: "Unknown_Entity_", // 机械动力，无限构件
-  EIrkPpcm: "ruoling", // 龙之冒险：新征程
-  e11vzqXl: "JQKA326", // 香草纪元
-  S5mhiSMC: "song_5007", // 香草纪元
-  CFqHhpsh: "Puikre", // 锻造大师
-  KGIfMlOP: "Puikre", // 赏金猎人
-  F4xIzfIX: "ZangHeRo", // 机械殖民地
-  G23dLUsP: "snk", // 剑与王国
-  XMUypeti: "thefool", // 愚者
-  YgvldBV8: "skillet_man", // 平底锅侠
-  aa8zTitm: "Latxx", // 沉浸战斗
-  k5OmCs1S: "Karashok_Leo", // 咒次元
-  KgeSn4uG: "Lovin", // 勇者之章
-  OIIWCwpQ: "JasonQ", // 齿轮盛宴
-  FkZiwq64: "Altnoir", // 空中厕所2
-  UJBwwyq3: "wuwei", // 真实地球
-  YtS91hhr: "ft_wt", // 农场物语
-  "2cDBzlDs": "martyredroad", // 真实地球
-  "92pKuCHs": "tfg", // 锻造之旅
-  ZSSC3pSh: "shenhuaqiyuan", // 神话起源
-  zT3k10EZ: "unfinished-path", // 未尽之路
-});
+const affs = projectAffiliates;
 const compatibilityMessages = defineMessages({
   title: {
     id: "project.about.compatibility.title",
@@ -2439,7 +2404,7 @@ function navigateToTranslation(translationData) {
 
 function navigateToServer() {
   // 跳转到服务器页面，与联机搭建按钮的跳转逻辑一致
-  const affId = affs.value[project.value.id];
+  const affId = affs[project.value.id];
   if (affId === "pcl") {
     window.open("/pcl", "_blank");
   } else if (affId) {

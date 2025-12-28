@@ -7,10 +7,10 @@
     <VersionChannelIndicator :channel="version.version_type" />
     <div class="flex min-w-0 flex-col gap-1">
       <h1 class="my-0 truncate text-nowrap text-base font-extrabold leading-none text-contrast">
-        [站内下载] {{ version.version_number }}
+        [站内下载] {{ version.name }}
       </h1>
       <p class="m-0 truncate text-nowrap text-xs font-semibold text-secondary">
-        {{ version.name }}
+        {{ version.version_number }}
       </p>
     </div>
     <ButtonStyled color="brand">
@@ -66,10 +66,10 @@
                     : u.platform === "xunlei"
                       ? "迅雷"
                       : "第三方云盘"
-          }}] {{ version.version_number }}
+          }}] {{ version.name }}
         </h1>
         <p class="m-0 truncate text-nowrap text-xs font-semibold text-secondary">
-          {{ version.name }}
+          {{ version.version_number }}
         </p>
       </div>
       <ButtonStyled color="brand">
