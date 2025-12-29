@@ -1280,6 +1280,7 @@ import BoxIcon from "~/assets/images/utils/box.svg?component";
 import RightArrowIcon from "~/assets/images/utils/right-arrow.svg?component";
 import InfoIcon from "~/assets/images/utils/info.svg?component";
 import UndoIcon from "~/assets/images/utils/undo.svg?component";
+import SendIcon from "~/assets/images/utils/send.svg?component";
 import Modal from "~/components/ui/Modal.vue";
 import ChevronRightIcon from "~/assets/images/utils/chevron-right.svg?component";
 import { useBaseFetchFile } from "~/composables/fetch.js";
