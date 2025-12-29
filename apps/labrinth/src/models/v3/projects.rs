@@ -116,6 +116,15 @@ pub struct Project {
     pub issues_type: i32,
 
     pub forum: Option<DiscussionId>,
+
+    /// 汉化追踪标记
+    pub translation_tracking: bool,
+
+    /// 汉化资源 slug（当 translation_tracking 为 true 时有值）
+    pub translation_tracker: Option<String>,
+
+    /// 汉化来源：哪个项目将当前项目作为汉化目标
+    pub translation_source: Option<String>,
 }
 
 fn remove_duplicates(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
@@ -245,6 +254,9 @@ impl From<QueryProject> for Project {
             issues_type: m.issues_type,
             fields,
             forum: m.forum.map(|x| x.into()),
+            translation_tracking: m.translation_tracking,
+            translation_tracker: m.translation_tracker.clone(),
+            translation_source: m.translation_source.clone(),
         }
     }
 }

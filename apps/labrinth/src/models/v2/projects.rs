@@ -72,6 +72,12 @@ pub struct LegacyProject {
     pub wiki_open: bool,
     pub issues_type: i32,
     pub forum: Option<DiscussionId>,
+    /// 汉化追踪标记
+    pub translation_tracking: bool,
+    /// 汉化资源 slug
+    pub translation_tracker: Option<String>,
+    /// 汉化来源：哪个项目将当前项目作为汉化目标
+    pub translation_source: Option<String>,
 }
 
 impl LegacyProject {
@@ -256,6 +262,9 @@ impl LegacyProject {
             server_side,
             game_versions,
             forum: data.forum,
+            translation_tracking: data.translation_tracking,
+            translation_tracker: data.translation_tracker.clone(),
+            translation_source: data.translation_source.clone(),
         }
     }
 

@@ -1,39 +1,36 @@
-use actix_rt::Arbiter;
-use futures::StreamExt;
+use crate::{
+    database::{
+        models::legacy_loader_fields::MinecraftGameVersion, redis::RedisPool,
+    },
+    util::env::parse_var,
+};
+use chrono::{DateTime, Utc};
+use log::{info, warn};
+use serde::Deserialize;
+use thiserror::Error;
 
-pub struct Scheduler {
-    arbiter: Arbiter,
+use super::Scheduler;
+
+#[derive(Error, Debug)]
+pub enum VersionIndexingError {
+    #[error("更新游戏版本列表时的网络错误：{0}")]
+    NetworkError(#[from] reqwest::Error),
+    #[error("更新游戏版本列表时的数据库错误：{0}")]
+    DatabaseError(#[from] crate::database::models::DatabaseError),
 }
 
-impl Default for Scheduler {
-    fn default() -> Self {
-        Self::new()
-    }
+#[derive(Deserialize)]
+struct InputFormat<'a> {
+    versions: Vec<VersionFormat<'a>>,
 }
 
-impl Scheduler {
-    pub fn new() -> Self {
-        Scheduler {
-            arbiter: Arbiter::new(),
-        }
-    }
-
-    pub fn run<F, R>(&mut self, interval: std::time::Duration, mut task: F)
-    where
-        F: FnMut() -> R + Send + 'static,
-        R: std::future::Future<Output = ()> + Send + 'static,
-    {
-        let future = IntervalStream::new(actix_rt::time::interval(interval))
-            .for_each_concurrent(2, move |_| task());
-
-        self.arbiter.spawn(future);
-    }
-}
-
-impl Drop for Scheduler {
-    fn drop(&mut self) {
-        self.arbiter.stop();
-    }
+#[derive(Deserialize)]
+struct VersionFormat<'a> {
+    id: String,
+    #[serde(rename = "type")]
+    type_: std::borrow::Cow<'a, str>,
+    #[serde(rename = "releaseTime")]
+    release_time: DateTime<Utc>,
 }
 
 pub fn schedule_versions(
@@ -57,41 +54,6 @@ pub fn schedule_versions(
             info!("完成游戏版本索引");
         }
     });
-}
-
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum VersionIndexingError {
-    #[error("更新游戏版本列表时的网络错误：{0}")]
-    NetworkError(#[from] reqwest::Error),
-    #[error("更新游戏版本列表时的数据库错误：{0}")]
-    DatabaseError(#[from] crate::database::models::DatabaseError),
-}
-
-use crate::{
-    database::{
-        models::legacy_loader_fields::MinecraftGameVersion, redis::RedisPool,
-    },
-    util::env::parse_var,
-};
-use chrono::{DateTime, Utc};
-use log::{info, warn};
-use serde::Deserialize;
-use tokio_stream::wrappers::IntervalStream;
-
-#[derive(Deserialize)]
-struct InputFormat<'a> {
-    // latest: LatestFormat,
-    versions: Vec<VersionFormat<'a>>,
-}
-#[derive(Deserialize)]
-struct VersionFormat<'a> {
-    id: String,
-    #[serde(rename = "type")]
-    type_: std::borrow::Cow<'a, str>,
-    #[serde(rename = "releaseTime")]
-    release_time: DateTime<Utc>,
 }
 
 async fn update_versions(

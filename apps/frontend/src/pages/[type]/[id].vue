@@ -1104,7 +1104,7 @@
           <h2>
             {{
               organization
-                ? ["bbsmc", "bbsmc-2", "bbsmc-3", "bbsmc-cn"].includes(organization.slug)
+                ? ["bbsmc", "bbsmc-2", "bbsmc-3"].includes(organization.slug)
                   ? "搬运团队"
                   : "创作团队"
                 : "创作者"
@@ -1147,6 +1147,51 @@
             </nuxt-link>
           </div>
         </div>
+        <!-- 汉化追踪标记 -->
+        <div v-if="project.translation_tracking" class="card flex-card experimental-styles-within">
+          <div class="flex items-center gap-2">
+            <TranslateIcon class="h-5 w-5 text-brand-green" aria-hidden="true" />
+            <h2 class="!mb-0">汉化追踪中</h2>
+          </div>
+          <p style="font-size: 0.875rem; color: var(--color-text); line-height: 1.6; margin: 0">
+            此项目正在进行汉化追踪，将会定期同步上游更新并更新汉化内容。
+          </p>
+          <!-- 汉化包项目卡片 -->
+          <nuxt-link
+            v-if="translationPackProject"
+            :to="`/${translationPackProject.project_type}/${translationPackProject.slug || translationPackProject.id}`"
+            class="translation-pack-card"
+          >
+            <Avatar :src="translationPackProject.icon_url" alt="translation-pack-icon" size="sm" />
+            <div class="translation-pack-info">
+              <span class="translation-pack-title">{{ translationPackProject.title }}</span>
+              <span class="translation-pack-desc">{{ translationPackProject.description }}</span>
+            </div>
+          </nuxt-link>
+        </div>
+
+        <!-- 为目标追踪资源标记（当前项目是某个项目的汉化包） -->
+        <div v-if="translationSourceProject" class="card flex-card experimental-styles-within">
+          <div class="flex items-center gap-2">
+            <TranslateIcon class="h-5 w-5 text-brand-green" aria-hidden="true" />
+            <h2 class="!mb-0">追踪汉化包</h2>
+          </div>
+          <p style="font-size: 0.875rem; color: var(--color-text); line-height: 1.6; margin: 0">
+            此资源是以下整合包的汉化包。
+          </p>
+          <!-- 原始项目卡片 -->
+          <nuxt-link
+            :to="`/${translationSourceProject.project_type}/${translationSourceProject.slug || translationSourceProject.id}`"
+            class="translation-pack-card"
+          >
+            <Avatar :src="translationSourceProject.icon_url" alt="source-project-icon" size="sm" />
+            <div class="translation-pack-info">
+              <span class="translation-pack-title">{{ translationSourceProject.title }}</span>
+              <span class="translation-pack-desc">{{ translationSourceProject.description }}</span>
+            </div>
+          </nuxt-link>
+        </div>
+
         <div
           v-if="
             organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3', 'bbsmc-cn'].includes(organization.slug)
@@ -1637,7 +1682,9 @@ let project,
   versions,
   wikis,
   organization,
-  resetOrganization;
+  resetOrganization,
+  translationPackProject,
+  translationSourceProject;
 try {
   [
     { data: project, refresh: resetProject },
@@ -1695,6 +1742,38 @@ try {
 
   versions = shallowRef(toRaw(versions));
   featuredVersions = shallowRef(toRaw(featuredVersions));
+
+  // 如果项目启用了汉化追踪且有 translation_tracker，获取汉化包项目信息
+  if (project.value && project.value.translation_tracker) {
+    try {
+      const { data: packProject } = await useAsyncData(
+        `project/${project.value.translation_tracker}`,
+        () => useBaseFetch(`project/${project.value.translation_tracker}`),
+      );
+      translationPackProject = packProject;
+    } catch {
+      // 汉化包项目不存在或获取失败，忽略错误
+      translationPackProject = ref(null);
+    }
+  } else {
+    translationPackProject = ref(null);
+  }
+
+  // 如果项目有 translation_source，获取原始项目信息（当前项目是汉化包）
+  if (project.value && project.value.translation_source) {
+    try {
+      const { data: sourceProject } = await useAsyncData(
+        `project/${project.value.translation_source}`,
+        () => useBaseFetch(`project/${project.value.translation_source}`),
+      );
+      translationSourceProject = sourceProject;
+    } catch {
+      // 原始项目不存在或获取失败，忽略错误
+      translationSourceProject = ref(null);
+    }
+  } else {
+    translationSourceProject = ref(null);
+  }
 } catch {
   throw createError({
     fatal: true,
@@ -2613,6 +2692,45 @@ const navLinks = computed(() => {
 @media (hover: none) and (max-width: 767px) {
   .modrinth-app-section {
     display: none;
+  }
+}
+
+.translation-pack-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-card-sm);
+  padding: var(--spacing-card-sm);
+  margin-top: var(--spacing-card-sm);
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--color-button-bg-hover);
+  }
+
+  .translation-pack-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-card-xs);
+    min-width: 0;
+
+    .translation-pack-title {
+      font-weight: bold;
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .translation-pack-desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 </style>

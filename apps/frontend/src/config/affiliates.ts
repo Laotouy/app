@@ -173,7 +173,7 @@ export const affiliates: Record<string, Affiliate> = {
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
     projects: ["zT3k10EZ"],
   },
-  "deceasedcraft": {
+  deceasedcraft: {
     name: "亡者世界",
     code: "亡者世界",
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
@@ -185,13 +185,13 @@ export const affiliates: Record<string, Affiliate> = {
 
 /** 项目ID -> 合作方key 的映射 */
 export const projectAffiliates: Record<string, string> = Object.fromEntries(
-  Object.entries(affiliates).flatMap(([key, aff]) => aff.projects.map((pid) => [pid, key]))
+  Object.entries(affiliates).flatMap(([key, aff]) => aff.projects.map((pid) => [pid, key])),
 );
 
 /** 合作方详细信息 (兼容旧接口) */
 export const creators: Record<string, { name: string; link: string; code?: string }> =
   Object.fromEntries(
-    Object.entries(affiliates).map(([key, { name, link, code }]) => [key, { name, link, code }])
+    Object.entries(affiliates).map(([key, { name, link, code }]) => [key, { name, link, code }]),
   );
 
 // ============ 辅助函数 ============
@@ -200,10 +200,10 @@ export const creators: Record<string, { name: string; link: string; code?: strin
  * 根据项目ID获取合作方信息
  */
 export function getCreatorByProjectId(
-  projectId: string
+  projectId: string,
 ): { name: string; link: string; code?: string } | null {
   const affKey = projectAffiliates[projectId];
-  return affKey ? creators[affKey] ?? null : null;
+  return affKey ? (creators[affKey] ?? null) : null;
 }
 
 /**

@@ -27,11 +27,11 @@ export const initUser = async () => {
       };
 
       const userId = auth.value.user.id;
-      let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+      const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
 
       const [follows, collections] = await Promise.all([
         $fetch(`${base}user/${userId}/follows`, { headers }),
-        $fetch(`${base.replace(/\/v\d\/?$/, '/v3/')}user/${userId}/collections`, { headers }),
+        $fetch(`${base.replace(/\/v\d\/?$/, "/v3/")}user/${userId}/collections`, { headers }),
       ]);
 
       user.collections = collections;
@@ -53,7 +53,7 @@ export const initUserCollections = async () => {
   if (auth.value?.user && auth.value?.user.id) {
     try {
       let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
-      base = base.replace(/\/v\d\/?$/, '/v3/');
+      base = base.replace(/\/v\d\/?$/, "/v3/");
       userState.value.collections = await $fetch(`${base}user/${auth.value.user.id}/collections`, {
         headers: { Authorization: auth.value.token },
       });
@@ -70,7 +70,7 @@ export const initUserFollows = async () => {
 
   if (auth.value?.user && auth.value?.user.id) {
     try {
-      let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+      const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
       userState.value.follows = await $fetch(`${base}user/${auth.value.user.id}/follows`, {
         headers: { Authorization: auth.value.token },
       });
@@ -87,7 +87,7 @@ export const initUserProjects = async () => {
 
   if (auth.value?.user && auth.value?.user.id) {
     try {
-      let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+      const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
       userState.value.projects = await $fetch(`${base}user/${auth.value.user.id}/projects`, {
         headers: { Authorization: auth.value.token },
       });
@@ -123,7 +123,7 @@ export const userCollectProject = async (collection, projectId) => {
   }
 
   let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
-  base = base.replace(/\/v\d\/?$/, '/v3/');
+  base = base.replace(/\/v\d\/?$/, "/v3/");
   await $fetch(`${base}collection/${collection.id}`, {
     method: "PATCH",
     body: {
@@ -139,7 +139,7 @@ export const userFollowProject = async (project) => {
   const userState = useState("user");
   const user = userState.value;
 
-  let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+  const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
 
   if (user.follows.find((x) => x.id === project.id)) {
     user.follows = user.follows.filter((x) => x.id !== project.id);
@@ -171,7 +171,7 @@ export const resendVerifyEmail = async () => {
 
   startLoading();
   try {
-    let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+    const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
     await $fetch(`${base}auth/email/resend_verify`, {
       method: "POST",
       headers: { Authorization: auth.value.token },
@@ -201,7 +201,7 @@ export const logout = async () => {
 
   startLoading();
   try {
-    let base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
+    const base = import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl;
     await $fetch(`${base}session/${auth.value.token}`, {
       method: "DELETE",
       headers: { Authorization: auth.value.token },

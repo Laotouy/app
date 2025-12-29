@@ -19,6 +19,9 @@
           <NavStackItem link="/moderation/appeals" label="封禁申诉">
             <ShieldIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem link="/moderation/translation-tracking" label="汉化监控">
+            <CalendarClockIcon aria-hidden="true" />
+          </NavStackItem>
         </NavStack>
       </aside>
     </div>
@@ -36,6 +39,7 @@ import ModerationIcon from "~/assets/images/sidebar/admin.svg?component";
 import ReportIcon from "~/assets/images/utils/report.svg?component";
 import LanguagesIcon from "~/assets/images/utils/languages.svg?component";
 import ShieldIcon from "~/assets/images/utils/shield.svg?component";
+import CalendarClockIcon from "~/assets/images/utils/calendar-clock.svg?component";
 
 definePageMeta({
   middleware: "auth",

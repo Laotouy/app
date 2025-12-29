@@ -216,6 +216,9 @@ impl ProjectBuilder {
             wiki_open: false,
             issues_type: 0,
             forum: None,
+            translation_tracking: false,
+            translation_tracker: None,
+            translation_source: None,
         };
         project_struct.insert(&mut *transaction).await?;
 
@@ -291,6 +294,10 @@ pub struct Project {
     pub wiki_open: bool,
     pub issues_type: i32,
     pub forum: Option<DiscussionId>,
+    pub translation_tracking: bool,
+    pub translation_tracker: Option<String>,
+    /// 汉化来源：哪个项目将当前项目作为汉化目标（通过反向查询 translation_tracker 获取）
+    pub translation_source: Option<String>,
 }
 
 impl Project {
@@ -895,7 +902,8 @@ impl Project {
                     m.updated updated, m.approved approved, m.queued, m.status status, m.requested_status requested_status,
                     m.license_url license_url, m.issues_type as issues_type,
                     m.team_id team_id, m.organization_id organization_id, m.license license, m.slug slug, m.moderation_message moderation_message, m.moderation_message_body moderation_message_body,
-                    m.webhook_sent, m.color, m.wiki_open, m.forum,
+                    m.webhook_sent, m.color, m.wiki_open, m.forum, m.translation_tracking, m.translation_tracker,
+                    (SELECT slug FROM mods WHERE translation_tracker = m.slug AND m.slug IS NOT NULL LIMIT 1) as translation_source,
                     t.id thread_id, m.monetization_status monetization_status,
                     ARRAY_AGG(DISTINCT c.category) filter (where c.category is not null and mc.is_additional is false) categories,
                     ARRAY_AGG(DISTINCT c.category) filter (where c.category is not null and mc.is_additional is true) additional_categories
@@ -968,6 +976,9 @@ impl Project {
                                 issues_type: m.issues_type,
                                 loaders,
                                 forum: m.forum.map(DiscussionId),
+                                translation_tracking: m.translation_tracking,
+                                translation_tracker: m.translation_tracker.clone(),
+                                translation_source: m.translation_source.clone(),
                             },
                             categories: m.categories.unwrap_or_default(),
                             additional_categories: m.additional_categories.unwrap_or_default(),

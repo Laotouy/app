@@ -15,6 +15,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.route("moderation/projects", web::get().to(get_projects));
     cfg.route("moderation/project/{id}", web::get().to(get_project_meta));
     cfg.route("moderation/project", web::post().to(set_project_meta));
+    cfg.route(
+        "moderation/translation-tracking-status",
+        web::get().to(get_translation_tracking_status),
+    );
 }
 
 #[derive(Deserialize)]
@@ -312,4 +316,173 @@ pub async fn set_project_meta(
     transaction.commit().await?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+/// 汉化追踪状态项
+#[derive(serde::Serialize)]
+pub struct TranslationTrackingItem {
+    /// 项目 ID
+    pub project_id: String,
+    /// 项目 slug
+    pub project_slug: Option<String>,
+    /// 项目名称
+    pub project_name: String,
+    /// 项目图标
+    pub project_icon: Option<String>,
+    /// 汉化包 slug
+    pub translation_pack_slug: Option<String>,
+    /// 最新版本 ID
+    pub latest_version_id: Option<String>,
+    /// 最新版本号
+    pub latest_version_number: Option<String>,
+    /// 最新版本发布时间
+    pub latest_version_published: Option<chrono::DateTime<chrono::Utc>>,
+    /// 是否有已批准的汉化绑定
+    pub has_approved_translation: bool,
+    /// 已批准的汉化版本 ID
+    pub approved_translation_version_id: Option<String>,
+    /// 已批准的汉化版本号
+    pub approved_translation_version_number: Option<String>,
+    /// 版本发布后经过的秒数
+    pub seconds_since_published: Option<i64>,
+}
+
+/// 汉化追踪状态响应
+#[derive(serde::Serialize)]
+pub struct TranslationTrackingStatusResponse {
+    /// 追踪项目列表
+    pub items: Vec<TranslationTrackingItem>,
+    /// 总数
+    pub total: i64,
+    /// 查询时间
+    pub queried_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// 获取所有开启汉化追踪的项目的状态
+pub async fn get_translation_tracking_status(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    check_is_moderator_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Some(&[Scopes::PROJECT_READ]),
+    )
+    .await?;
+
+    use chrono::Utc;
+    use futures::stream::TryStreamExt;
+
+    // 查询所有开启了汉化追踪的项目及其最新版本和汉化状态
+    let rows = sqlx::query!(
+        r#"
+        WITH tracked_projects AS (
+            -- 获取所有开启汉化追踪的项目
+            SELECT
+                m.id,
+                m.slug,
+                m.name,
+                m.icon_url,
+                m.translation_tracker
+            FROM mods m
+            WHERE m.translation_tracking = true
+            AND m.status = 'approved'
+        ),
+        latest_versions AS (
+            -- 获取每个项目的最新版本
+            SELECT DISTINCT ON (v.mod_id)
+                v.mod_id,
+                v.id as version_id,
+                v.version_number,
+                v.date_published
+            FROM versions v
+            WHERE v.mod_id IN (SELECT id FROM tracked_projects)
+            AND v.status = 'listed'
+            ORDER BY v.mod_id, v.date_published DESC
+        ),
+        approved_translations AS (
+            -- 获取每个版本的已批准汉化绑定
+            SELECT DISTINCT ON (vlv.joining_version_id)
+                vlv.joining_version_id as original_version_id,
+                vlv.version_id as translation_version_id,
+                tv.version_number as translation_version_number
+            FROM version_link_version vlv
+            INNER JOIN versions tv ON tv.id = vlv.version_id
+            WHERE vlv.approval_status = 'approved'
+            AND vlv.link_type = 'translation'
+            ORDER BY vlv.joining_version_id, vlv.created_at DESC
+        )
+        SELECT
+            tp.id as project_id,
+            tp.slug as project_slug,
+            tp.name as project_name,
+            tp.icon_url as project_icon,
+            tp.translation_tracker,
+            lv.version_id as "latest_version_id?",
+            lv.version_number as "latest_version_number?",
+            lv.date_published as "latest_version_published?",
+            at.translation_version_id as "translation_version_id?",
+            at.translation_version_number as "translation_version_number?"
+        FROM tracked_projects tp
+        LEFT JOIN latest_versions lv ON lv.mod_id = tp.id
+        LEFT JOIN approved_translations at ON at.original_version_id = lv.version_id
+        ORDER BY lv.date_published DESC NULLS LAST
+        "#
+    )
+    .fetch(&**pool)
+    .try_collect::<Vec<_>>()
+    .await?;
+
+    let now = Utc::now();
+    let items: Vec<TranslationTrackingItem> = rows
+        .into_iter()
+        .map(|row| {
+            let seconds_since_published = row
+                .latest_version_published
+                .map(|pub_time| (now - pub_time).num_seconds());
+
+            TranslationTrackingItem {
+                project_id: crate::models::ids::ProjectId::from(
+                    database::models::ids::ProjectId(row.project_id),
+                )
+                .to_string(),
+                project_slug: row.project_slug,
+                project_name: row.project_name,
+                project_icon: row.project_icon,
+                translation_pack_slug: row.translation_tracker,
+                latest_version_id: row.latest_version_id.map(|id| {
+                    crate::models::ids::VersionId::from(
+                        database::models::ids::VersionId(id),
+                    )
+                    .to_string()
+                }),
+                latest_version_number: row.latest_version_number,
+                latest_version_published: row.latest_version_published,
+                has_approved_translation: row.translation_version_id.is_some(),
+                approved_translation_version_id: row
+                    .translation_version_id
+                    .map(|id| {
+                        crate::models::ids::VersionId::from(
+                            database::models::ids::VersionId(id),
+                        )
+                        .to_string()
+                    }),
+                approved_translation_version_number: row
+                    .translation_version_number,
+                seconds_since_published,
+            }
+        })
+        .collect();
+
+    let total = items.len() as i64;
+
+    Ok(HttpResponse::Ok().json(TranslationTrackingStatusResponse {
+        items,
+        total,
+        queried_at: now,
+    }))
 }

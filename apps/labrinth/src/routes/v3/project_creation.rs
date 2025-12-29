@@ -960,6 +960,9 @@ async fn project_create_inner(
             wiki_open: false,
             issues_type: 0,
             forum: None,
+            translation_tracking: false,
+            translation_tracker: None,
+            translation_source: None,
         };
 
         Ok(HttpResponse::Ok().json(response))

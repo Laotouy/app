@@ -295,6 +295,9 @@ pub struct EditProject {
 
     #[validate(range(min = 0, max = 3))]
     pub issues_type: Option<i32>,
+
+    /// 汉化追踪标记，仅管理员可设置，且仅限 bbsmc-2 组织下的项目
+    pub translation_tracking: Option<bool>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1074,6 +1077,51 @@ pub async fn project_edit(
                     WHERE (id = $2)
                     ",
                     *issues_type,
+                    id as db_ids::ProjectId,
+                )
+                .execute(&mut *transaction)
+                .await?;
+            }
+
+            // 汉化追踪设置（仅管理员可操作，仅 bbsmc 组织项目）
+            if let Some(translation_tracking) =
+                &new_project.translation_tracking
+            {
+                // 权限检查：只有管理员可以设置
+                if !user.role.is_mod() {
+                    return Err(ApiError::CustomAuthentication(
+                        "只有管理员可以设置汉化追踪标记!".to_string(),
+                    ));
+                }
+
+                // 组织检查：只允许 bbsmc 组织下的项目
+                // 允许的组织 ID 列表
+                const ALLOWED_ORG_IDS: &[&str] = &["87ze5gIz", "6FNyvmc5"];
+
+                let is_allowed_org = if let Some(org_id) =
+                    project_item.inner.organization_id
+                {
+                    let org_id_str = crate::models::ids::base62_impl::to_base62(
+                        org_id.0 as u64,
+                    );
+                    ALLOWED_ORG_IDS.contains(&org_id_str.as_str())
+                } else {
+                    false
+                };
+
+                if !is_allowed_org {
+                    return Err(ApiError::InvalidInput(
+                        "汉化追踪只能为 bbsmc 组织下的项目开启!".to_string(),
+                    ));
+                }
+
+                sqlx::query!(
+                    "
+                    UPDATE mods
+                    SET translation_tracking = $1
+                    WHERE (id = $2)
+                    ",
+                    *translation_tracking,
                     id as db_ids::ProjectId,
                 )
                 .execute(&mut *transaction)
