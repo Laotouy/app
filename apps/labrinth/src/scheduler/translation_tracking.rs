@@ -3,11 +3,11 @@
 //! 每 5 分钟执行一次，检查启用了汉化追踪的项目，
 //! 同步上游更新并更新汉化内容。
 
-use crate::database::models::DatabaseError;
-use crate::database::models::ids::generate_project_id;
-use crate::database::models::project_item::ProjectBuilder;
+use crate::database::models::project_item::{Project, ProjectBuilder};
+use crate::database::models::ids::{generate_project_id, ProjectId};
 use crate::database::models::team_item::TeamBuilder;
 use crate::database::models::thread_item::ThreadBuilder;
+use crate::database::models::DatabaseError;
 use crate::database::redis::RedisPool;
 use crate::models::projects::{MonetizationStatus, ProjectStatus};
 use crate::models::threads::ThreadType;
@@ -170,7 +170,7 @@ async fn sync_cn_project_icon(
 /// 执行汉化追踪逻辑
 async fn run_translation_tracking(
     pool: &sqlx::Pool<sqlx::Postgres>,
-    _redis: &RedisPool,
+    redis: &RedisPool,
 ) -> Result<(), TranslationTrackingError> {
     // 获取所有启用汉化追踪的项目
     let projects = get_tracked_projects(pool).await?;
@@ -204,7 +204,7 @@ async fn run_translation_tracking(
             project.downloads
         );
 
-        if let Err(e) = process_tracked_project(pool, project, &cn_org).await {
+        if let Err(e) = process_tracked_project(pool, project, &cn_org, redis).await {
             warn!("处理项目 {} ({}) 失败: {}", project.name, project.id, e);
             // 继续处理下一个项目，不中断整个任务
         }
@@ -222,6 +222,7 @@ async fn process_tracked_project(
     pool: &sqlx::Pool<sqlx::Postgres>,
     project: &TrackedProject,
     cn_org: &CnOrganization,
+    redis: &RedisPool,
 ) -> Result<(), TranslationTrackingError> {
     let Some(original_slug) = &project.slug else {
         warn!("项目 {} 没有 slug，跳过", project.name);
@@ -248,6 +249,16 @@ async fn process_tracked_project(
                 project.icon_url.as_deref(),
             )
             .await?;
+
+            // 清除汉化资源缓存
+            Project::clear_cache(
+                ProjectId(cn_project.id),
+                Some(cn_slug.clone()),
+                None,
+                redis,
+            )
+            .await?;
+
             info!("汉化资源 {} 图标同步完成", cn_slug);
         }
 
@@ -334,6 +345,24 @@ async fn process_tracked_project(
     .await?;
 
     transaction.commit().await?;
+
+    // 清除原项目缓存（translation_tracker 已更新）
+    Project::clear_cache(
+        ProjectId(project.id),
+        project.slug.clone(),
+        None,
+        redis,
+    )
+    .await?;
+
+    // 清除新创建的汉化资源缓存
+    Project::clear_cache(
+        project_id,
+        Some(cn_slug.clone()),
+        None,
+        redis,
+    )
+    .await?;
 
     info!(
         "成功创建汉化资源: {} (id={})，已更新原项目 translation_tracker={}",

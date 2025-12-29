@@ -386,9 +386,6 @@ impl Project {
             .execute(&mut **transaction)
             .await?;
 
-            // 不删除线程，让线程的 mod_id 通过外键约束自动设置为 NULL
-            // 这样线程可以继续存在，用于历史记录和审计
-
             sqlx::query!(
                 "
                 UPDATE reports
@@ -539,6 +536,37 @@ impl Project {
                 UPDATE payouts_values
                 SET mod_id = NULL
                 WHERE (mod_id = $1)
+                ",
+                id as ProjectId,
+            )
+            .execute(&mut **transaction)
+            .await?;
+
+            // 删除关联的 threads 及其消息和成员
+            sqlx::query!(
+                "
+                DELETE FROM threads_messages
+                WHERE thread_id IN (SELECT id FROM threads WHERE mod_id = $1)
+                ",
+                id as ProjectId,
+            )
+            .execute(&mut **transaction)
+            .await?;
+
+            sqlx::query!(
+                "
+                DELETE FROM threads_members
+                WHERE thread_id IN (SELECT id FROM threads WHERE mod_id = $1)
+                ",
+                id as ProjectId,
+            )
+            .execute(&mut **transaction)
+            .await?;
+
+            sqlx::query!(
+                "
+                DELETE FROM threads
+                WHERE mod_id = $1
                 ",
                 id as ProjectId,
             )
