@@ -20,6 +20,64 @@ use super::Scheduler;
 /// bbsmc-cn 组织的 slug
 const CN_ORG_SLUG: &str = "bbsmc-cn";
 
+/// BBSMC 汉化组 QQ 群号
+const BBSMC_QQ_GROUP: &str = "1073724937";
+
+/// 汉化包描述模板 - 第一部分：基本信息
+fn get_description_part1(slug: &str) -> String {
+    format!(
+        "# {} 汉化包\n\n此资源包含 {} 的中文本地化内容。\n\n由 BBSMC 汉化组维护。",
+        slug, slug
+    )
+}
+
+/// 汉化包描述模板 - 第二部分：使用教程
+fn get_description_part2() -> &'static str {
+    r#"
+
+## 使用教程
+
+此汉化包为覆盖文件类型，需要将压缩包内的所有文件解压后覆盖到游戏运行目录中。
+
+### 安装步骤
+
+1. **下载汉化包**：点击上方的下载按钮获取最新版本的汉化包
+2. **解压文件**：将下载的压缩包解压
+3. **定位游戏目录**：
+   - 如果**未开启版本隔离**：找到 `.minecraft` 文件夹
+   - 如果**开启了版本隔离**：找到对应版本的文件夹（通常在 `.minecraft/versions/版本名称/` 下）
+4. **覆盖文件**：将解压后的所有文件和文件夹复制到游戏目录中，选择覆盖原有文件
+5. **启动游戏**：重新启动游戏即可看到汉化效果
+
+> **注意**：每次整合包更新后，请重新下载对应版本的汉化包并重复上述步骤。"#
+}
+
+/// 汉化包描述模板 - 第三部分：QQ 群信息
+fn get_description_part3() -> String {
+    format!(
+        r#"
+
+## 反馈与交流
+
+如果您在使用汉化包时遇到任何问题，或者想要游玩的整合包还没有汉化包，欢迎加入 BBSMC 汉化组 QQ 群进行反馈：
+
+**QQ 群号：{}**
+
+我们会尽快处理您的反馈和汉化请求！"#,
+        BBSMC_QQ_GROUP
+    )
+}
+
+/// 生成完整的汉化包描述
+fn generate_cn_description(slug: &str) -> String {
+    format!(
+        "{}{}{}",
+        get_description_part1(slug),
+        get_description_part2(),
+        get_description_part3()
+    )
+}
+
 /// 汉化组织信息
 #[derive(Debug)]
 struct CnOrganization {
@@ -122,6 +180,7 @@ async fn get_cn_organization(
 struct CnProjectInfo {
     id: i64,
     icon_url: Option<String>,
+    description: String,
 }
 
 /// 获取汉化资源信息（如果存在）
@@ -132,7 +191,7 @@ async fn get_cn_project(
     let result = sqlx::query_as!(
         CnProjectInfo,
         r#"
-        SELECT id, icon_url
+        SELECT id, icon_url, description
         FROM mods
         WHERE LOWER(slug) = LOWER($1)
         LIMIT 1
@@ -159,6 +218,27 @@ async fn sync_cn_project_icon(
         "#,
         new_icon_url,
         new_icon_url,
+        cn_project_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// 同步汉化资源描述
+async fn sync_cn_project_description(
+    pool: &sqlx::Pool<sqlx::Postgres>,
+    cn_project_id: i64,
+    new_description: &str,
+) -> Result<(), TranslationTrackingError> {
+    sqlx::query!(
+        r#"
+        UPDATE mods
+        SET description = $1
+        WHERE id = $2
+        "#,
+        new_description,
         cn_project_id
     )
     .execute(pool)
@@ -234,7 +314,9 @@ async fn process_tracked_project(
 
     // 检查汉化资源是否已存在
     if let Some(cn_project) = get_cn_project(pool, &cn_slug).await? {
-        info!("汉化资源 {} 已存在，检查图标同步", cn_slug);
+        info!("汉化资源 {} 已存在，检查同步", cn_slug);
+
+        let mut need_clear_cache = false;
 
         // 检查图标是否需要同步
         if cn_project.icon_url != project.icon_url {
@@ -249,8 +331,31 @@ async fn process_tracked_project(
                 project.icon_url.as_deref(),
             )
             .await?;
+            need_clear_cache = true;
+            info!("汉化资源 {} 图标同步完成", cn_slug);
+        }
 
-            // 清除汉化资源缓存
+        // 检查描述是否需要同步
+        let expected_description = generate_cn_description(original_slug);
+        if cn_project.description != expected_description {
+            info!(
+                "同步汉化资源描述: {} (长度 {} -> {})",
+                cn_slug,
+                cn_project.description.len(),
+                expected_description.len()
+            );
+            sync_cn_project_description(
+                pool,
+                cn_project.id,
+                &expected_description,
+            )
+            .await?;
+            need_clear_cache = true;
+            info!("汉化资源 {} 描述同步完成", cn_slug);
+        }
+
+        // 如果有任何更新，清除缓存
+        if need_clear_cache {
             Project::clear_cache(
                 ProjectId(cn_project.id),
                 Some(cn_slug.clone()),
@@ -258,8 +363,6 @@ async fn process_tracked_project(
                 redis,
             )
             .await?;
-
-            info!("汉化资源 {} 图标同步完成", cn_slug);
         }
 
         return Ok(());
@@ -286,10 +389,7 @@ async fn process_tracked_project(
         )),
         name: format!("{} 汉化包", original_slug),
         summary: "整合包汉化包，长期稳定更新".to_string(),
-        description: format!(
-            "# {} 汉化包\n\n此资源包含 {} 的中文本地化内容。\n\n由 BBSMC 汉化组维护。",
-            original_slug, original_slug
-        ),
+        description: generate_cn_description(original_slug),
         icon_url: project.icon_url.clone(),
         raw_icon_url: project.icon_url.clone(),
         license_url: None,
