@@ -1,480 +1,424 @@
 <template>
-  <div :style="themeVars">
-    <!-- <div class="game-header">
-      <div class="hero-container">
-        <img src="https://cdn.bbsmc.net/raw/top.jpeg" alt="header" />
-        <div class="desktop-only"></div>
-      </div>
-    </div> -->
-    <div class="game-page container">
-      <!-- <div class="game-description">
-        <div class="game-title">
-          <h1 class="section-title">BBSMC</h1>
-          <span class="num-projects">Minecraft资源社区</span>
+  <div class="home-page">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <span class="hero-title-line">发现最好的</span>
+          <span class="hero-title-line"><span class="hero-title-highlight">Minecraft</span></span>
+          <span class="hero-title-line">中文资源</span>
+        </h1>
+
+        <p class="hero-desc">
+          探索数十万个模组、整合包、光影和资源包。下载、分享、与百万玩家共建最活跃的中文 MC 社区。
+        </p>
+
+        <div class="hero-actions">
+          <NuxtLink to="/mods" class="hero-btn hero-btn-primary">开始探索</NuxtLink>
+          <NuxtLink to="/dashboard/projects" class="hero-btn hero-btn-secondary">创作者入驻</NuxtLink>
         </div>
-      </div> -->
-      <!-- Banner 轮播区域 -->
-      <section
-        class="group relative mb-12 h-[450px] select-none overflow-hidden rounded-xl"
-        :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
-        @mouseenter="handleMouseEnter"
-        @mouseleave="handleMouseLeave"
-        @mousedown="handleDragStart"
-        @touchstart="handleDragStart"
-        @touchmove="handleDragMove"
-        @touchend="handleDragEnd"
-      >
-        <div
-          v-for="(item, index) in carouselItems"
-          :key="index"
-          :class="[
-            'absolute inset-0 h-full w-full select-none transition-opacity duration-500',
-            { 'z-10 opacity-100': index === currentSlide, 'z-0 opacity-0': index !== currentSlide },
-          ]"
-          @click="handleBannerClick($event, item.slug)"
-        >
-          <img
-            :src="item.image"
-            :alt="item.title"
-            class="user-select-none absolute inset-0 h-full w-full object-cover"
-            :class="{ 'transition-transform duration-500 group-hover:scale-105': !isDragging }"
-            draggable="false"
-          />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-          <div class="pointer-events-none absolute bottom-0 left-0 p-8 text-white md:p-12">
-            <h2 class="banner-title">{{ item.title }}</h2>
-            <p class="banner-description">{{ item.description }}</p>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-value">{{ formatStatNumber(stats.projects) }}+</div>
+            <div class="hero-stat-label">资源总数</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-value">{{ formatStatNumber(stats.downloads) }}+</div>
+            <div class="hero-stat-label">累计下载</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-value">{{ formatStatNumber(stats.users) }}</div>
+            <div class="hero-stat-label">注册用户</div>
           </div>
         </div>
-        <div class="absolute bottom-6 right-6 z-20 flex space-x-2">
-          <button
-            v-for="(_, index) in carouselItems"
+      </div>
+
+      <div class="hero-visual">
+        <div
+          class="hero-banner"
+          :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
+          @mouseenter="handleMouseEnter"
+          @mouseleave="handleMouseLeave"
+          @mousedown="handleDragStart"
+          @touchstart="handleDragStart"
+          @touchmove="handleDragMove"
+          @touchend="handleDragEnd"
+        >
+          <div
+            v-for="(item, index) in heroBanners"
             :key="index"
             :class="[
-              'h-2 w-2 rounded-full transition-all duration-300',
-              currentSlide === index ? 'bg-white' : 'bg-white/50 hover:bg-white',
+              'hero-slide',
+              {
+                'active': index === currentHeroSlide,
+              },
             ]"
-            @click="goToSlide(index)"
-          ></button>
-        </div>
-      </section>
-
-      <!-- 搜索框区域 -->
-      <section class="mb-12">
-        <div class="mx-auto max-w-2xl px-4">
-          <form class="relative" @submit.prevent="handleSearch">
-            <input
-              v-model="searchQuery"
-              type="search"
-              placeholder="搜索模组、资源包、整合包..."
-              class="search-input w-full rounded-full py-4 pl-12 pr-4 outline-none transition-all"
-              style="background: var(--color-raised-bg); color: var(--color-text)"
-              @input="handleSearchInput"
-            />
-            <div class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
-              <svg
-                class="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                style="color: var(--color-text)"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section class="mb-12">
-        <div class="px-4">
-          <h2 class="mb-6 text-2xl font-bold" style="color: var(--color-text-dark)">热门资源</h2>
-        </div>
-        <div class="grid grid-cols-1 gap-8 px-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <div
-            v-for="project in modpacks"
-            :key="project.project_id"
-            class="group overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
-            style="
-              background: var(--color-raised-bg);
-              box-shadow:
-                0 10px 15px -3px rgba(0, 0, 0, 0.05),
-                0 4px 6px -2px rgba(0, 0, 0, 0.03);
-            "
+            @click="handleBannerClick($event, item.slug)"
           >
-            <a :href="getProjectLink(project)" target="_blank" class="block">
-              <div class="relative h-56">
-                <img
-                  :src="project.featured_gallery"
-                  :alt="project.title"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-
-                <!-- 下载量统计 -->
-                <div
-                  class="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-sm"
-                >
-                  <svg
-                    class="h-4 w-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  <span class="text-sm font-medium text-white">{{
-                    formatNumber(project.downloads)
-                  }}</span>
-                </div>
-
-                <div class="absolute bottom-4 left-4 text-white">
-                  <h3 class="card-title">{{ project.title }}</h3>
-                  <p v-if="project.author !== 'BBSMC'" class="card-author">
-                    By {{ project.author }}
-                  </p>
-                </div>
-              </div>
-            </a>
+            <img
+              :src="item.image"
+              :alt="item.title"
+              class="hero-slide-image"
+              :class="{ 'scale-effect': !isDragging }"
+              draggable="false"
+            />
+            <div class="hero-slide-overlay">
+              <span class="hero-slide-badge">{{ item.badge }}</span>
+              <h3 class="hero-slide-title">{{ item.title }}</h3>
+              <p class="hero-slide-desc">{{ item.description }}</p>
+            </div>
+          </div>
+          <div class="hero-banner-nav">
+            <button
+              v-for="(_, index) in heroBanners"
+              :key="index"
+              :class="['hero-nav-dot', { active: currentHeroSlide === index }]"
+              @click.stop="goToHeroSlide(index)"
+            ></button>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 矿工茶馆区域 -->
-      <section class="mb-16">
-        <div class="px-4">
-          <h2 class="mb-6 text-2xl font-bold" style="color: var(--color-text-dark)">矿工茶馆</h2>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <a
-              v-for="forum in forums"
-              :key="forum.id"
-              :href="forum.project_id ? `/project/${forum.project_id}/forum` : `/d/${forum.id}`"
-              class="forum-card group"
+    <!-- Categories -->
+    <section class="categories">
+      <div class="categories-track">
+        <NuxtLink to="/" class="cat-chip active"><StarIcon class="cat-icon" /> 热门推荐</NuxtLink>
+        <NuxtLink to="/mods" class="cat-chip"><BoxIcon class="cat-icon" /> 模组</NuxtLink>
+        <NuxtLink to="/plugins" class="cat-chip"><PlugIcon class="cat-icon" /> 插件</NuxtLink>
+        <NuxtLink to="/modpacks" class="cat-chip"><PackageClosedIcon class="cat-icon" /> 整合包</NuxtLink>
+        <NuxtLink to="/shaders" class="cat-chip"><GlassesIcon class="cat-icon" /> 光影</NuxtLink>
+        <NuxtLink to="/resourcepacks" class="cat-chip"><PaintBrushIcon class="cat-icon" /> 资源包</NuxtLink>
+        <NuxtLink to="/languages" class="cat-chip"><LanguagesIcon class="cat-icon" /> 汉化</NuxtLink>
+        <NuxtLink to="/datapacks" class="cat-chip"><BracesIcon class="cat-icon" /> 数据包</NuxtLink>
+        <NuxtLink to="/softwares" class="cat-chip"><WrenchIcon class="cat-icon" /> 工具</NuxtLink>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-area">
+        <!-- Hot Resources -->
+        <section class="section">
+          <header class="section-header">
+            <div class="section-title-group">
+              <span class="section-label">TRENDING</span>
+              <h2 class="section-title">热门资源</h2>
+            </div>
+            <NuxtLink to="/mods" class="section-more">浏览全部 →</NuxtLink>
+          </header>
+
+          <div class="resource-grid">
+            <NuxtLink
+              v-for="project in hotProjects"
+              :key="project.project_id"
+              :to="getProjectLink(project)"
+              class="resource-card"
             >
-              <div class="flex items-start gap-3">
-                <!-- 用户头像 -->
-                <img :src="forum.avatar" :alt="forum.user_name" class="forum-avatar" />
+              <!-- Gallery Image -->
+              <div class="resource-gallery" :style="getGalleryStyle(project)">
+                <div class="resource-type-badge">{{ getProjectTypeLabel(project.project_type) }}</div>
+              </div>
 
-                <!-- 中间内容区 -->
-                <div class="min-w-0 flex-1">
-                  <h3 class="forum-card-title">{{ forum.title }}</h3>
-                  <div class="mt-1 flex items-center gap-2">
-                    <span class="forum-username">{{ forum.user_name }}</span>
-                    <span class="forum-replies">{{ forum.replies }} 回复</span>
+              <!-- Card Body -->
+              <div class="resource-body">
+                <!-- Header: Icon + Title -->
+                <div class="resource-header">
+                  <img
+                    v-if="project.icon_url"
+                    :src="project.icon_url"
+                    :alt="project.title"
+                    class="resource-icon"
+                  />
+                  <span v-else class="resource-icon-placeholder"><PackageClosedIcon /></span>
+                  <div class="resource-title-wrap">
+                    <div class="resource-name">{{ project.title }}</div>
+                    <div class="resource-author">by {{ project.author }}</div>
                   </div>
                 </div>
 
-                <!-- 右侧时间和箭头 -->
-                <div class="flex flex-shrink-0 flex-col items-end gap-1">
-                  <p class="forum-card-time">{{ fromNow(forum.last_post_time) }}</p>
-                  <svg
-                    class="h-5 w-5 transform transition-transform group-hover:translate-x-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    style="color: var(--color-brand)"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                <!-- Description -->
+                <p class="resource-desc">{{ project.description }}</p>
+
+                <!-- Tags: Loaders + Version -->
+                <div class="resource-tags">
+                  <span v-for="loader in (project.loaders || []).slice(0, 3)" :key="loader" class="tag loader">
+                    {{ formatLoader(loader) }}
+                  </span>
+                  <span v-if="project.versions?.[0]" class="tag version">{{ project.versions[0] }}</span>
+                </div>
+
+                <!-- Footer Stats -->
+                <div class="resource-footer">
+                  <div class="resource-stat">
+                    <DownloadIcon class="stat-icon" />
+                    <span>{{ formatNumber(project.downloads) }}</span>
+                  </div>
+                  <div class="resource-stat">
+                    <HeartIcon class="stat-icon" />
+                    <span>{{ formatNumber(project.follows) }}</span>
+                  </div>
+                  <div class="resource-stat update">
+                    <UpdatedIcon class="stat-icon" />
+                    <span>{{ fromNow(project.date_modified) }}</span>
+                  </div>
                 </div>
               </div>
-            </a>
+            </NuxtLink>
+          </div>
+        </section>
+
+        <!-- Community News -->
+        <section v-if="notices.length > 0" class="section">
+          <header class="section-header">
+            <div class="section-title-group">
+              <span class="section-label">NEWS</span>
+              <h2 class="section-title">社区资讯</h2>
+            </div>
+            <NuxtLink to="/forums/notice" class="section-more">查看全部 →</NuxtLink>
+          </header>
+
+          <div class="notice-list">
+            <NuxtLink
+              v-for="notice in notices"
+              :key="notice.id"
+              :to="`/d/${notice.id}`"
+              class="notice-item"
+            >
+              <img :src="notice.avatar" :alt="notice.user_name" class="notice-avatar" />
+              <div class="notice-content">
+                <div class="notice-title">{{ notice.title }}</div>
+                <div class="notice-meta">
+                  <span class="notice-author">{{ notice.user_name }}</span>
+                  <span class="notice-time">{{ fromNow(notice.created) }}</span>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </section>
+
+        <!-- Discussions -->
+        <section class="section">
+          <header class="section-header">
+            <div class="section-title-group">
+              <span class="section-label">COMMUNITY</span>
+              <h2 class="section-title">热门讨论</h2>
+            </div>
+            <NuxtLink to="/forums/chat" class="section-more">进入论坛 →</NuxtLink>
+          </header>
+
+          <div class="discussion-list">
+            <NuxtLink
+              v-for="forum in forums"
+              :key="forum.id"
+              :to="forum.project_id ? `/project/${forum.project_id}/forum` : `/d/${forum.id}`"
+              class="discussion-item"
+            >
+              <img :src="forum.avatar" :alt="forum.user_name" class="discussion-avatar" />
+              <div class="discussion-content">
+                <div class="discussion-header">
+                  <span :class="['discussion-category', `cat-${forum.category}`]">
+                    {{ getCategoryLabel(forum.category) }}
+                  </span>
+                  <span class="discussion-time">{{ fromNow(forum.last_post_time) }}</span>
+                </div>
+                <div class="discussion-title">{{ forum.title }}</div>
+                <div class="discussion-meta">
+                  <span class="discussion-author">{{ forum.user_name }}</span>
+                  <span class="discussion-replies"><MessageIcon class="stat-icon" /> {{ forum.replies }} 回复</span>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </section>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- Version Card -->
+        <div class="sidebar-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title"><GameIcon class="sidebar-icon" /> 版本动态</h3>
+          </div>
+          <div class="sidebar-body">
+            <div class="version-list">
+              <a href="https://minecraft.net" target="_blank" class="version-item">
+                <span class="version-badge">1.21.4</span>
+                <div class="version-info">
+                  <div class="version-name">最新正式版</div>
+                  <div class="version-date">2024年12月</div>
+                </div>
+              </a>
+              <a href="https://minecraft.net" target="_blank" class="version-item">
+                <span class="version-badge snapshot">1.21.5</span>
+                <div class="version-info">
+                  <div class="version-name">快照版本</div>
+                  <div class="version-date">测试中</div>
+                </div>
+              </a>
+            </div>
           </div>
         </div>
-      </section>
-    </div>
+
+        <!-- Quick Links -->
+        <div class="sidebar-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title"><LinkIcon class="sidebar-icon" /> 快捷入口</h3>
+          </div>
+          <div class="quick-links">
+            <NuxtLink to="/mods" class="quick-link">
+              <span class="quick-link-icon"><BoxIcon /></span>
+              <span class="quick-link-text">模组</span>
+            </NuxtLink>
+            <NuxtLink to="/modpacks" class="quick-link">
+              <span class="quick-link-icon"><PackageClosedIcon /></span>
+              <span class="quick-link-text">整合包</span>
+            </NuxtLink>
+            <NuxtLink to="/shaders" class="quick-link">
+              <span class="quick-link-icon"><GlassesIcon /></span>
+              <span class="quick-link-text">光影</span>
+            </NuxtLink>
+            <NuxtLink to="/forums/chat" class="quick-link">
+              <span class="quick-link-icon"><MessageIcon /></span>
+              <span class="quick-link-text">论坛</span>
+            </NuxtLink>
+          </div>
+        </div>
+      </aside>
+    </main>
   </div>
 </template>
 
 <script setup>
-// import { homePageSearch } from "~/generated/state.json";
-
-// const searchQuery = ref("");
-// const sortType = ref("relevance");
-
-// const searchProjects = ref(homePageSearch.hits ?? []);
-
-// async function updateSearchProjects() {
-//   const res = await useBaseFetch(
-//     `search?limit=3&query=${searchQuery.value}&index=${sortType.value}`,
-//   );
-
-//   searchProjects.value = res.hits ?? [];
-// }
 import dayjs from "dayjs";
-import { isDarkTheme } from "~/plugins/theme/themes.ts";
-const modpacks = ref([]);
-const searchQuery = ref("");
-const forums = ref([]);
+import {
+  BoxIcon,
+  PackageClosedIcon,
+  GlobeIcon,
+  LanguagesIcon,
+  MessageIcon,
+  StarIcon,
+  PlugIcon,
+  GlassesIcon,
+  PaintBrushIcon,
+  BracesIcon,
+  WrenchIcon,
+  GameIcon,
+  LinkIcon,
+  SparklesIcon,
+  HeartIcon,
+  DownloadIcon,
+  UpdatedIcon,
+} from "@modrinth/assets";
 
-// 获取当前主题并设置CSS变量
-const { $theme } = useNuxtApp();
-const themeVars = computed(() => {
-  if (isDarkTheme($theme?.active)) {
-    return {
-      "--carousel-gradient-end": "rgba(0, 0, 0, 0.8)",
-      "--carousel-dot-bg": "rgba(255, 255, 255, 0.5)",
-      "--carousel-dot-active": "var(--color-text-dark)",
-      "--carousel-text-color": "var(--color-text-dark)",
-    };
-  } else {
-    return {
-      "--carousel-gradient-end": "rgba(255, 255, 255, 0.9)",
-      "--carousel-dot-bg": "rgba(100, 100, 100, 0.5)",
-      "--carousel-dot-active": "var(--color-brand)",
-      "--carousel-text-color": "var(--color-text)",
-    };
-  }
+// Data
+const hotProjects = ref([]);
+const forums = ref([]);
+const notices = ref([]);
+const stats = ref({
+  projects: 12580,
+  downloads: 1580000,
+  users: 89234,
+  modpacks: 1247,
+  mods: 3842,
+  languages: 4521,
+  forums: 28000,
 });
 
-async function getProjects() {
-  const [modpacksResponse, forumsResponse] = await Promise.all([
-    useBaseFetch(`search?limit=8&index=relevance&facets=[["project_type:modpack"]]`),
-    useBaseFetch(`forum`, { apiVersion: 3 }),
-  ]);
+// Hero Banners - 来自整合包页面的内容
+const heroBanners = ref([
+  {
+    image: "https://cdn.bbsmc.net/bbsmc/data/G23dLUsP/images/e681d996cd07316e12facedd8fb22e9f74ce68a1_350.webp",
+    title: "剑与王国",
+    description: "围绕模拟殖民地与村民招募玩法的深度魔改整合包",
+    badge: "热门整合包",
+    slug: "/modpack/snk",
+  },
+  {
+    image: "https://cdn.bbsmc.net/bbsmc/data/EIrkPpcm/images/7d43813f0ff22b6c769e7382d36d5059657e8a94_350.webp",
+    title: "龙之冒险：新征程",
+    description: "面对众多怪物的冒险之旅，你做好准备了吗？",
+    badge: "精选整合包",
+    slug: "/modpack/lzmx",
+  },
+  {
+    image: "https://cdn.bbsmc.net/raw/images/pcl2.jpg",
+    title: "PCL2 启动器",
+    description: "超快的下载速度，下载安装 Mod 和整合包，简洁且高度自定义的界面",
+    badge: "推荐软件",
+    slug: "/software/pcl",
+  },
+  {
+    image: "https://cdn.bbsmc.net/bbsmc/data/XMUypeti/images/82d38f228afad3b75202eaf8a148c1318a8cea48_350.webp",
+    title: "愚者 - The Fool",
+    description: "愚弄、伪装、欺诈，屠龙者终成恶龙。",
+    badge: "精选整合包",
+    slug: "/modpack/the-fool",
+  },
+  {
+    image: "https://cdn.bbsmc.net/bbsmc/data/e11vzqXl/images/346fd8930411f592c94acce68b8290a5266843e3_350.webp",
+    title: "香草纪元:食旅纪行",
+    description: "农夫乐事全附属与异界冒险",
+    badge: "热门整合包",
+    slug: "/modpack/vefc",
+  },
+]);
 
-  modpacks.value =
-    modpacksResponse.hits?.map((modpack) => ({
-      ...modpack,
-      slug: modpack.slug || modpack.project_id,
-      featured_gallery:
-        modpack.featured_gallery ||
-        (modpack.gallery?.length > 0 ? modpack.gallery[0] : modpack.icon_url),
-    })) ?? [];
+const currentHeroSlide = ref(0);
+const autoPlayInterval = ref(null);
+const isClient = ref(false);
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragCurrentX = ref(0);
+const hasDragged = ref(false);
 
-  forums.value = (forumsResponse.forums ?? []).slice(0, 6); // 只显示6个
+// Fetch data
+async function fetchData() {
+  try {
+    const [projectsResponse, forumsResponse, noticesResponse] = await Promise.all([
+      useBaseFetch(`search?limit=6&index=relevance`),
+      useBaseFetch(`forum`, { apiVersion: 3 }),
+      useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
+    ]);
+
+    hotProjects.value = projectsResponse.hits ?? [];
+    forums.value = (forumsResponse.forums ?? []).slice(0, 5);
+    notices.value = (noticesResponse.forums ?? []).slice(0, 5);
+  } catch (e) {
+    console.error("Failed to fetch data:", e);
+  }
 }
-await getProjects();
 
-// 时间格式化
+await fetchData();
+
+// Time formatting
 const fromNow = (date) => {
   const currentDate = useCurrentDate();
   return dayjs(date).from(currentDate.value);
 };
 
-// 初始化的时候就打乱carouselItems的顺序
-
-const carouselItems = ref([
-  {
-    image: "https://cdn.bbsmc.net/raw/images/pcl2.jpg",
-    title: "PCL2",
-    description:
-      "Minecraft 启动器：Plain Craft Launcher！简称 PCL！ 超快的下载速度，下载安装 Mod 和整合包，简洁且高度自定义的界面，流畅精细的动画……总之很棒就完事啦！",
-    slug: "/software/pcl",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/vC327lbX/images/9b83a4e1111aadfff2e6ca82bec99883bb04bc3f.webp",
-    title: "PCL CE",
-    description: "基于 PCL 公开源代码二次开发的社区版本，添加了许多实用功能与改进",
-    slug: "/software/pcl",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/1p2TFl6X/images/73cc070ff496b26f2674eb5928b021cb2ef93426_350.webp",
-    title: "乌托邦探险之旅",
-    description: "乌托邦探险之旅",
-    slug: "/modpack/utopia-journey",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/NxtrWNas/images/329b6261d797271622386b146078d7130a5438c0_350.webp",
-    title: "探索自然2",
-    description: "通过探索，种田来发展经济，提升实力，面临不断增强的怪物",
-    slug: "/modpack/tansuoziran2",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/dL0Tbr7N/images/19f25c62f6bcc1d068c9b35e4e603e81991754f9_350.webp",
-    title: "脆骨症：黯光",
-    description: "脆骨症的维度分支，引入了大量的新维度作为内容的补充。",
-    slug: "/modpack/no-flesh-within-chest-dim",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/G23dLUsP/images/e681d996cd07316e12facedd8fb22e9f74ce68a1_350.webp",
-    title: "剑与王国",
-    description: "围绕模拟殖民地与村民招募玩法的深度魔改整合包",
-    slug: "/modpack/snk",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/EIrkPpcm/images/7d43813f0ff22b6c769e7382d36d5059657e8a94_350.webp",
-    title: "龙之冒险：新征程",
-    description: "面对众多怪物的冒险之旅，你做好准备了吗？",
-    slug: "/modpack/lzmx",
-  },
-  {
-    image:
-      "https://cdn.bbsmc.net/bbsmc/data/OIIWCwpQ/images/fce31aca660ea4b6cf77ce8e51468d4e6585c0d8_350.webp",
-    title: "机械动力:齿轮盛宴",
-    description:
-      "欢迎来到齿轮盛宴的世界,欢迎来到齿轮盛宴的世界,也能体验到沉浸式做菜的欢乐,更能体验到丰富的世界之旅，怪物、美景层出不穷，美不胜收,愿齿轮盛宴能给你带来盛宴一般的感受.",
-    slug: "/modpack/create-delight",
-  },
-]);
-
-const currentSlide = ref(0);
-
-// 拖动相关状态
-const isDragging = ref(false);
-const dragStartX = ref(0);
-const dragCurrentX = ref(0);
-const hasDragged = ref(false); // 标记是否发生了拖动
-
-// 处理拖动开始
-const handleDragStart = (e) => {
-  const isTouchEvent = e.type.includes("touch");
-
-  isDragging.value = true;
-  hasDragged.value = false; // 重置拖动标志
-  dragStartX.value = isTouchEvent ? e.touches[0].clientX : e.clientX;
-  dragCurrentX.value = dragStartX.value;
-  stopAutoPlay(); // 停止自动播放
-
-  if (!isTouchEvent) {
-    e.preventDefault(); // 阻止默认行为
-    // 桌面端：在 document 上监听 mousemove 和 mouseup
-    document.addEventListener("mousemove", handleDragMove);
-    document.addEventListener("mouseup", handleDragEnd);
-  }
-};
-
-// 处理拖动中
-const handleDragMove = (e) => {
-  if (!isDragging.value) return;
-
-  const isTouchEvent = e.type.includes("touch");
-  const currentX = isTouchEvent ? e.touches[0].clientX : e.clientX;
-  dragCurrentX.value = currentX;
-
-  // 如果拖动距离超过5px，标记为已拖动
-  const distance = Math.abs(currentX - dragStartX.value);
-  if (distance > 5) {
-    hasDragged.value = true;
-    e.preventDefault();
-  }
-};
-
-// 处理拖动结束
-const handleDragEnd = (_e) => {
-  if (!isDragging.value) return;
-
-  const dragDistance = dragCurrentX.value - dragStartX.value;
-  const threshold = 50; // 拖动超过50px才切换
-
-  if (Math.abs(dragDistance) > threshold) {
-    if (dragDistance > 0) {
-      // 向右拖动，显示上一张
-      prevSlide();
-    } else {
-      // 向左拖动，显示下一张
-      nextSlide();
-    }
-  }
-
-  isDragging.value = false;
-  startAutoPlay(); // 恢复自动播放
-
-  // 移除 document 上的监听器
-  document.removeEventListener("mousemove", handleDragMove);
-  document.removeEventListener("mouseup", handleDragEnd);
-
-  // 延迟重置拖动位置，让 click 事件能正确判断
-  setTimeout(() => {
-    dragStartX.value = 0;
-    dragCurrentX.value = 0;
-  }, 10);
-};
-
-// 上一张
-const prevSlide = () => {
-  currentSlide.value =
-    currentSlide.value === 0 ? carouselItems.value.length - 1 : currentSlide.value - 1;
-  startAutoPlay(); // 重置自动播放计时器
-};
-
-// 处理 Banner 点击（防止拖动后触发跳转）
-const handleBannerClick = (e, url) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  // 如果发生了拖动，不跳转
-  if (hasDragged.value) {
-    hasDragged.value = false; // 重置标志
-    return;
-  }
-
-  // 否则正常跳转
-  window.open(url, "_blank");
-};
-
-// 搜索功能
-const handleSearch = async () => {
-  const query = searchQuery.value.trim();
-
-  if (query) {
-    // 调用搜索API，不限制项目类型
-    const searchResponse = await useBaseFetch(
-      `search?limit=8&index=relevance&query=${encodeURIComponent(query)}`,
-    );
-
-    modpacks.value =
-      searchResponse.hits?.map((project) => ({
-        ...project,
-        slug: project.slug || project.project_id,
-        featured_gallery:
-          project.featured_gallery ||
-          (project.gallery?.length > 0 ? project.gallery[0] : project.icon_url),
-      })) ?? [];
-  } else {
-    // 搜索框为空时，恢复显示热门整合包
-    await getProjects();
-  }
-};
-
-// 防抖定时器
-let searchTimeout = null;
-
-// 实时搜索
-const handleSearchInput = () => {
-  // 清除之前的定时器
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
-
-  // 设置新的定时器，300ms 后执行搜索
-  searchTimeout = setTimeout(() => {
-    handleSearch();
-  }, 300);
-};
-
-// 格式化数字显示（下载量等）
+// Number formatting
 const formatNumber = (num) => {
   if (!num) return "0";
-
   if (num >= 10000) {
     return (num / 10000).toFixed(1).replace(/\.0$/, "") + "万";
   }
-  return num.toString();
+  return num.toLocaleString();
 };
 
-// 根据项目类型生成链接
+const formatStatNumber = (num) => {
+  if (!num) return "0";
+  if (num >= 10000) {
+    return (num / 10000).toFixed(0) + "万";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  return num.toLocaleString();
+};
+
+// Project link
 const getProjectLink = (project) => {
   const typeMap = {
     mod: "mod",
@@ -483,29 +427,99 @@ const getProjectLink = (project) => {
     resourcepack: "resourcepack",
     shader: "shader",
     datapack: "datapack",
+    software: "software",
+    language: "language",
   };
   const type = typeMap[project.project_type] || project.project_type;
-  return `/${type}/${project.slug}`;
+  return `/${type}/${project.slug || project.project_id}`;
 };
 
-const autoPlayInterval = ref(null);
-const autoPlayDelay = 5000;
+// Project type label
+const getProjectTypeLabel = (type) => {
+  const labels = {
+    mod: "模组",
+    modpack: "整合包",
+    plugin: "插件",
+    resourcepack: "资源包",
+    shader: "光影",
+    datapack: "数据包",
+    software: "软件",
+    language: "汉化",
+  };
+  return labels[type] || type;
+};
 
-// 添加一个标志来判断是否在客户端
-const isClient = ref(false);
+// Get gallery image URL (handles different API response formats)
+const getGalleryStyle = (project) => {
+  // Try different possible gallery formats
+  let imageUrl = null;
 
-// 开始自动播放
+  // Format 1: gallery is array of strings
+  if (project.gallery?.[0] && typeof project.gallery[0] === 'string') {
+    imageUrl = project.gallery[0];
+  }
+  // Format 2: gallery is array of objects with url property
+  else if (project.gallery?.[0]?.url) {
+    imageUrl = project.gallery[0].url;
+  }
+  // Format 3: featured_gallery field
+  else if (project.featured_gallery) {
+    imageUrl = project.featured_gallery;
+  }
+  // Format 4: icon_url as fallback for software
+  else if (project.project_type === 'software' && project.icon_url) {
+    imageUrl = project.icon_url;
+  }
+
+  return imageUrl ? `background-image: url(${imageUrl})` : '';
+};
+
+// Forum category label
+const getCategoryLabel = (category) => {
+  const labels = {
+    chat: '闲聊',
+    project: '资源',
+    article: '专栏',
+    notice: '公告',
+    help: '求助',
+    share: '分享',
+  };
+  return labels[category] || category;
+};
+
+// Loader formatting
+const formatLoader = (loader) => {
+  const loaderNames = {
+    fabric: "Fabric",
+    forge: "Forge",
+    neoforge: "NeoForge",
+    quilt: "Quilt",
+    bukkit: "Bukkit",
+    spigot: "Spigot",
+    paper: "Paper",
+    purpur: "Purpur",
+    sponge: "Sponge",
+    bungeecord: "BungeeCord",
+    velocity: "Velocity",
+    waterfall: "Waterfall",
+    folia: "Folia",
+    canvas: "Canvas",
+    iris: "Iris",
+    optifine: "OptiFine",
+    vanilla: "原版",
+  };
+  return loaderNames[loader] || loader;
+};
+
+// Hero Banner controls
 const startAutoPlay = () => {
-  // 只在客户端执行
   if (!isClient.value) return;
-
   stopAutoPlay();
   autoPlayInterval.value = setInterval(() => {
-    nextSlide();
-  }, autoPlayDelay);
+    currentHeroSlide.value = (currentHeroSlide.value + 1) % heroBanners.value.length;
+  }, 5000);
 };
 
-// 停止自动播放
 const stopAutoPlay = () => {
   if (autoPlayInterval.value) {
     clearInterval(autoPlayInterval.value);
@@ -513,43 +527,92 @@ const stopAutoPlay = () => {
   }
 };
 
-// 修改 nextSlide 和 prevSlide 函数，添加重置自动播放
-const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % carouselItems.value.length;
-  startAutoPlay(); // 重置自动播放计时器
+const goToHeroSlide = (index) => {
+  if (index === currentHeroSlide.value) {
+    navigateTo(heroBanners.value[index].slug);
+    return;
+  }
+  currentHeroSlide.value = index;
+  startAutoPlay();
 };
 
-// const prevSlide = () => {
-//   currentSlide.value =
-//     currentSlide.value === 0 ? carouselItems.value.length - 1 : currentSlide.value - 1;
-//   startAutoPlay(); // 重置自动播放计时器
-// };
+const prevHeroSlide = () => {
+  currentHeroSlide.value = (currentHeroSlide.value - 1 + heroBanners.value.length) % heroBanners.value.length;
+  startAutoPlay();
+};
 
-const goToSlide = (index) => {
-  if (index === currentSlide.value) {
-    // 打开链接
-    window.open(`${carouselItems.value[index].slug}`, "_blank");
+const nextHeroSlide = () => {
+  currentHeroSlide.value = (currentHeroSlide.value + 1) % heroBanners.value.length;
+  startAutoPlay();
+};
+
+// Banner 拖拽处理函数
+const handleDragStart = (e) => {
+  const isTouchEvent = e.type.includes("touch");
+  isDragging.value = true;
+  hasDragged.value = false;
+  dragStartX.value = isTouchEvent ? e.touches[0].clientX : e.clientX;
+  dragCurrentX.value = dragStartX.value;
+  stopAutoPlay();
+
+  if (!isTouchEvent) {
+    e.preventDefault();
+    document.addEventListener("mousemove", handleDragMove);
+    document.addEventListener("mouseup", handleDragEnd);
+  }
+};
+
+const handleDragMove = (e) => {
+  if (!isDragging.value) return;
+  const isTouchEvent = e.type.includes("touch");
+  const currentX = isTouchEvent ? e.touches[0].clientX : e.clientX;
+  dragCurrentX.value = currentX;
+
+  const distance = Math.abs(currentX - dragStartX.value);
+  if (distance > 5) {
+    hasDragged.value = true;
+    e.preventDefault();
+  }
+};
+
+const handleDragEnd = () => {
+  if (!isDragging.value) return;
+
+  const dragDistance = dragCurrentX.value - dragStartX.value;
+  const threshold = 50;
+
+  if (Math.abs(dragDistance) > threshold) {
+    if (dragDistance > 0) {
+      prevHeroSlide();
+    } else {
+      nextHeroSlide();
+    }
+  }
+
+  isDragging.value = false;
+  startAutoPlay();
+
+  document.removeEventListener("mousemove", handleDragMove);
+  document.removeEventListener("mouseup", handleDragEnd);
+
+  setTimeout(() => {
+    dragStartX.value = 0;
+    dragCurrentX.value = 0;
+  }, 10);
+};
+
+const handleBannerClick = (e, url) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (hasDragged.value) {
+    hasDragged.value = false;
     return;
   }
 
-  currentSlide.value = index;
-  startAutoPlay(); // 重置自动播放计时器
+  navigateTo(url);
 };
 
-// 在组件挂载时启动自动播放
-onMounted(() => {
-  isClient.value = true;
-  currentSlide.value = Math.floor(Math.random() * carouselItems.value.length);
-  startAutoPlay();
-});
-
-// 确保在组件卸载时清除定时器
-onUnmounted(() => {
-  stopAutoPlay();
-  isClient.value = false;
-});
-
-// 鼠标事件处理
 const handleMouseEnter = () => {
   if (!isClient.value) return;
   stopAutoPlay();
@@ -559,193 +622,1184 @@ const handleMouseLeave = () => {
   if (!isClient.value) return;
   startAutoPlay();
 };
+
+onMounted(() => {
+  isClient.value = true;
+  currentHeroSlide.value = Math.floor(Math.random() * heroBanners.value.length);
+  startAutoPlay();
+});
+
+onUnmounted(() => {
+  stopAutoPlay();
+  isClient.value = false;
+});
 </script>
 
-<style scoped>
-.container {
-  max-width: 1224px;
-  margin: auto;
-  min-height: 724px;
+<style scoped lang="scss">
+.home-page {
+  min-height: 100vh;
 }
 
-.game-page {
+// ==========================================
+// HERO SECTION
+// ==========================================
+.hero {
+  min-height: 90vh;
+  padding: 120px 40px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  max-width: 1600px;
+  margin: 0 auto;
   position: relative;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+  color: var(--color-text-dark);
+  animation: reveal-up 0.8s var(--ease-out) 0.1s both;
+}
+
+.hero-title-line {
+  display: block;
+}
+
+.hero-title-highlight {
+  color: var(--flame, #f16436);
+  position: relative;
+}
+
+.hero-title-highlight::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0.05em;
+  width: 100%;
+  height: 0.12em;
+  background: var(--flame, #f16436);
+  opacity: 0.3;
+  border-radius: 4px;
+}
+
+.hero-desc {
+  font-size: 1.15rem;
+  color: var(--color-secondary);
+  line-height: 1.8;
+  max-width: 500px;
+  margin-bottom: 40px;
+  animation: reveal-up 0.8s var(--ease-out) 0.2s both;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 60px;
+  animation: reveal-up 0.8s var(--ease-out) 0.3s both;
+}
+
+.hero-btn {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 16px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.4s var(--ease-spring);
+  text-decoration: none;
+}
+
+.hero-btn-primary {
+  background: var(--flame, #f16436);
+  color: #000;
+
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px var(--accent-glow, rgba(241, 100, 54, 0.4));
+  }
+}
+
+.hero-btn-secondary {
+  background: var(--color-raised-bg);
+  border: 2px solid var(--color-divider);
+  color: var(--color-text-dark);
+
+  &:hover {
+    border-color: var(--color-divider-dark);
+    transform: translateY(-4px);
+  }
+}
+
+.hero-stats {
+  display: flex;
+  gap: 48px;
+  animation: reveal-up 0.8s var(--ease-out) 0.4s both;
+}
+
+.hero-stat {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 40px;
+    background: var(--color-divider);
+  }
+
+  &:last-child::after {
+    display: none;
+  }
+}
+
+.hero-stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--color-text-dark);
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  margin-top: 4px;
+}
+
+// Hero Visual - Banner Carousel
+.hero-visual {
+  position: relative;
+  z-index: 1;
+  animation: reveal-scale 1s var(--ease-out) 0.3s both;
+}
+
+.hero-banner {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  user-select: none;
+
+  &.cursor-grab {
+    cursor: grab;
+  }
+
+  &.cursor-grabbing {
+    cursor: grabbing;
+  }
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: scale(1.02);
+
+  &.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hero-slide-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+
+  &.scale-effect {
+    transition: transform 0.5s ease;
+
+    .hero-banner:hover & {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.hero-slide-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px 32px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hero-slide-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.hero-slide-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.hero-slide-desc {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.hero-slide-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.hero-banner-nav {
+  position: absolute;
+  bottom: 20px;
+  right: 32px;
+  display: flex;
+  gap: 8px;
   z-index: 2;
 }
 
-/* Banner 标题样式 */
-.banner-title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  line-height: 1.2;
-  font-family:
-    "Space Grotesk",
-    var(--montserrat-font),
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: #ffffff !important;
-}
-
-.banner-description {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  max-width: 42rem;
-  color: #d1d5db !important;
-}
-
-/* 卡片标题样式 */
-.card-title {
-  font-weight: 700;
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  font-family:
-    "Space Grotesk",
-    var(--montserrat-font),
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: #ffffff !important;
-}
-
-.card-author {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: #d1d5db !important;
-  margin-top: 0.25rem;
-}
-
-/* 矿工茶馆卡片样式 */
-.forum-card {
-  display: block;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background: var(--color-raised-bg);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease;
-  text-decoration: none;
-  border: 1px solid transparent;
-}
-
-.forum-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border-color: var(--color-brand);
-}
-
-/* 用户头像 */
-.forum-avatar {
-  width: 40px;
-  height: 40px;
+.hero-nav-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  object-fit: cover;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  &.active {
+    background: var(--flame, #f16436);
+    width: 28px;
+    border-radius: 5px;
+  }
+}
+
+.hero-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+  z-index: 2;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: var(--flame, #f16436);
+    border-color: var(--flame, #f16436);
+  }
+
+  &.prev {
+    left: 16px;
+  }
+
+  &.next {
+    right: 16px;
+  }
+}
+
+// ==========================================
+// CATEGORIES
+// ==========================================
+.categories {
+  max-width: 1600px;
+  margin: 0 auto 60px;
+  padding: 0 40px;
+  overflow: hidden;
+}
+
+.categories-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 20px 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 1400px) {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+.cat-chip {
   flex-shrink: 0;
-  border: 2px solid var(--color-divider);
-  transition: border-color 0.2s;
-}
-
-.forum-card:hover .forum-avatar {
-  border-color: var(--color-brand);
-}
-
-/* 标题 */
-.forum-card-title {
-  font-size: 0.9375rem;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
   font-weight: 600;
+  padding: 14px 24px;
+  background: var(--color-raised-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 100px;
+  color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s var(--ease-out);
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    color: var(--color-text-dark);
+    transform: translateY(-3px);
+  }
+
+  &.active {
+    background: var(--flame, #f16436);
+    border-color: var(--flame, #f16436);
+    color: #000;
+  }
+}
+
+.cat-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+// ==========================================
+// MAIN CONTENT
+// ==========================================
+.main-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 48px;
+}
+
+.content-area {
+  min-width: 0;
+}
+
+// Section Headers
+.section {
+  margin-bottom: 48px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.section-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--flame, #f16436);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--color-text-dark);
   margin: 0;
+}
+
+.section-more {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--flame, #f16436);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: gap 0.3s var(--ease-out);
+  text-decoration: none;
+
+  &:hover {
+    gap: 14px;
+  }
+}
+
+// Resource Grid - Card Layout
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resource-card {
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s var(--ease-out);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px var(--accent-glow, rgba(241, 100, 54, 0.15));
+
+    .resource-gallery {
+      &::after {
+        opacity: 0.3;
+      }
+    }
+  }
+}
+
+.resource-gallery {
+  height: 120px;
+  background-color: var(--bg-elevated, #1a1d23);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--color-divider) 0%, var(--bg-elevated, #1a1d23) 100%);
+    z-index: 0;
+  }
+
+  // Hide fallback gradient when image is loaded
+  &[style*="background-image"] {
+    &::before {
+      display: none;
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    z-index: 1;
+  }
+}
+
+.resource-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.resource-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.resource-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resource-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--color-divider);
+}
+
+.resource-icon-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--bg-elevated, #12151a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--color-secondary);
+  }
+}
+
+.resource-title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.resource-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.resource-author {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+.resource-desc {
+  font-size: 0.85rem;
+  color: var(--color-secondary);
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  line-height: 1.4;
-  transition: color 0.2s;
+  overflow: hidden;
+  margin: 0;
+  flex: 1;
 }
 
-.forum-card:hover .forum-card-title {
-  color: var(--color-brand);
+.resource-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-/* 用户名 */
-.forum-username {
-  font-size: 0.75rem;
-  color: var(--color-text);
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  background: var(--bg-elevated, #12151a);
+  border-radius: 4px;
+  color: var(--color-secondary);
+  letter-spacing: 0.02em;
+
+  &.loader {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+    color: var(--flame, #f16436);
+  }
+
+  &.version {
+    background: rgba(45, 212, 191, 0.1);
+    color: var(--teal, #2dd4bf);
+  }
+}
+
+.resource-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider);
+  margin-top: auto;
+}
+
+.resource-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+
+  .stat-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    color: var(--color-secondary);
+  }
+
+  &.update {
+    margin-left: auto;
+    font-size: 0.75rem;
+  }
+}
+
+// Notice List
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notice-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 16px;
+  transition: all 0.3s var(--ease-out);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    background: var(--accent-muted, rgba(241, 100, 54, 0.06));
+
+    &::before {
+      opacity: 1;
+    }
+
+    .notice-badge {
+      background: var(--flame, #f16436);
+      color: #fff;
+    }
+  }
+}
+
+.notice-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+
+  .notice-item:hover & {
+    transform: scale(1.05);
+  }
+}
+
+.notice-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+.notice-author {
   font-weight: 500;
 }
 
-/* 回复数 */
-.forum-replies {
+.notice-time {
+  opacity: 0.8;
+}
+
+// Discussion List
+.discussion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.discussion-item {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 16px;
+  transition: all 0.3s var(--ease-out);
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--color-divider-dark);
+    background: var(--bg-card-hover, var(--color-raised-bg));
+    transform: translateX(4px);
+
+    .discussion-avatar {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.discussion-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.discussion-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discussion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discussion-category {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  // Default style
+  background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+  color: var(--flame, #f16436);
+
+  // Category specific colors
+  &.cat-project {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+  }
+
+  &.cat-chat {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
+  }
+
+  &.cat-article {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+  }
+
+  &.cat-notice {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+    color: var(--flame, #f16436);
+  }
+
+  &.cat-help {
+    background: rgba(255, 179, 71, 0.12);
+    color: #ffb347;
+  }
+
+  &.cat-share {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+  }
+}
+
+.discussion-time {
   font-size: 0.75rem;
-  color: var(--color-text);
+  color: var(--color-secondary);
   opacity: 0.7;
 }
 
-/* 时间 */
-.forum-card-time {
-  font-size: 0.75rem;
-  color: var(--color-text);
-  margin: 0;
+.discussion-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: right;
+  line-height: 1.4;
 }
 
-/* 搜索框样式 */
-.search-input {
-  border: 1px solid rgba(128, 128, 128, 0.3) !important;
-  box-shadow: none !important;
+.discussion-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--color-secondary);
 }
 
-.search-input:focus {
-  border: 1px solid rgba(128, 128, 128, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.1) !important;
+.discussion-author {
+  font-weight: 500;
 }
 
-/* Banner 链接样式重置 */
-section a:focus {
-  outline: none;
-  box-shadow: none;
+.discussion-replies {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0.8;
 }
 
-section a:active {
-  outline: none;
-  box-shadow: none;
+.stat-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--color-secondary);
 }
 
-.user-select-none {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+// ==========================================
+// SIDEBAR
+// ==========================================
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-/* 响应式调整 */
+.sidebar-card {
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.sidebar-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.sidebar-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--flame, #f16436);
+}
+
+.sidebar-body {
+  padding: 20px 24px;
+}
+
+// Version List
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.version-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--bg-elevated, #12151a);
+  border-radius: 12px;
+  transition: all 0.3s;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--bg-card-hover, #1e2229);
+  }
+}
+
+.version-badge {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  background: var(--flame, #f16436);
+  color: #000;
+  border-radius: 10px;
+
+  &.snapshot {
+    background: var(--teal, #2dd4bf);
+  }
+}
+
+.version-info {
+  flex: 1;
+}
+
+.version-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.version-date {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+// Quick Links
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: var(--bg-elevated, #12151a);
+  border-radius: 12px;
+  transition: all 0.3s var(--ease-out);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.12));
+    transform: translateY(-4px);
+  }
+}
+
+.quick-link-icon {
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 1.6rem;
+    height: 1.6rem;
+    color: var(--flame, #f16436);
+  }
+}
+
+.quick-link-text {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+// ==========================================
+// ANIMATIONS
+// ==========================================
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px var(--accent-glow, rgba(241, 100, 54, 0.4)));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px var(--accent-glow, rgba(241, 100, 54, 0.4)));
+  }
+}
+
+// ==========================================
+// RESPONSIVE
+// ==========================================
+@media (max-width: 1200px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 120px 32px 60px;
+    min-height: auto;
+  }
+
+  .hero-visual {
+    max-width: 100%;
+  }
+
+  .hero-banner {
+    height: 400px;
+  }
+
+  .main-content {
+    grid-template-columns: 1fr;
+    padding: 0 32px 60px;
+  }
+
+  .sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
 @media (max-width: 768px) {
-  .container {
-    padding: 0 8px;
+  .hero {
+    padding: 100px 24px 40px;
   }
 
-  .banner-title {
-    font-size: 2.25rem;
+  .hero-title {
+    font-size: clamp(2rem, 8vw, 2.5rem);
   }
 
-  .banner-description {
-    font-size: 1.125rem;
-  }
-}
-
-@media (min-width: 768px) {
-  .banner-title {
-    font-size: 3rem;
+  .hero-banner {
+    height: 320px;
   }
 
-  .banner-description {
-    font-size: 1.25rem;
+  .hero-slide-title {
+    font-size: 1.4rem;
+  }
+
+  .hero-slide-desc {
+    font-size: 0.9rem;
+    display: none;
+  }
+
+  .hero-slide-overlay {
+    padding: 24px 20px;
+  }
+
+  .hero-nav-arrow {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+  }
+
+  .hero-stats {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .hero-stat::after {
+    display: none;
+  }
+
+  .categories {
+    padding: 0 24px;
+  }
+
+  .main-content {
+    padding: 0 24px 40px;
+  }
+
+  .resource-item {
+    grid-template-columns: 56px 1fr;
+  }
+
+  .resource-icon-wrap {
+    width: 56px;
+    height: 56px;
+  }
+
+  .resource-stats {
+    display: none;
+  }
+
+  .sidebar {
+    grid-template-columns: 1fr;
   }
 }
 </style>
