@@ -3789,7 +3789,6 @@ const navLinks = computed(() => {
   width: 100%;
   min-height: 200px;
   margin-bottom: 24px;
-  overflow: hidden;
 }
 
 // Hero Background - Clean, minimal design
