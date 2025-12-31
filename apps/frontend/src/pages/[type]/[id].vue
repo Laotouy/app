@@ -621,12 +621,120 @@
     </NewModal>
     <CollectionCreateModal ref="modal_collection" :project-ids="[project.id]" />
     <div
-      class="new-page sidebar"
+      class="new-page sidebar revolution-layout"
       :class="{
         'alt-layout': route.fullPath.includes('/wikis') || route.fullPath.includes('/wiki/'),
       }"
     >
-      <div class="normal-page__header relative my-4">
+      <!-- ==================== IMMERSIVE HERO SECTION ==================== -->
+      <div class="hero-section">
+        <!-- Hero Background with Gallery Image -->
+        <div class="hero-background">
+          <img
+            v-if="project.gallery && project.gallery.length > 0"
+            :src="project.gallery[0].url"
+            :alt="project.title"
+            class="hero-bg-image"
+          />
+          <div class="hero-gradient-overlay"></div>
+        </div>
+
+        <!-- Hero Content -->
+        <div class="hero-content">
+          <div class="hero-main">
+            <!-- Project Icon -->
+            <div class="hero-icon-wrapper">
+              <Avatar :src="project.icon_url" :alt="project.title" size="120px" class="hero-icon" />
+            </div>
+
+            <!-- Project Info -->
+            <div class="hero-info">
+              <div class="hero-title-row">
+                <h1 class="hero-title">{{ project.title }}</h1>
+                <Badge v-if="auth.user && currentMember" :type="project.status" class="hero-status-badge" />
+              </div>
+              <p class="hero-description">{{ project.description }}</p>
+
+              <!-- Tags & Stats Combined -->
+              <div class="hero-meta">
+                <!-- Quick Tags -->
+                <div class="hero-tags">
+                  <span
+                    v-for="(category, index) in project.categories.slice(0, 3)"
+                    :key="index"
+                    class="hero-tag"
+                  >
+                    {{ formatCategory(category) }}
+                  </span>
+                  <span v-if="project.categories.length > 3" class="hero-tag hero-tag--more">
+                    +{{ project.categories.length - 3 }}
+                  </span>
+                </div>
+
+                <!-- Stats Inline -->
+                <div class="hero-stats-inline">
+                  <span class="stat-item"><DownloadIcon class="stat-icon" />{{ $formatNumber(project.downloads) }}</span>
+                  <span class="stat-item"><HeartIcon class="stat-icon" />{{ $formatNumber(project.followers) }}</span>
+                  <span class="stat-item"><CalendarIcon class="stat-icon" />{{ fromNow(project.approved || project.published) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Actions -->
+          <div class="hero-actions">
+            <ButtonStyled size="large" color="green" class="hero-download-btn">
+              <button @click="(event) => onDownloadClick(event)">
+                <DownloadIcon aria-hidden="true" />
+                下载
+              </button>
+            </ButtonStyled>
+            <ButtonStyled v-if="affs[project.id]" size="large" color="purple" type="transparent">
+              <nuxt-link v-if="affs[project.id] === 'pcl'" :to="`/pcl`" target="_blank">
+                <ServerIcon aria-hidden="true" />
+                联机
+              </nuxt-link>
+              <nuxt-link v-else :to="`/server?aff=${affs[project.id]}`" target="_blank">
+                <ServerIcon aria-hidden="true" />
+                联机
+              </nuxt-link>
+            </ButtonStyled>
+            <ButtonStyled size="large" circular :color="following ? 'red' : 'standard'">
+              <button v-if="auth.user" @click="userFollowProject(project)">
+                <HeartIcon :fill="following ? 'currentColor' : 'none'" aria-hidden="true" />
+              </button>
+              <nuxt-link v-else to="/auth/sign-in">
+                <HeartIcon aria-hidden="true" />
+              </nuxt-link>
+            </ButtonStyled>
+            <ButtonStyled size="large" circular>
+              <PopoutMenu v-if="auth.user" from="top-right">
+                <BookmarkIcon :fill="collections.some((x) => x.projects.includes(project.id)) ? 'currentColor' : 'none'" />
+                <template #menu>
+                  <input v-model="displayCollectionsSearch" type="text" placeholder="搜索收藏..." class="search-input menu-search" />
+                  <div v-if="collections.length > 0" class="collections-list">
+                    <Checkbox
+                      v-for="option in collections.slice().sort((a, b) => a.name.localeCompare(b.name))"
+                      :key="option.id"
+                      :model-value="option.projects.includes(project.id)"
+                      class="popout-checkbox"
+                      @update:model-value="() => onUserCollectProject(option, project.id)"
+                    >{{ option.name }}</Checkbox>
+                  </div>
+                  <div v-else class="menu-text"><p class="popout-text">未找到任何收藏夹</p></div>
+                  <button class="btn collection-button" @click="(event) => $refs.modal_collection.show(event)">
+                    <PlusIcon aria-hidden="true" />创建收藏夹
+                  </button>
+                </template>
+              </PopoutMenu>
+              <nuxt-link v-else to="/auth/sign-in"><BookmarkIcon aria-hidden="true" /></nuxt-link>
+            </ButtonStyled>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== LEGACY HEADER (HIDDEN, KEPT FOR COMPATIBILITY) ==================== -->
+      <div class="normal-page__header relative my-4" style="display: none;">
         <ContentPageHeader>
           <template #icon>
             <Avatar :src="project.icon_url" :alt="project.title" size="96px" />
@@ -1396,6 +1504,21 @@ import { getVersionsToDisplay } from "~/helpers/projects.js";
 import { projectAffiliates } from "~/config/affiliates";
 const data = useNuxtApp();
 const route = useNativeRoute();
+
+// Remove main padding for immersive hero effect
+onMounted(() => {
+  const mainEl = document.querySelector('main');
+  if (mainEl) {
+    mainEl.style.paddingTop = '0';
+  }
+});
+
+onUnmounted(() => {
+  const mainEl = document.querySelector('main');
+  if (mainEl) {
+    mainEl.style.paddingTop = '';
+  }
+});
 
 const auth = await useAuth();
 const user = await useUser();
@@ -2569,6 +2692,11 @@ const navLinks = computed(() => {
 });
 </script>
 <style lang="scss" scoped>
+// ==========================================
+// FLAME THEME - Project Detail Page
+// ==========================================
+
+// Settings Header (for settings page mode)
 .settings-header {
   display: flex;
   flex-direction: row;
@@ -2589,6 +2717,7 @@ const navLinks = computed(() => {
   }
 }
 
+// Popout Menu Styles
 .popout-checkbox {
   padding: var(--gap-sm) var(--gap-md);
   white-space: nowrap;
@@ -2639,6 +2768,7 @@ const navLinks = computed(() => {
   --scrollable-pane-bg: var(--color-bg);
 }
 
+// Download Animation
 .over-the-top-download-animation {
   position: fixed;
   z-index: 100;
@@ -2695,6 +2825,7 @@ const navLinks = computed(() => {
   }
 }
 
+// Translation Pack Card
 .translation-pack-card {
   display: flex;
   align-items: center;
@@ -2704,10 +2835,11 @@ const navLinks = computed(() => {
   background-color: var(--color-bg);
   border-radius: var(--radius-md);
   text-decoration: none;
-  transition: background-color 0.15s ease;
+  transition: all 0.3s var(--ease-out, ease);
 
   &:hover {
-    background-color: var(--color-button-bg-hover);
+    background-color: var(--accent-muted, rgba(241, 100, 54, 0.08));
+    border-color: var(--flame, #f16436);
   }
 
   .translation-pack-info {
@@ -2730,6 +2862,1372 @@ const navLinks = computed(() => {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+  }
+}
+
+// ==========================================
+// FLAME THEME OVERRIDES
+// ==========================================
+
+// Page Header Enhancement
+:deep(.normal-page__header) {
+  position: relative;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-divider);
+
+  // Status Badge Styling
+  .status-badge {
+    margin-left: 12px;
+  }
+}
+
+// Enhanced ContentPageHeader
+:deep(.content-page-header) {
+  position: relative;
+
+  // Large Icon with glow effect
+  .icon, [class*="avatar"] {
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s var(--ease-out, ease), box-shadow 0.3s var(--ease-out, ease);
+
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: 0 12px 32px rgba(241, 100, 54, 0.2);
+    }
+  }
+
+  // Title Enhancement
+  h1, .title {
+    font-family: var(--font-display, inherit);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-text-dark, var(--color-text));
+  }
+
+  // Summary/Description
+  .summary, .description {
+    color: var(--color-secondary);
+    line-height: 1.7;
+  }
+}
+
+// Stats Enhancement
+:deep(.stats), :deep([class*="stats"]) {
+  .stat-icon, svg {
+    color: var(--color-secondary);
+    transition: color 0.2s ease;
+  }
+
+  &:hover .stat-icon, &:hover svg {
+    color: var(--flame, #f16436);
+  }
+}
+
+// Tag List Enhancement - Clean design
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-list__item {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--color-divider);
+  transition: all 0.2s ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    color: var(--_color, var(--color-secondary));
+  }
+
+  // Platform tags with color - keep background style
+  &[style*="--_color"] {
+    background: color-mix(in srgb, var(--_color) 12%, transparent);
+    border-color: color-mix(in srgb, var(--_color) 30%, transparent);
+    color: var(--_color);
+
+    &:hover {
+      background: color-mix(in srgb, var(--_color) 20%, transparent);
+      border-color: var(--_color);
+    }
+  }
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    color: var(--flame, #f16436);
+  }
+}
+
+// ==========================================
+// SIDEBAR CARDS - FLAME THEME
+// ==========================================
+
+// Base Card Styling
+:deep(.card.flex-card) {
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s var(--ease-out, ease);
+
+  &:hover {
+    border-color: rgba(241, 100, 54, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  // Card Titles
+  h2 {
+    font-family: var(--font-display, inherit);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text-dark, var(--color-text));
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-divider);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+      content: '';
+      width: 3px;
+      height: 16px;
+      background: linear-gradient(180deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
+      border-radius: 2px;
+    }
+  }
+
+  // Card Section Spacing
+  section {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Section Subtitles
+  h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-secondary);
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+}
+
+// Details List Enhancement - Clean, no background
+:deep(.details-list) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+:deep(.details-list__item) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-secondary);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  &:hover {
+    color: var(--flame, #f16436);
+
+    svg {
+      color: var(--flame, #f16436);
+    }
+  }
+}
+
+// Large variant (for members) - keep subtle background
+:deep(.details-list__item--type-large) {
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border-radius: 10px;
+
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    span:first-child {
+      font-weight: 600;
+      color: var(--color-text-dark, var(--color-text));
+    }
+  }
+
+  &:hover {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.08));
+  }
+}
+
+:deep(.details-list__item__text--style-secondary) {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+// External Links Enhancement
+:deep(.details-list__item) {
+  a, .text-link {
+    color: var(--flame, #f16436);
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .external-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+  }
+}
+
+// ==========================================
+// NAVIGATION TABS - FLAME THEME
+// ==========================================
+
+// NavTabs component now handles its own underline indicator
+// Only apply basic styling overrides here
+:deep(.nav-tabs-underline) {
+  margin-bottom: 16px;
+}
+
+// ==========================================
+// BUTTONS - FLAME THEME
+// ==========================================
+
+// Download Button Enhancement
+:deep([class*="button"][class*="green"]),
+:deep(.btn-green),
+:deep(button[class*="green"]) {
+  background: linear-gradient(135deg, var(--flame, #f16436) 0%, #ff8a5c 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(241, 100, 54, 0.35);
+  transition: all 0.3s var(--ease-out, ease);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(241, 100, 54, 0.45);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Action Buttons
+:deep([class*="button"][class*="circular"]),
+:deep(.btn-circular) {
+  border-radius: 12px;
+  transition: all 0.25s var(--ease-out, ease);
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+
+    svg {
+      color: var(--flame, #f16436);
+    }
+  }
+}
+
+// Follow Button (Heart)
+:deep([class*="button"][class*="red"]) {
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+
+// Purple Button (Server)
+:deep([class*="button"][class*="purple"]) {
+  color: var(--purple, #a855f7);
+  border-color: var(--purple, #a855f7);
+
+  &:hover {
+    background: rgba(168, 85, 247, 0.1);
+  }
+}
+
+// ==========================================
+// WIKI SIDEBAR - FLAME THEME
+// ==========================================
+
+:deep(.wiki-sidebar), :deep([class*="wiki"]) {
+  .wiki-nav-item, a {
+    padding: 10px 14px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.08));
+    }
+
+    &.active, &[aria-current="page"] {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.12));
+      color: var(--flame, #f16436);
+      font-weight: 600;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: var(--flame, #f16436);
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+// ==========================================
+// COMPATIBILITY SECTION
+// ==========================================
+
+:deep(.compatibility-info), :deep([class*="compatibility"]) {
+  .game-version-tag, .platform-tag, .environment-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-bg);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+      color: var(--flame, #f16436);
+    }
+  }
+}
+
+// Version Display Enhancement
+:deep(.version-display), :deep([class*="version"]:not(.nav-tabs)) {
+  .version-badge {
+    background: rgba(45, 212, 191, 0.12);
+    color: var(--teal, #2dd4bf);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+// ==========================================
+// RESPONSIVE DESIGN
+// ==========================================
+
+@media (max-width: 1200px) {
+  :deep(.nav-tabs) {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.card.flex-card) {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  :deep(.details-list__item) {
+    padding: 10px 12px;
+  }
+
+  .tag-list__item {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+}
+
+// ==========================================
+// DARK/LIGHT THEME ADAPTATIONS
+// ==========================================
+
+// These use CSS variables that automatically adapt to theme
+:root {
+  --flame: #f16436;
+  --accent-muted: rgba(241, 100, 54, 0.1);
+  --accent-glow: rgba(241, 100, 54, 0.3);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+// Light theme specific overrides
+:global(.light-mode), :global([data-theme="light"]) {
+  --bg-card: #ffffff;
+  --color-text-dark: #1a1a2e;
+  --accent-muted: rgba(241, 100, 54, 0.08);
+}
+
+// Dark theme specific overrides
+:global(.dark-mode), :global([data-theme="dark"]) {
+  --bg-card: #1e2128;
+  --color-text-dark: #ffffff;
+  --accent-muted: rgba(241, 100, 54, 0.12);
+}
+
+// ==========================================
+// HOVER ANIMATIONS
+// ==========================================
+
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Apply entrance animations to cards
+:deep(.card.flex-card) {
+  animation: slide-up 0.4s var(--ease-out, ease) both;
+
+  &:nth-child(1) { animation-delay: 0.05s; }
+  &:nth-child(2) { animation-delay: 0.1s; }
+  &:nth-child(3) { animation-delay: 0.15s; }
+  &:nth-child(4) { animation-delay: 0.2s; }
+  &:nth-child(5) { animation-delay: 0.25s; }
+  &:nth-child(6) { animation-delay: 0.3s; }
+}
+
+// ==========================================
+// DOWNLOAD MODAL - FLAME THEME
+// ==========================================
+
+:deep(.modal), :deep([class*="modal"]) {
+  // Modal backdrop
+  .modal-backdrop {
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  // Modal container
+  .modal-container, .modal-content {
+    background: var(--bg-card, var(--color-raised-bg));
+    border: 1px solid var(--color-divider);
+    border-radius: 20px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  // Modal header
+  .modal-header, [class*="modal-header"] {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-divider);
+    background: linear-gradient(135deg, var(--accent-muted, rgba(241, 100, 54, 0.05)) 0%, transparent 100%);
+
+    .icon {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  // Modal body
+  .modal-body, [class*="modal-body"] {
+    padding: 24px;
+  }
+}
+
+// Accordion in Modal Enhancement
+:deep(.accordion-with-bg) {
+  background: var(--color-bg) !important;
+  border: 1px solid var(--color-divider);
+  border-radius: 14px !important;
+  overflow: hidden;
+
+  // Accordion Header
+  [class*="accordion-header"], summary {
+    padding: 14px 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      color: var(--flame, #f16436);
+    }
+
+    &:hover {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.06));
+    }
+  }
+
+  // Accordion Content
+  [class*="accordion-content"], .accordion-body {
+    padding: 12px;
+    border-top: 1px solid var(--color-divider);
+    background: var(--color-bg);
+  }
+}
+
+// Version/Platform Selection Buttons in Modal
+:deep(.accordion-with-bg) {
+  button, [class*="button"] {
+    margin: 4px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover:not(.looks-disabled) {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+      color: var(--flame, #f16436);
+    }
+
+    // Selected state
+    &[class*="brand"], &.selected {
+      background: var(--flame, #f16436) !important;
+      color: #fff !important;
+    }
+
+    // Disabled/incompatible state
+    &.looks-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Version Summary Cards in Download Modal
+:deep(.version-summary), :deep([class*="version-summary"]) {
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.25s var(--ease-out, ease);
+
+  &:hover {
+    border-color: var(--flame, #f16436);
+    box-shadow: 0 4px 16px rgba(241, 100, 54, 0.15);
+  }
+
+  // Version type badge
+  .version-type-badge, [class*="type-badge"] {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &.release, &[class*="release"] {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    &.beta, &[class*="beta"] {
+      background: rgba(249, 115, 22, 0.15);
+      color: #f97316;
+    }
+
+    &.alpha, &[class*="alpha"] {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+  }
+
+  // Download button in version card
+  .download-btn, [class*="download"] {
+    background: linear-gradient(135deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(241, 100, 54, 0.4);
+    }
+  }
+}
+
+// Search Input in Modal
+:deep(.iconified-input) {
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-secondary);
+  }
+
+  input {
+    background: transparent;
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--color-text);
+
+    &::placeholder {
+      color: var(--color-secondary);
+    }
+  }
+
+  &:focus-within {
+    border-color: var(--flame, #f16436);
+    box-shadow: 0 0 0 3px rgba(241, 100, 54, 0.15);
+  }
+}
+
+// Translation Promo Enhancement
+:deep(.translation-promo), :deep([class*="translation-promo"]) {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 14px;
+  padding: 16px;
+
+  &:hover {
+    border-color: rgba(34, 197, 94, 0.4);
+  }
+}
+
+// Server Promo Enhancement
+:deep(.server-promo), :deep([class*="server-promo"]) {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.02) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 14px;
+  padding: 16px;
+
+  &:hover {
+    border-color: rgba(168, 85, 247, 0.4);
+  }
+}
+
+// ==========================================
+// PAGE LAYOUT ENHANCEMENT
+// ==========================================
+
+// Main page wrapper
+:deep(.new-page.sidebar) {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 40px 60px;
+
+  @media (max-width: 1200px) {
+    padding: 20px 24px 48px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px 16px 40px;
+  }
+}
+
+// Sidebar Enhancement
+:deep(.normal-page__info) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// Content Area
+:deep(.normal-page__content) {
+  min-width: 0;
+}
+
+// Horizontal Rule Enhancement
+:deep(hr) {
+  border: none;
+  height: 1px;
+  background: var(--color-divider);
+  margin: 12px 0;
+}
+
+// Crown Icon (Owner Badge)
+:deep(.text-brand-orange) {
+  color: var(--flame, #f16436) !important;
+}
+
+// ==========================================
+// MESSAGE BANNERS
+// ==========================================
+
+:deep(.message-banner), :deep([class*="message-banner"]) {
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid;
+
+  &.warning, &[class*="warning"] {
+    background: rgba(249, 115, 22, 0.08);
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #f97316;
+  }
+
+  &.error, &[class*="error"] {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  &.info, &[class*="info"] {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+  }
+
+  &.success, &[class*="success"] {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+  }
+}
+
+// ==========================================
+// OVERFLOW MENU ENHANCEMENT
+// ==========================================
+
+:deep(.overflow-menu), :deep([class*="overflow-menu"]) {
+  background: var(--bg-card, var(--color-raised-bg));
+  border: 1px solid var(--color-divider);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+
+  .menu-item, [class*="menu-item"] {
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: var(--accent-muted, rgba(241, 100, 54, 0.08));
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+    }
+  }
+}
+
+// ==========================================
+// WIKI CREATE MODAL
+// ==========================================
+
+:deep(.wiki-create-modal), :deep([class*="wiki-create"]) {
+  input, textarea {
+    background: var(--color-bg);
+    border: 1px solid var(--color-divider);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: var(--flame, #f16436);
+      box-shadow: 0 0 0 3px rgba(241, 100, 54, 0.15);
+      outline: none;
+    }
+  }
+}
+
+// ==========================================
+// REVOLUTIONARY LAYOUT - IMMERSIVE HERO
+// ==========================================
+
+// Revolution Layout Container
+// The .new-page.sidebar grid template is:
+//   "header header" auto
+//   "content sidebar" auto
+//   "content dummy" 1fr
+//   / 1fr 18.75rem
+// We use the header area for the hero section
+.revolution-layout {
+  // Hero section takes the header grid area and breaks out to full viewport width
+  .hero-section {
+    grid-area: header;
+    // Break out of container to full viewport width (FTB style)
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+  }
+
+  // Keep sidebar and content in their original positions
+  .normal-page__sidebar {
+    grid-area: sidebar;
+  }
+
+  .normal-page__content {
+    grid-area: content;
+  }
+}
+
+// ==========================================
+// HERO SECTION STYLES
+// ==========================================
+
+.hero-section {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+// Hero Background - Clean, minimal design
+// No blurred gallery image, just pure theme background
+.hero-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--color-bg);
+
+  // Hide the background image entirely for clean look
+  .hero-bg-image {
+    display: none;
+  }
+
+  // No gradient overlay needed
+  .hero-gradient-overlay {
+    display: none;
+  }
+}
+
+
+// No gallery fallback
+.hero-section:not(:has(.hero-bg-image)) {
+  .hero-background {
+    background: linear-gradient(
+      135deg,
+      var(--accent-muted, rgba(241, 100, 54, 0.15)) 0%,
+      transparent 50%,
+      var(--accent-muted, rgba(241, 100, 54, 0.08)) 100%
+    );
+
+    .hero-gradient-overlay {
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        var(--color-bg, #0f0f0f) 100%
+      );
+    }
+  }
+}
+
+// Hero Content Container
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 40px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+
+  @media (max-width: 1200px) {
+    padding: 24px 24px 16px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 20px 16px 16px;
+    gap: 20px;
+  }
+}
+
+// Hero Main (Icon + Info)
+.hero-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  flex: 1;
+  min-width: 0;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+}
+
+// Hero Icon Wrapper
+.hero-icon-wrapper {
+  position: relative;
+  flex-shrink: 0;
+
+  :deep(.hero-icon) {
+    border-radius: 20px !important;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 0 3px rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s var(--ease-out, ease), box-shadow 0.3s var(--ease-out, ease);
+
+    &:hover {
+      transform: scale(1.03);
+      box-shadow:
+        0 12px 40px rgba(241, 100, 54, 0.3),
+        0 0 0 3px rgba(241, 100, 54, 0.3);
+    }
+  }
+
+}
+
+// Hero Info
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-dark, #1a1a1a);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hero-status-badge {
+  flex-shrink: 0;
+}
+
+.hero-description {
+  font-size: 1rem;
+  color: var(--color-secondary, #666);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 600px;
+
+  @media (max-width: 640px) {
+    font-size: 0.9rem;
+  }
+}
+
+// Hero Tags
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+
+  @media (max-width: 640px) {
+    justify-content: center;
+  }
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: var(--color-button-bg, #f0f0f0);
+  border: 1px solid var(--color-divider, #e0e0e0);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--flame, #f16436);
+    border-color: var(--flame, #f16436);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  &--more {
+    background: rgba(241, 100, 54, 0.15);
+    border-color: rgba(241, 100, 54, 0.3);
+    color: var(--flame, #f16436);
+  }
+}
+
+// Hero Actions
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+  }
+
+  :deep(.hero-download-btn) {
+    button {
+      padding: 14px 28px !important;
+      font-size: 1rem !important;
+      font-weight: 700 !important;
+      border-radius: 14px !important;
+      background: linear-gradient(135deg, var(--flame, #f16436) 0%, #ff8a5c 100%) !important;
+      box-shadow:
+        0 8px 24px rgba(241, 100, 54, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+
+      &:hover {
+        transform: translateY(-3px) !important;
+        box-shadow:
+          0 12px 32px rgba(241, 100, 54, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.15) inset !important;
+      }
+    }
+  }
+}
+
+// ==========================================
+// HERO META (TAGS + STATS COMBINED)
+// ==========================================
+
+.hero-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+    margin-top: 8px;
+  }
+}
+
+.hero-stats-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-secondary, #666);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-text, #333);
+
+      .stat-icon {
+        color: var(--flame, #f16436);
+      }
+    }
+
+    .stat-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.6;
+      transition: all 0.2s ease;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 0.8rem;
+      gap: 4px;
+
+      .stat-icon {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+}
+
+// ==========================================
+// DARK THEME HERO ADAPTATIONS
+// ==========================================
+// Note: Using :global with high specificity to override scoped styles
+
+// ==========================================
+// ENHANCED SIDEBAR FOR REVOLUTION LAYOUT
+// ==========================================
+
+.revolution-layout {
+  :deep(.normal-page__sidebar) {
+    padding-top: 8px;
+
+    .card.flex-card {
+      background: var(--bg-card, var(--color-raised-bg));
+      border: 1px solid var(--color-divider);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: all 0.3s var(--ease-out, ease);
+
+      &:hover {
+        border-color: rgba(241, 100, 54, 0.3);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+      }
+
+      // Enhanced Card Headers
+      h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        &::before {
+          content: '';
+          width: 4px;
+          height: 18px;
+          background: linear-gradient(180deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
+          border-radius: 2px;
+        }
+      }
+
+      // Enhanced Tag List - Clean, minimal background
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .tag-list__item {
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          background: transparent;
+          border: 1px solid var(--color-divider);
+          color: var(--color-text);
+          transition: all 0.2s ease;
+
+          svg {
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            color: var(--_color, var(--color-secondary));
+          }
+
+          // Platform tags with color - keep colored background
+          &[style*="--_color"] {
+            background: color-mix(in srgb, var(--_color) 12%, transparent);
+            border-color: color-mix(in srgb, var(--_color) 30%, transparent);
+            color: var(--_color);
+
+            &:hover {
+              background: color-mix(in srgb, var(--_color) 20%, transparent);
+              border-color: var(--_color);
+            }
+          }
+
+          &:hover {
+            border-color: var(--flame, #f16436);
+            color: var(--flame, #f16436);
+          }
+        }
+      }
+
+      // Enhanced Details List - Clean, no background
+      .details-list {
+        gap: 4px;
+
+        .details-list__item {
+          padding: 8px 4px;
+          border-radius: 8px;
+          background: transparent;
+          border: none;
+
+          &:hover {
+            color: var(--flame, #f16436);
+
+            svg {
+              color: var(--flame, #f16436);
+            }
+          }
+        }
+
+        // Keep background only for member cards
+        .details-list__item--type-large {
+          padding: 10px 12px;
+          background: var(--color-bg);
+          border-radius: 10px;
+
+          &:hover {
+            background: var(--accent-muted, rgba(241, 100, 54, 0.08));
+          }
+        }
+      }
+
+      // Enhanced Links List - Clean, no background
+      .links-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        a {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 4px;
+          background: transparent;
+          border-radius: 8px;
+          color: var(--color-text);
+          text-decoration: none;
+          transition: all 0.2s ease;
+
+          svg {
+            width: 18px;
+            height: 18px;
+            color: var(--flame, #f16436);
+          }
+
+          .external-icon {
+            margin-left: auto;
+            opacity: 0.4;
+            width: 14px;
+            height: 14px;
+            color: var(--color-secondary);
+          }
+
+          &:hover {
+            color: var(--flame, #f16436);
+
+            .external-icon {
+              opacity: 0.8;
+              color: var(--flame, #f16436);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // NavTabs component handles its own underline indicator
+  :deep(.nav-tabs-underline) {
+    margin-bottom: 20px;
+  }
+}
+</style>
+
+<style lang="scss">
+// Non-scoped styles to override parent layout padding for immersive hero
+// This cannot be in scoped styles because it needs to affect the parent main element
+body main:has(.revolution-layout) {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+// Override .new-page container padding for immersive hero
+.new-page.revolution-layout {
+  padding-top: 0 !important;
+}
+
+// ==========================================
+// DARK THEME HERO ADAPTATIONS (Non-scoped)
+// ==========================================
+.dark-mode,
+.oled-mode {
+  .hero-section {
+    .hero-title {
+      color: #fff !important;
+    }
+
+    .hero-description {
+      color: rgba(255, 255, 255, 0.75) !important;
+    }
+
+    .hero-tag {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+
+      &:hover {
+        background: var(--flame, #f16436) !important;
+        border-color: var(--flame, #f16436) !important;
+        color: #fff !important;
+      }
+    }
+
+    .hero-stats-inline .stat-item {
+      color: rgba(255, 255, 255, 0.65) !important;
+
+      &:hover {
+        color: rgba(255, 255, 255, 0.9) !important;
+      }
     }
   }
 }
