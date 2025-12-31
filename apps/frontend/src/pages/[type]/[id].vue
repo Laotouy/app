@@ -729,6 +729,67 @@
               </PopoutMenu>
               <nuxt-link v-else to="/auth/sign-in"><BookmarkIcon aria-hidden="true" /></nuxt-link>
             </ButtonStyled>
+            <!-- Settings Button -->
+            <ButtonStyled v-if="auth.user && currentMember" size="large" circular>
+              <nuxt-link :to="`/${project.project_type}/${project.slug ? project.slug : project.id}/settings`">
+                <SettingsIcon aria-hidden="true" />
+              </nuxt-link>
+            </ButtonStyled>
+            <!-- More Options Menu -->
+            <ButtonStyled size="large" circular type="transparent">
+              <OverflowMenu
+                :options="[
+                  {
+                    id: 'analytics',
+                    link: `/${project.project_type}/${project.slug ? project.slug : project.id}/settings/analytics`,
+                    hoverOnly: true,
+                    shown: auth.user && !!currentMember,
+                  },
+                  {
+                    divider: true,
+                    shown: auth.user && !!currentMember,
+                  },
+                  {
+                    id: 'moderation-checklist',
+                    action: () => (showModerationChecklist = true),
+                    color: 'orange',
+                    hoverOnly: true,
+                    shown: auth.user && tags.staffRoles.includes(auth.user.role) && !showModerationChecklist,
+                  },
+                  {
+                    divider: true,
+                    shown: auth.user && tags.staffRoles.includes(auth.user.role) && !showModerationChecklist,
+                  },
+                  {
+                    id: 'report',
+                    action: () => auth.user ? reportProject(project.id) : navigateTo('/auth/sign-in'),
+                    color: 'red',
+                    hoverOnly: true,
+                    shown: !currentMember,
+                  },
+                  { id: 'copy-id', action: () => copyId() },
+                ]"
+                aria-label="More options"
+              >
+                <MoreVerticalIcon aria-hidden="true" />
+                <template #analytics>
+                  <ChartIcon aria-hidden="true" />
+                  分析
+                </template>
+                <template #moderation-checklist>
+                  <ScaleIcon aria-hidden="true" />
+                  审查项目
+                </template>
+                <template #report>
+                  <ReportIcon aria-hidden="true" />
+                  举报
+                </template>
+                <template #copy-id>
+                  <ClipboardCopyIcon aria-hidden="true" />
+                  复制资源 ID
+                </template>
+              </OverflowMenu>
+            </ButtonStyled>
           </div>
         </div>
       </div>

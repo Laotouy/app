@@ -191,7 +191,7 @@
                 <div class="notice-title">{{ notice.title }}</div>
                 <div class="notice-meta">
                   <span class="notice-author">{{ notice.user_name }}</span>
-                  <span class="notice-time">{{ fromNow(notice.created) }}</span>
+                  <span class="notice-time">{{ fromNow(notice.last_post_time) }}</span>
                 </div>
               </div>
             </NuxtLink>
@@ -236,53 +236,44 @@
 
       <!-- Sidebar -->
       <aside class="sidebar">
-        <!-- Version Card -->
+        <!-- 测评专栏 -->
         <div class="sidebar-card">
           <div class="sidebar-header">
-            <h3 class="sidebar-title"><GameIcon class="sidebar-icon" /> 版本动态</h3>
+            <h3 class="sidebar-title"><StarIcon class="sidebar-icon" /> 测评专栏</h3>
+            <NuxtLink to="/forums/article" class="sidebar-more">更多 →</NuxtLink>
           </div>
           <div class="sidebar-body">
-            <div class="version-list">
-              <a href="https://minecraft.net" target="_blank" class="version-item">
-                <span class="version-badge">1.21.4</span>
-                <div class="version-info">
-                  <div class="version-name">最新正式版</div>
-                  <div class="version-date">2024年12月</div>
+            <div class="article-list">
+              <NuxtLink
+                v-for="article in articles"
+                :key="article.id"
+                :to="`/d/${article.id}`"
+                class="article-item"
+              >
+                <img :src="article.avatar" :alt="article.user_name" class="article-avatar" />
+                <div class="article-info">
+                  <div class="article-title">{{ article.title }}</div>
+                  <div class="article-meta">{{ article.user_name }} · {{ fromNow(article.last_post_time) }}</div>
                 </div>
-              </a>
-              <a href="https://minecraft.net" target="_blank" class="version-item">
-                <span class="version-badge snapshot">1.21.5</span>
-                <div class="version-info">
-                  <div class="version-name">快照版本</div>
-                  <div class="version-date">测试中</div>
-                </div>
-              </a>
+              </NuxtLink>
             </div>
           </div>
         </div>
 
-        <!-- Quick Links -->
+        <!-- 友情链接 -->
         <div class="sidebar-card">
           <div class="sidebar-header">
-            <h3 class="sidebar-title"><LinkIcon class="sidebar-icon" /> 快捷入口</h3>
+            <h3 class="sidebar-title"><LinkIcon class="sidebar-icon" /> 友情链接</h3>
           </div>
           <div class="quick-links">
-            <NuxtLink to="/mods" class="quick-link">
-              <span class="quick-link-icon"><BoxIcon /></span>
-              <span class="quick-link-text">模组</span>
-            </NuxtLink>
-            <NuxtLink to="/modpacks" class="quick-link">
-              <span class="quick-link-icon"><PackageClosedIcon /></span>
-              <span class="quick-link-text">整合包</span>
-            </NuxtLink>
-            <NuxtLink to="/shaders" class="quick-link">
-              <span class="quick-link-icon"><GlassesIcon /></span>
-              <span class="quick-link-text">光影</span>
-            </NuxtLink>
-            <NuxtLink to="/forums/chat" class="quick-link">
-              <span class="quick-link-icon"><MessageIcon /></span>
-              <span class="quick-link-text">论坛</span>
-            </NuxtLink>
+            <a href="https://www.mcmod.cn/" target="_blank" rel="noopener" class="quick-link">
+              <img src="https://www.mcmod.cn/images/links/mcmod.gif" alt="MC百科" class="friend-link-logo" />
+              <span class="quick-link-text">MC百科</span>
+            </a>
+            <a href="https://bbs.mc9y.net/" target="_blank" rel="noopener" class="quick-link">
+              <img src="https://bbs.mc9y.net/styles/io_dark/io/images/logo.png" alt="九域资源社区" class="friend-link-logo" />
+              <span class="quick-link-text">九域资源社区</span>
+            </a>
           </div>
         </div>
       </aside>
@@ -316,6 +307,7 @@ import {
 const hotProjects = ref([]);
 const forums = ref([]);
 const notices = ref([]);
+const articles = ref([]);
 const stats = ref({
   projects: 12580,
   downloads: 1580000,
@@ -376,15 +368,17 @@ const hasDragged = ref(false);
 // Fetch data
 async function fetchData() {
   try {
-    const [projectsResponse, forumsResponse, noticesResponse] = await Promise.all([
+    const [projectsResponse, forumsResponse, noticesResponse, articlesResponse] = await Promise.all([
       useBaseFetch(`search?limit=6&index=relevance`),
       useBaseFetch(`forum`, { apiVersion: 3 }),
       useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
+      useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
     ]);
 
     hotProjects.value = projectsResponse.hits ?? [];
     forums.value = (forumsResponse.forums ?? []).slice(0, 5);
     notices.value = (noticesResponse.forums ?? []).slice(0, 5);
+    articles.value = (articlesResponse.forums ?? []).slice(0, 3);
   } catch (e) {
     console.error("Failed to fetch data:", e);
   }
@@ -1572,58 +1566,76 @@ onUnmounted(() => {
   color: var(--flame, #f16436);
 }
 
-.sidebar-body {
-  padding: 20px 24px;
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-// Version List
-.version-list {
+.sidebar-more {
+  font-size: 0.8rem;
+  color: var(--flame, #f16436);
+  text-decoration: none;
+  font-weight: 500;
+  transition: gap 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.sidebar-body {
+  padding: 16px 20px;
+}
+
+// Article List
+.article-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.version-item {
+.article-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px;
   background: var(--bg-elevated, #12151a);
-  border-radius: 12px;
-  transition: all 0.3s;
+  border-radius: 10px;
+  transition: all 0.2s ease;
   text-decoration: none;
 
   &:hover {
-    background: var(--bg-card-hover, #1e2229);
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+    transform: translateX(4px);
   }
 }
 
-.version-badge {
-  font-family: var(--font-mono);
+.article-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.article-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-title {
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 8px 14px;
-  background: var(--flame, #f16436);
-  color: #000;
-  border-radius: 10px;
-
-  &.snapshot {
-    background: var(--teal, #2dd4bf);
-  }
-}
-
-.version-info {
-  flex: 1;
-}
-
-.version-name {
-  font-size: 0.9rem;
-  font-weight: 600;
   color: var(--color-text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
 
-.version-date {
-  font-size: 0.8rem;
+.article-meta {
+  font-size: 0.75rem;
   color: var(--color-secondary);
 }
 
@@ -1670,6 +1682,15 @@ onUnmounted(() => {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-secondary);
+}
+
+// Friend Links
+.friend-link-logo {
+  width: auto;
+  height: 32px;
+  max-width: 120px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 // ==========================================
