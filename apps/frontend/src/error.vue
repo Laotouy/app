@@ -4,37 +4,51 @@
       <div class="error-content">
         <!-- Error Code Display -->
         <div class="error-code">
-          <span class="code-number">{{ error.statusCode || '404' }}</span>
+          <span class="code-number">{{ error.statusCode || "404" }}</span>
         </div>
 
         <!-- Error Icon -->
         <div class="error-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
           </svg>
         </div>
 
         <!-- Error Message -->
         <h1 class="error-title">
-          {{ error.statusCode === 404 ? '页面走丢了' : '出错了' }}
+          {{ error.statusCode === 404 ? "页面走丢了" : "出错了" }}
         </h1>
         <p class="error-message">
-          {{ error.statusCode === 404
-            ? '抱歉，您访问的页面不存在或已被移除'
-            : error.message || '发生了未知错误' }}
+          {{
+            error.statusCode === 404
+              ? "抱歉，您访问的页面不存在或已被移除"
+              : error.message || "发生了未知错误"
+          }}
         </p>
 
         <!-- Action Buttons -->
         <div class="error-actions">
           <NuxtLink to="/" class="btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+              />
             </svg>
             返回首页
           </NuxtLink>
-          <button @click="goBack" class="btn-secondary">
+          <button class="btn-secondary" @click="goBack">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
+              />
             </svg>
             返回上页
           </button>
@@ -68,12 +82,7 @@
 </template>
 
 <script setup>
-import {
-  BoxIcon,
-  PackageClosedIcon,
-  GlassesIcon,
-  MessageIcon,
-} from "@modrinth/assets";
+import { BoxIcon, PackageClosedIcon, GlassesIcon, MessageIcon } from "@modrinth/assets";
 
 defineProps({
   error: {
@@ -91,7 +100,7 @@ const goBack = () => {
   if (window.history.length > 1) {
     window.history.back();
   } else {
-    navigateTo('/');
+    navigateTo("/");
   }
 };
 </script>

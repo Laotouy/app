@@ -15,7 +15,9 @@
 
         <div class="hero-actions">
           <NuxtLink to="/mods" class="hero-btn hero-btn-primary">开始探索</NuxtLink>
-          <NuxtLink to="/dashboard/projects" class="hero-btn hero-btn-secondary">创作者入驻</NuxtLink>
+          <NuxtLink to="/dashboard/projects" class="hero-btn hero-btn-secondary"
+            >创作者入驻</NuxtLink
+          >
         </div>
 
         <div class="hero-stats">
@@ -51,7 +53,7 @@
             :class="[
               'hero-slide',
               {
-                'active': index === currentHeroSlide,
+                active: index === currentHeroSlide,
               },
             ]"
             @click="handleBannerClick($event, item.slug)"
@@ -87,10 +89,16 @@
         <NuxtLink to="/" class="cat-chip active"><StarIcon class="cat-icon" /> 热门推荐</NuxtLink>
         <NuxtLink to="/mods" class="cat-chip"><BoxIcon class="cat-icon" /> 模组</NuxtLink>
         <NuxtLink to="/plugins" class="cat-chip"><PlugIcon class="cat-icon" /> 插件</NuxtLink>
-        <NuxtLink to="/modpacks" class="cat-chip"><PackageClosedIcon class="cat-icon" /> 整合包</NuxtLink>
+        <NuxtLink to="/modpacks" class="cat-chip"
+          ><PackageClosedIcon class="cat-icon" /> 整合包</NuxtLink
+        >
         <NuxtLink to="/shaders" class="cat-chip"><GlassesIcon class="cat-icon" /> 光影</NuxtLink>
-        <NuxtLink to="/resourcepacks" class="cat-chip"><PaintBrushIcon class="cat-icon" /> 资源包</NuxtLink>
-        <NuxtLink to="/languages" class="cat-chip"><LanguagesIcon class="cat-icon" /> 汉化</NuxtLink>
+        <NuxtLink to="/resourcepacks" class="cat-chip"
+          ><PaintBrushIcon class="cat-icon" /> 资源包</NuxtLink
+        >
+        <NuxtLink to="/languages" class="cat-chip"
+          ><LanguagesIcon class="cat-icon" /> 汉化</NuxtLink
+        >
         <NuxtLink to="/datapacks" class="cat-chip"><BracesIcon class="cat-icon" /> 数据包</NuxtLink>
         <NuxtLink to="/softwares" class="cat-chip"><WrenchIcon class="cat-icon" /> 工具</NuxtLink>
       </div>
@@ -118,7 +126,9 @@
             >
               <!-- Gallery Image -->
               <div class="resource-gallery" :style="getGalleryStyle(project)">
-                <div class="resource-type-badge">{{ getProjectTypeLabel(project.project_type) }}</div>
+                <div class="resource-type-badge">
+                  {{ getProjectTypeLabel(project.project_type) }}
+                </div>
               </div>
 
               <!-- Card Body -->
@@ -143,10 +153,16 @@
 
                 <!-- Tags: Loaders + Version -->
                 <div class="resource-tags">
-                  <span v-for="loader in (project.loaders || []).slice(0, 3)" :key="loader" class="tag loader">
+                  <span
+                    v-for="loader in (project.loaders || []).slice(0, 3)"
+                    :key="loader"
+                    class="tag loader"
+                  >
                     {{ formatLoader(loader) }}
                   </span>
-                  <span v-if="project.versions?.[0]" class="tag version">{{ project.versions[0] }}</span>
+                  <span v-if="project.versions?.[0]" class="tag version">{{
+                    project.versions[0]
+                  }}</span>
                 </div>
 
                 <!-- Footer Stats -->
@@ -226,7 +242,9 @@
                 <div class="discussion-title">{{ forum.title }}</div>
                 <div class="discussion-meta">
                   <span class="discussion-author">{{ forum.user_name }}</span>
-                  <span class="discussion-replies"><MessageIcon class="stat-icon" /> {{ forum.replies }} 回复</span>
+                  <span class="discussion-replies"
+                    ><MessageIcon class="stat-icon" /> {{ forum.replies }} 回复</span
+                  >
                 </div>
               </div>
             </NuxtLink>
@@ -253,7 +271,9 @@
                 <img :src="article.avatar" :alt="article.user_name" class="article-avatar" />
                 <div class="article-info">
                   <div class="article-title">{{ article.title }}</div>
-                  <div class="article-meta">{{ article.user_name }} · {{ fromNow(article.last_post_time) }}</div>
+                  <div class="article-meta">
+                    {{ article.user_name }} · {{ fromNow(article.last_post_time) }}
+                  </div>
                 </div>
               </NuxtLink>
             </div>
@@ -267,11 +287,19 @@
           </div>
           <div class="quick-links">
             <a href="https://www.mcmod.cn/" target="_blank" rel="noopener" class="quick-link">
-              <img src="https://www.mcmod.cn/images/links/mcmod.gif" alt="MC百科" class="friend-link-logo" />
+              <img
+                src="https://www.mcmod.cn/images/links/mcmod.gif"
+                alt="MC百科"
+                class="friend-link-logo"
+              />
               <span class="quick-link-text">MC百科</span>
             </a>
             <a href="https://bbs.mc9y.net/" target="_blank" rel="noopener" class="quick-link">
-              <img src="https://bbs.mc9y.net/styles/io_dark/io/images/logo.png" alt="九域资源社区" class="friend-link-logo" />
+              <img
+                src="https://bbs.mc9y.net/styles/io_dark/io/images/logo.png"
+                alt="九域资源社区"
+                class="friend-link-logo"
+              />
               <span class="quick-link-text">九域资源社区</span>
             </a>
           </div>
@@ -321,14 +349,16 @@ const stats = ref({
 // Hero Banners - 来自整合包页面的内容
 const heroBanners = ref([
   {
-    image: "https://cdn.bbsmc.net/bbsmc/data/G23dLUsP/images/e681d996cd07316e12facedd8fb22e9f74ce68a1_350.webp",
+    image:
+      "https://cdn.bbsmc.net/bbsmc/data/G23dLUsP/images/e681d996cd07316e12facedd8fb22e9f74ce68a1_350.webp",
     title: "剑与王国",
     description: "围绕模拟殖民地与村民招募玩法的深度魔改整合包",
     badge: "热门整合包",
     slug: "/modpack/snk",
   },
   {
-    image: "https://cdn.bbsmc.net/bbsmc/data/EIrkPpcm/images/7d43813f0ff22b6c769e7382d36d5059657e8a94_350.webp",
+    image:
+      "https://cdn.bbsmc.net/bbsmc/data/EIrkPpcm/images/7d43813f0ff22b6c769e7382d36d5059657e8a94_350.webp",
     title: "龙之冒险：新征程",
     description: "面对众多怪物的冒险之旅，你做好准备了吗？",
     badge: "精选整合包",
@@ -342,14 +372,16 @@ const heroBanners = ref([
     slug: "/software/pcl",
   },
   {
-    image: "https://cdn.bbsmc.net/bbsmc/data/XMUypeti/images/82d38f228afad3b75202eaf8a148c1318a8cea48_350.webp",
+    image:
+      "https://cdn.bbsmc.net/bbsmc/data/XMUypeti/images/82d38f228afad3b75202eaf8a148c1318a8cea48_350.webp",
     title: "愚者 - The Fool",
     description: "愚弄、伪装、欺诈，屠龙者终成恶龙。",
     badge: "精选整合包",
     slug: "/modpack/the-fool",
   },
   {
-    image: "https://cdn.bbsmc.net/bbsmc/data/e11vzqXl/images/346fd8930411f592c94acce68b8290a5266843e3_350.webp",
+    image:
+      "https://cdn.bbsmc.net/bbsmc/data/e11vzqXl/images/346fd8930411f592c94acce68b8290a5266843e3_350.webp",
     title: "香草纪元:食旅纪行",
     description: "农夫乐事全附属与异界冒险",
     badge: "热门整合包",
@@ -368,12 +400,14 @@ const hasDragged = ref(false);
 // Fetch data
 async function fetchData() {
   try {
-    const [projectsResponse, forumsResponse, noticesResponse, articlesResponse] = await Promise.all([
-      useBaseFetch(`search?limit=6&index=relevance`),
-      useBaseFetch(`forum`, { apiVersion: 3 }),
-      useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
-      useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
-    ]);
+    const [projectsResponse, forumsResponse, noticesResponse, articlesResponse] = await Promise.all(
+      [
+        useBaseFetch(`search?limit=6&index=relevance`),
+        useBaseFetch(`forum`, { apiVersion: 3 }),
+        useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
+        useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
+      ],
+    );
 
     hotProjects.value = projectsResponse.hits ?? [];
     forums.value = (forumsResponse.forums ?? []).slice(0, 5);
@@ -449,7 +483,7 @@ const getGalleryStyle = (project) => {
   let imageUrl = null;
 
   // Format 1: gallery is array of strings
-  if (project.gallery?.[0] && typeof project.gallery[0] === 'string') {
+  if (project.gallery?.[0] && typeof project.gallery[0] === "string") {
     imageUrl = project.gallery[0];
   }
   // Format 2: gallery is array of objects with url property
@@ -461,22 +495,22 @@ const getGalleryStyle = (project) => {
     imageUrl = project.featured_gallery;
   }
   // Format 4: icon_url as fallback for software
-  else if (project.project_type === 'software' && project.icon_url) {
+  else if (project.project_type === "software" && project.icon_url) {
     imageUrl = project.icon_url;
   }
 
-  return imageUrl ? `background-image: url(${imageUrl})` : '';
+  return imageUrl ? `background-image: url(${imageUrl})` : "";
 };
 
 // Forum category label
 const getCategoryLabel = (category) => {
   const labels = {
-    chat: '闲聊',
-    project: '资源',
-    article: '专栏',
-    notice: '公告',
-    help: '求助',
-    share: '分享',
+    chat: "闲聊",
+    project: "资源",
+    article: "专栏",
+    notice: "公告",
+    help: "求助",
+    share: "分享",
   };
   return labels[category] || category;
 };
@@ -531,7 +565,8 @@ const goToHeroSlide = (index) => {
 };
 
 const prevHeroSlide = () => {
-  currentHeroSlide.value = (currentHeroSlide.value - 1 + heroBanners.value.length) % heroBanners.value.length;
+  currentHeroSlide.value =
+    (currentHeroSlide.value - 1 + heroBanners.value.length) % heroBanners.value.length;
   startAutoPlay();
 };
 
@@ -675,7 +710,7 @@ onUnmounted(() => {
 }
 
 .hero-title-highlight::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   bottom: 0.05em;
@@ -747,7 +782,7 @@ onUnmounted(() => {
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     right: -24px;
     top: 50%;
@@ -805,7 +840,9 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
   transform: scale(1.02);
 
   &.active {
@@ -836,7 +873,12 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   padding: 40px 32px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.4) 60%,
+    transparent 100%
+  );
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1130,7 +1172,7 @@ onUnmounted(() => {
   position: relative;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, var(--color-divider) 0%, var(--bg-elevated, #1a1d23) 100%);
@@ -1145,7 +1187,7 @@ onUnmounted(() => {
   }
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
@@ -1320,7 +1362,7 @@ onUnmounted(() => {
   overflow: hidden;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 0;
@@ -1719,7 +1761,8 @@ onUnmounted(() => {
 }
 
 @keyframes glow {
-  0%, 100% {
+  0%,
+  100% {
     filter: drop-shadow(0 0 10px var(--accent-glow, rgba(241, 100, 54, 0.4)));
   }
   50% {

@@ -86,7 +86,10 @@
                 <td colspan="5">
                   <div class="tier-info">
                     <span class="tier-name">EPYC型</span>
-                    <span class="tier-specs">AMD 霄龙 EPYC 7R13（CPUZ 500分）| 小海豚PBlaze6 6537 企业级U.2固态 | RECC DDR4 2400MHz 自动纠错</span>
+                    <span class="tier-specs"
+                      >AMD 霄龙 EPYC 7R13（CPUZ 500分）| 小海豚PBlaze6 6537 企业级U.2固态 | RECC
+                      DDR4 2400MHz 自动纠错</span
+                    >
                   </div>
                 </td>
               </tr>
@@ -119,7 +122,10 @@
                 <td colspan="5">
                   <div class="tier-info">
                     <span class="tier-name">发烧型</span>
-                    <span class="tier-specs">Intel 酷睿 I7-14700K（CPUZ 870分）| 英特尔P4510 企业级U.2固态 | DDR4 3200MHz</span>
+                    <span class="tier-specs"
+                      >Intel 酷睿 I7-14700K（CPUZ 870分）| 英特尔P4510 企业级U.2固态 | DDR4
+                      3200MHz</span
+                    >
                   </div>
                 </td>
               </tr>
@@ -155,7 +161,15 @@
           <div v-if="showMobileQR" class="qr-modal-overlay" @click="showMobileQR = false">
             <div class="qr-modal" @click.stop>
               <button class="qr-modal-close" @click="showMobileQR = false">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -175,16 +189,32 @@
         <div class="common-specs">
           <div class="spec-item">
             <span class="spec-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v10h16V7H4zm2 2h2v2H6V9zm4 0h8v2h-8V9zm-4 4h2v2H6v-2zm4 0h8v2h-8v-2z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                width="20"
+                height="20"
+              >
+                <path
+                  d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2v10h16V7H4zm2 2h2v2H6V9zm4 0h8v2h-8V9zm-4 4h2v2H6v-2zm4 0h8v2h-8v-2z"
+                />
               </svg>
             </span>
             <span class="spec-text">默认30G存储磁盘，可免费扩展至50G</span>
           </div>
           <div class="spec-item">
             <span class="spec-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                width="20"
+                height="20"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
               </svg>
             </span>
             <span class="spec-text">机柜共享带宽 2500Mbps</span>
@@ -486,8 +516,12 @@ onMounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .qr-modal {
