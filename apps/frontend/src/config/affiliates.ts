@@ -179,6 +179,11 @@ export const affiliates: Record<string, Affiliate> = {
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
     projects: ["PRsqHZRu"],
   },
+  LaotouY: {
+    name: "老头",
+    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
+    projects: [], // 通过组织级别配置，不需要手动添加项目
+  },
 };
 
 // ============ 自动生成的映射表 (不要手动编辑) ============

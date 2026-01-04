@@ -615,7 +615,7 @@
           />
 
           <!-- 服务器推荐 -->
-          <ServerPromo v-if="affs[project.id]" @navigate="navigateToServer" />
+          <ServerPromo v-if="projectAffKey" @navigate="navigateToServer" />
         </div>
       </template>
     </NewModal>
@@ -651,7 +651,11 @@
             <div class="hero-info">
               <div class="hero-title-row">
                 <h1 class="hero-title">{{ project.title }}</h1>
-                <Badge v-if="auth.user && currentMember" :type="project.status" class="hero-status-badge" />
+                <Badge
+                  v-if="auth.user && currentMember"
+                  :type="project.status"
+                  class="hero-status-badge"
+                />
               </div>
               <p class="hero-description">{{ project.description }}</p>
 
@@ -673,9 +677,17 @@
 
                 <!-- Stats Inline -->
                 <div class="hero-stats-inline">
-                  <span class="stat-item"><DownloadIcon class="stat-icon" />{{ $formatNumber(project.downloads) }}</span>
-                  <span class="stat-item"><HeartIcon class="stat-icon" />{{ $formatNumber(project.followers) }}</span>
-                  <span class="stat-item"><CalendarIcon class="stat-icon" />{{ fromNow(project.approved || project.published) }}</span>
+                  <span class="stat-item"
+                    ><DownloadIcon class="stat-icon" />{{ $formatNumber(project.downloads) }}</span
+                  >
+                  <span class="stat-item"
+                    ><HeartIcon class="stat-icon" />{{ $formatNumber(project.followers) }}</span
+                  >
+                  <span class="stat-item"
+                    ><CalendarIcon class="stat-icon" />{{
+                      fromNow(project.approved || project.published)
+                    }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -689,12 +701,12 @@
                 下载
               </button>
             </ButtonStyled>
-            <ButtonStyled v-if="affs[project.id]" size="large" color="purple" type="transparent">
-              <nuxt-link v-if="affs[project.id] === 'pcl'" :to="`/pcl`" target="_blank">
+            <ButtonStyled v-if="projectAffKey" size="large" color="purple" type="transparent">
+              <nuxt-link v-if="projectAffKey === 'pcl'" :to="`/pcl`" target="_blank">
                 <ServerIcon aria-hidden="true" />
                 联机
               </nuxt-link>
-              <nuxt-link v-else :to="`/server?aff=${affs[project.id]}`" target="_blank">
+              <nuxt-link v-else :to="`/server?aff=${projectAffKey}`" target="_blank">
                 <ServerIcon aria-hidden="true" />
                 联机
               </nuxt-link>
@@ -709,20 +721,37 @@
             </ButtonStyled>
             <ButtonStyled size="large" circular>
               <PopoutMenu v-if="auth.user" from="top-right">
-                <BookmarkIcon :fill="collections.some((x) => x.projects.includes(project.id)) ? 'currentColor' : 'none'" />
+                <BookmarkIcon
+                  :fill="
+                    collections.some((x) => x.projects.includes(project.id))
+                      ? 'currentColor'
+                      : 'none'
+                  "
+                />
                 <template #menu>
-                  <input v-model="displayCollectionsSearch" type="text" placeholder="搜索收藏..." class="search-input menu-search" />
+                  <input
+                    v-model="displayCollectionsSearch"
+                    type="text"
+                    placeholder="搜索收藏..."
+                    class="search-input menu-search"
+                  />
                   <div v-if="collections.length > 0" class="collections-list">
                     <Checkbox
-                      v-for="option in collections.slice().sort((a, b) => a.name.localeCompare(b.name))"
+                      v-for="option in collections
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name))"
                       :key="option.id"
                       :model-value="option.projects.includes(project.id)"
                       class="popout-checkbox"
                       @update:model-value="() => onUserCollectProject(option, project.id)"
-                    >{{ option.name }}</Checkbox>
+                      >{{ option.name }}</Checkbox
+                    >
                   </div>
                   <div v-else class="menu-text"><p class="popout-text">未找到任何收藏夹</p></div>
-                  <button class="btn collection-button" @click="(event) => $refs.modal_collection.show(event)">
+                  <button
+                    class="btn collection-button"
+                    @click="(event) => $refs.modal_collection.show(event)"
+                  >
                     <PlusIcon aria-hidden="true" />创建收藏夹
                   </button>
                 </template>
@@ -731,7 +760,9 @@
             </ButtonStyled>
             <!-- Settings Button -->
             <ButtonStyled v-if="auth.user && currentMember" size="large" circular>
-              <nuxt-link :to="`/${project.project_type}/${project.slug ? project.slug : project.id}/settings`">
+              <nuxt-link
+                :to="`/${project.project_type}/${project.slug ? project.slug : project.id}/settings`"
+              >
                 <SettingsIcon aria-hidden="true" />
               </nuxt-link>
             </ButtonStyled>
@@ -754,15 +785,22 @@
                     action: () => (showModerationChecklist = true),
                     color: 'orange',
                     hoverOnly: true,
-                    shown: auth.user && tags.staffRoles.includes(auth.user.role) && !showModerationChecklist,
+                    shown:
+                      auth.user &&
+                      tags.staffRoles.includes(auth.user.role) &&
+                      !showModerationChecklist,
                   },
                   {
                     divider: true,
-                    shown: auth.user && tags.staffRoles.includes(auth.user.role) && !showModerationChecklist,
+                    shown:
+                      auth.user &&
+                      tags.staffRoles.includes(auth.user.role) &&
+                      !showModerationChecklist,
                   },
                   {
                     id: 'report',
-                    action: () => auth.user ? reportProject(project.id) : navigateTo('/auth/sign-in'),
+                    action: () =>
+                      auth.user ? reportProject(project.id) : navigateTo('/auth/sign-in'),
                     color: 'red',
                     hoverOnly: true,
                     shown: !currentMember,
@@ -795,7 +833,7 @@
       </div>
 
       <!-- ==================== LEGACY HEADER (HIDDEN, KEPT FOR COMPATIBILITY) ==================== -->
-      <div class="normal-page__header relative my-4" style="display: none;">
+      <div class="normal-page__header relative my-4" style="display: none">
         <ContentPageHeader>
           <template #icon>
             <Avatar :src="project.icon_url" :alt="project.title" size="96px" />
@@ -852,12 +890,12 @@
                 </button>
               </ButtonStyled>
 
-              <ButtonStyled v-if="affs[project.id]" size="large" color="purple" type="transparent">
-                <nuxt-link v-if="affs[project.id] === 'pcl'" :to="`/pcl`" target="_blank">
+              <ButtonStyled v-if="projectAffKey" size="large" color="purple" type="transparent">
+                <nuxt-link v-if="projectAffKey === 'pcl'" :to="`/pcl`" target="_blank">
                   <ServerIcon aria-hidden="true" />
                   联机搭建
                 </nuxt-link>
-                <nuxt-link v-else :to="`/server?aff=${affs[project.id]}`" target="_blank">
+                <nuxt-link v-else :to="`/server?aff=${projectAffKey}`" target="_blank">
                   <ServerIcon aria-hidden="true" />
                   联机搭建
                 </nuxt-link>
@@ -878,12 +916,12 @@
                 </button>
               </ButtonStyled>
 
-              <ButtonStyled v-if="affs[project.id]" size="large" color="purple" type="transparent">
-                <nuxt-link v-if="affs[project.id] === 'pcl'" :to="`/pcl`" target="_blank">
+              <ButtonStyled v-if="projectAffKey" size="large" color="purple" type="transparent">
+                <nuxt-link v-if="projectAffKey === 'pcl'" :to="`/pcl`" target="_blank">
                   <ServerIcon aria-hidden="true" />
                   联机搭建
                 </nuxt-link>
-                <nuxt-link v-else :to="`/server?aff=${affs[project.id]}`" target="_blank">
+                <nuxt-link v-else :to="`/server?aff=${projectAffKey}`" target="_blank">
                   <ServerIcon aria-hidden="true" />
                   联机搭建
                 </nuxt-link>
@@ -1568,16 +1606,16 @@ const route = useNativeRoute();
 
 // Remove main padding for immersive hero effect
 onMounted(() => {
-  const mainEl = document.querySelector('main');
+  const mainEl = document.querySelector("main");
   if (mainEl) {
-    mainEl.style.paddingTop = '0';
+    mainEl.style.paddingTop = "0";
   }
 });
 
 onUnmounted(() => {
-  const mainEl = document.querySelector('main');
+  const mainEl = document.querySelector("main");
   if (mainEl) {
-    mainEl.style.paddingTop = '';
+    mainEl.style.paddingTop = "";
   }
 });
 
@@ -1628,7 +1666,28 @@ const gameVersionAccordion = ref();
 const platformAccordion = ref();
 const WikiFatherAccordion = ref();
 
-const affs = projectAffiliates;
+// 组织级别的联机搭建配置
+const ORG_AFFILIATES = {
+  K1ZYxGDQ: "LaotouY",
+  "6FNyvmc5": "LaotouY",
+};
+
+// 获取项目的联机搭建 affiliate key
+const projectAffKey = computed(() => {
+  if (!project.value) return null;
+
+  // 首先检查项目级别的配置
+  const projectAff = projectAffiliates[project.value.id];
+  if (projectAff) return projectAff;
+
+  // 然后检查组织级别的配置
+  if (organization?.value?.id) {
+    const orgAff = ORG_AFFILIATES[organization.value.id];
+    if (orgAff) return orgAff;
+  }
+
+  return null;
+});
 const compatibilityMessages = defineMessages({
   title: {
     id: "project.about.compatibility.title",
@@ -2667,7 +2726,7 @@ function navigateToTranslation(translationData) {
 
 function navigateToServer() {
   // 跳转到服务器页面，与联机搭建按钮的跳转逻辑一致
-  const affId = affs[project.value.id];
+  const affId = projectAffKey.value;
   if (affId === "pcl") {
     window.open("/pcl", "_blank");
   } else if (affId) {
@@ -2949,10 +3008,13 @@ const navLinks = computed(() => {
   position: relative;
 
   // Large Icon with glow effect
-  .icon, [class*="avatar"] {
+  .icon,
+  [class*="avatar"] {
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    transition: transform 0.3s var(--ease-out, ease), box-shadow 0.3s var(--ease-out, ease);
+    transition:
+      transform 0.3s var(--ease-out, ease),
+      box-shadow 0.3s var(--ease-out, ease);
 
     &:hover {
       transform: scale(1.02);
@@ -2961,7 +3023,8 @@ const navLinks = computed(() => {
   }
 
   // Title Enhancement
-  h1, .title {
+  h1,
+  .title {
     font-family: var(--font-display, inherit);
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -2969,20 +3032,24 @@ const navLinks = computed(() => {
   }
 
   // Summary/Description
-  .summary, .description {
+  .summary,
+  .description {
     color: var(--color-secondary);
     line-height: 1.7;
   }
 }
 
 // Stats Enhancement
-:deep(.stats), :deep([class*="stats"]) {
-  .stat-icon, svg {
+:deep(.stats),
+:deep([class*="stats"]) {
+  .stat-icon,
+  svg {
     color: var(--color-secondary);
     transition: color 0.2s ease;
   }
 
-  &:hover .stat-icon, &:hover svg {
+  &:hover .stat-icon,
+  &:hover svg {
     color: var(--flame, #f16436);
   }
 }
@@ -3062,7 +3129,7 @@ const navLinks = computed(() => {
     gap: 8px;
 
     &::before {
-      content: '';
+      content: "";
       width: 3px;
       height: 16px;
       background: linear-gradient(180deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
@@ -3156,7 +3223,8 @@ const navLinks = computed(() => {
 
 // External Links Enhancement
 :deep(.details-list__item) {
-  a, .text-link {
+  a,
+  .text-link {
     color: var(--flame, #f16436);
     text-decoration: none;
     transition: all 0.2s ease;
@@ -3245,8 +3313,10 @@ const navLinks = computed(() => {
 // WIKI SIDEBAR - FLAME THEME
 // ==========================================
 
-:deep(.wiki-sidebar), :deep([class*="wiki"]) {
-  .wiki-nav-item, a {
+:deep(.wiki-sidebar),
+:deep([class*="wiki"]) {
+  .wiki-nav-item,
+  a {
     padding: 10px 14px;
     border-radius: 10px;
     transition: all 0.2s ease;
@@ -3255,13 +3325,14 @@ const navLinks = computed(() => {
       background: var(--accent-muted, rgba(241, 100, 54, 0.08));
     }
 
-    &.active, &[aria-current="page"] {
+    &.active,
+    &[aria-current="page"] {
       background: var(--accent-muted, rgba(241, 100, 54, 0.12));
       color: var(--flame, #f16436);
       font-weight: 600;
 
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         left: 0;
         top: 50%;
@@ -3279,8 +3350,11 @@ const navLinks = computed(() => {
 // COMPATIBILITY SECTION
 // ==========================================
 
-:deep(.compatibility-info), :deep([class*="compatibility"]) {
-  .game-version-tag, .platform-tag, .environment-tag {
+:deep(.compatibility-info),
+:deep([class*="compatibility"]) {
+  .game-version-tag,
+  .platform-tag,
+  .environment-tag {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -3300,7 +3374,8 @@ const navLinks = computed(() => {
 }
 
 // Version Display Enhancement
-:deep(.version-display), :deep([class*="version"]:not(.nav-tabs)) {
+:deep(.version-display),
+:deep([class*="version"]:not(.nav-tabs)) {
   .version-badge {
     background: rgba(45, 212, 191, 0.12);
     color: var(--teal, #2dd4bf);
@@ -3357,14 +3432,16 @@ const navLinks = computed(() => {
 }
 
 // Light theme specific overrides
-:global(.light-mode), :global([data-theme="light"]) {
+:global(.light-mode),
+:global([data-theme="light"]) {
   --bg-card: #ffffff;
   --color-text-dark: #1a1a2e;
   --accent-muted: rgba(241, 100, 54, 0.08);
 }
 
 // Dark theme specific overrides
-:global(.dark-mode), :global([data-theme="dark"]) {
+:global(.dark-mode),
+:global([data-theme="dark"]) {
   --bg-card: #1e2128;
   --color-text-dark: #ffffff;
   --accent-muted: rgba(241, 100, 54, 0.12);
@@ -3375,8 +3452,13 @@ const navLinks = computed(() => {
 // ==========================================
 
 @keyframes gentle-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 @keyframes slide-up {
@@ -3394,19 +3476,32 @@ const navLinks = computed(() => {
 :deep(.card.flex-card) {
   animation: slide-up 0.4s var(--ease-out, ease) both;
 
-  &:nth-child(1) { animation-delay: 0.05s; }
-  &:nth-child(2) { animation-delay: 0.1s; }
-  &:nth-child(3) { animation-delay: 0.15s; }
-  &:nth-child(4) { animation-delay: 0.2s; }
-  &:nth-child(5) { animation-delay: 0.25s; }
-  &:nth-child(6) { animation-delay: 0.3s; }
+  &:nth-child(1) {
+    animation-delay: 0.05s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.15s;
+  }
+  &:nth-child(4) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.25s;
+  }
+  &:nth-child(6) {
+    animation-delay: 0.3s;
+  }
 }
 
 // ==========================================
 // DOWNLOAD MODAL - FLAME THEME
 // ==========================================
 
-:deep(.modal), :deep([class*="modal"]) {
+:deep(.modal),
+:deep([class*="modal"]) {
   // Modal backdrop
   .modal-backdrop {
     backdrop-filter: blur(8px);
@@ -3414,7 +3509,8 @@ const navLinks = computed(() => {
   }
 
   // Modal container
-  .modal-container, .modal-content {
+  .modal-container,
+  .modal-content {
     background: var(--bg-card, var(--color-raised-bg));
     border: 1px solid var(--color-divider);
     border-radius: 20px;
@@ -3423,10 +3519,15 @@ const navLinks = computed(() => {
   }
 
   // Modal header
-  .modal-header, [class*="modal-header"] {
+  .modal-header,
+  [class*="modal-header"] {
     padding: 20px 24px;
     border-bottom: 1px solid var(--color-divider);
-    background: linear-gradient(135deg, var(--accent-muted, rgba(241, 100, 54, 0.05)) 0%, transparent 100%);
+    background: linear-gradient(
+      135deg,
+      var(--accent-muted, rgba(241, 100, 54, 0.05)) 0%,
+      transparent 100%
+    );
 
     .icon {
       border-radius: 12px;
@@ -3435,7 +3536,8 @@ const navLinks = computed(() => {
   }
 
   // Modal body
-  .modal-body, [class*="modal-body"] {
+  .modal-body,
+  [class*="modal-body"] {
     padding: 24px;
   }
 }
@@ -3448,7 +3550,8 @@ const navLinks = computed(() => {
   overflow: hidden;
 
   // Accordion Header
-  [class*="accordion-header"], summary {
+  [class*="accordion-header"],
+  summary {
     padding: 14px 18px;
     font-weight: 600;
     display: flex;
@@ -3468,7 +3571,8 @@ const navLinks = computed(() => {
   }
 
   // Accordion Content
-  [class*="accordion-content"], .accordion-body {
+  [class*="accordion-content"],
+  .accordion-body {
     padding: 12px;
     border-top: 1px solid var(--color-divider);
     background: var(--color-bg);
@@ -3477,7 +3581,8 @@ const navLinks = computed(() => {
 
 // Version/Platform Selection Buttons in Modal
 :deep(.accordion-with-bg) {
-  button, [class*="button"] {
+  button,
+  [class*="button"] {
     margin: 4px;
     padding: 10px 16px;
     border-radius: 10px;
@@ -3491,7 +3596,8 @@ const navLinks = computed(() => {
     }
 
     // Selected state
-    &[class*="brand"], &.selected {
+    &[class*="brand"],
+    &.selected {
       background: var(--flame, #f16436) !important;
       color: #fff !important;
     }
@@ -3505,7 +3611,8 @@ const navLinks = computed(() => {
 }
 
 // Version Summary Cards in Download Modal
-:deep(.version-summary), :deep([class*="version-summary"]) {
+:deep(.version-summary),
+:deep([class*="version-summary"]) {
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: 14px;
@@ -3518,7 +3625,8 @@ const navLinks = computed(() => {
   }
 
   // Version type badge
-  .version-type-badge, [class*="type-badge"] {
+  .version-type-badge,
+  [class*="type-badge"] {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 0.7rem;
@@ -3526,24 +3634,28 @@ const navLinks = computed(() => {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 
-    &.release, &[class*="release"] {
+    &.release,
+    &[class*="release"] {
       background: rgba(34, 197, 94, 0.15);
       color: #22c55e;
     }
 
-    &.beta, &[class*="beta"] {
+    &.beta,
+    &[class*="beta"] {
       background: rgba(249, 115, 22, 0.15);
       color: #f97316;
     }
 
-    &.alpha, &[class*="alpha"] {
+    &.alpha,
+    &[class*="alpha"] {
       background: rgba(239, 68, 68, 0.15);
       color: #ef4444;
     }
   }
 
   // Download button in version card
-  .download-btn, [class*="download"] {
+  .download-btn,
+  [class*="download"] {
     background: linear-gradient(135deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
     color: #fff;
     border: none;
@@ -3596,7 +3708,8 @@ const navLinks = computed(() => {
 }
 
 // Translation Promo Enhancement
-:deep(.translation-promo), :deep([class*="translation-promo"]) {
+:deep(.translation-promo),
+:deep([class*="translation-promo"]) {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.02) 100%);
   border: 1px solid rgba(34, 197, 94, 0.2);
   border-radius: 14px;
@@ -3608,7 +3721,8 @@ const navLinks = computed(() => {
 }
 
 // Server Promo Enhancement
-:deep(.server-promo), :deep([class*="server-promo"]) {
+:deep(.server-promo),
+:deep([class*="server-promo"]) {
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.02) 100%);
   border: 1px solid rgba(168, 85, 247, 0.2);
   border-radius: 14px;
@@ -3667,30 +3781,35 @@ const navLinks = computed(() => {
 // MESSAGE BANNERS
 // ==========================================
 
-:deep(.message-banner), :deep([class*="message-banner"]) {
+:deep(.message-banner),
+:deep([class*="message-banner"]) {
   border-radius: 14px;
   padding: 16px 20px;
   border: 1px solid;
 
-  &.warning, &[class*="warning"] {
+  &.warning,
+  &[class*="warning"] {
     background: rgba(249, 115, 22, 0.08);
     border-color: rgba(249, 115, 22, 0.3);
     color: #f97316;
   }
 
-  &.error, &[class*="error"] {
+  &.error,
+  &[class*="error"] {
     background: rgba(239, 68, 68, 0.08);
     border-color: rgba(239, 68, 68, 0.3);
     color: #ef4444;
   }
 
-  &.info, &[class*="info"] {
+  &.info,
+  &[class*="info"] {
     background: rgba(59, 130, 246, 0.08);
     border-color: rgba(59, 130, 246, 0.3);
     color: #3b82f6;
   }
 
-  &.success, &[class*="success"] {
+  &.success,
+  &[class*="success"] {
     background: rgba(34, 197, 94, 0.08);
     border-color: rgba(34, 197, 94, 0.3);
     color: #22c55e;
@@ -3701,14 +3820,16 @@ const navLinks = computed(() => {
 // OVERFLOW MENU ENHANCEMENT
 // ==========================================
 
-:deep(.overflow-menu), :deep([class*="overflow-menu"]) {
+:deep(.overflow-menu),
+:deep([class*="overflow-menu"]) {
   background: var(--bg-card, var(--color-raised-bg));
   border: 1px solid var(--color-divider);
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 
-  .menu-item, [class*="menu-item"] {
+  .menu-item,
+  [class*="menu-item"] {
     padding: 12px 16px;
     font-size: 0.875rem;
     transition: all 0.15s ease;
@@ -3729,8 +3850,10 @@ const navLinks = computed(() => {
 // WIKI CREATE MODAL
 // ==========================================
 
-:deep(.wiki-create-modal), :deep([class*="wiki-create"]) {
-  input, textarea {
+:deep(.wiki-create-modal),
+:deep([class*="wiki-create"]) {
+  input,
+  textarea {
     background: var(--color-bg);
     border: 1px solid var(--color-divider);
     border-radius: 12px;
@@ -3810,7 +3933,6 @@ const navLinks = computed(() => {
   }
 }
 
-
 // No gallery fallback
 .hero-section:not(:has(.hero-bg-image)) {
   .hero-background {
@@ -3822,11 +3944,7 @@ const navLinks = computed(() => {
     );
 
     .hero-gradient-overlay {
-      background: linear-gradient(
-        180deg,
-        transparent 0%,
-        var(--color-bg, #0f0f0f) 100%
-      );
+      background: linear-gradient(180deg, transparent 0%, var(--color-bg, #0f0f0f) 100%);
     }
   }
 }
@@ -3880,7 +3998,9 @@ const navLinks = computed(() => {
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       0 0 0 3px rgba(255, 255, 255, 0.1);
-    transition: transform 0.3s var(--ease-out, ease), box-shadow 0.3s var(--ease-out, ease);
+    transition:
+      transform 0.3s var(--ease-out, ease),
+      box-shadow 0.3s var(--ease-out, ease);
 
     &:hover {
       transform: scale(1.03);
@@ -3889,7 +4009,6 @@ const navLinks = computed(() => {
         0 0 0 3px rgba(241, 100, 54, 0.3);
     }
   }
-
 }
 
 // Hero Info
@@ -4111,7 +4230,7 @@ const navLinks = computed(() => {
         gap: 10px;
 
         &::before {
-          content: '';
+          content: "";
           width: 4px;
           height: 18px;
           background: linear-gradient(180deg, var(--flame, #f16436) 0%, #ff8a5c 100%);
