@@ -14,9 +14,16 @@
           快速一键部署，无需繁琐上传和配置即可联机。
           <br />
           <br />
-          与
-          <span data-v-56edd70f="" class="font-bold"> {{ cf.name }}</span>
-          联动合作，您的购买将会把销售收益的20%-30%的归于{{ cf.name }}所有用于创作持续性收益
+          <template v-if="cf.isOrganization">
+            您的购买带来的收益，将为
+            <span data-v-56edd70f="" class="font-bold">{{ cf.name }}</span>
+            提供持续的研发和运营支持
+          </template>
+          <template v-else>
+            与
+            <span data-v-56edd70f="" class="font-bold"> {{ cf.name }}</span>
+            联动合作，您的购买将会把销售收益的20%-30%归于{{ cf.name }}所有用于创作持续性收益
+          </template>
         </h2>
         <h1
           style="

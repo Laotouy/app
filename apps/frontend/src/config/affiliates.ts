@@ -11,6 +11,8 @@ export interface Affiliate {
   code?: string;
   /** 关联的项目ID列表 */
   projects: string[];
+  /** 是否为组织级别的合作（显示不同的文案） */
+  isOrganization?: boolean;
 }
 
 /**
@@ -180,9 +182,11 @@ export const affiliates: Record<string, Affiliate> = {
     projects: ["PRsqHZRu"],
   },
   LaotouY: {
-    name: "老头",
+    name: "BBSMC",
+    code: "BBSMC",
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
     projects: [], // 通过组织级别配置，不需要手动添加项目
+    isOrganization: true,
   },
 };
 
@@ -194,10 +198,15 @@ export const projectAffiliates: Record<string, string> = Object.fromEntries(
 );
 
 /** 合作方详细信息 (兼容旧接口) */
-export const creators: Record<string, { name: string; link: string; code?: string }> =
-  Object.fromEntries(
-    Object.entries(affiliates).map(([key, { name, link, code }]) => [key, { name, link, code }]),
-  );
+export const creators: Record<
+  string,
+  { name: string; link: string; code?: string; isOrganization?: boolean }
+> = Object.fromEntries(
+  Object.entries(affiliates).map(([key, { name, link, code, isOrganization }]) => [
+    key,
+    { name, link, code, isOrganization },
+  ]),
+);
 
 // ============ 辅助函数 ============
 
@@ -206,7 +215,7 @@ export const creators: Record<string, { name: string; link: string; code?: strin
  */
 export function getCreatorByProjectId(
   projectId: string,
-): { name: string; link: string; code?: string } | null {
+): { name: string; link: string; code?: string; isOrganization?: boolean } | null {
   const affKey = projectAffiliates[projectId];
   return affKey ? (creators[affKey] ?? null) : null;
 }
@@ -214,7 +223,9 @@ export function getCreatorByProjectId(
 /**
  * 根据合作方key获取合作方信息
  */
-export function getCreatorByKey(key: string): { name: string; link: string; code?: string } | null {
+export function getCreatorByKey(
+  key: string,
+): { name: string; link: string; code?: string; isOrganization?: boolean } | null {
   return creators[key] ?? null;
 }
 
