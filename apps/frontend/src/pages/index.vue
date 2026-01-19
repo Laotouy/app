@@ -56,7 +56,7 @@
                 active: index === currentHeroSlide,
               },
             ]"
-            @click="handleBannerClick($event, item.slug)"
+            @click="handleBannerClick($event, index)"
           >
             <img
               :src="item.image"
@@ -630,7 +630,7 @@ const handleDragEnd = () => {
   }, 10);
 };
 
-const handleBannerClick = (e, url) => {
+const handleBannerClick = (e, index) => {
   e.preventDefault();
   e.stopPropagation();
 
@@ -639,7 +639,7 @@ const handleBannerClick = (e, url) => {
     return;
   }
 
-  navigateTo(url);
+  navigateTo(heroBanners.value[index].slug);
 };
 
 const handleMouseEnter = () => {
@@ -840,6 +840,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   opacity: 0;
+  pointer-events: none;
   transition:
     opacity 0.6s ease,
     transform 0.6s ease;
@@ -848,6 +849,7 @@ onUnmounted(() => {
   &.active {
     opacity: 1;
     transform: scale(1);
+    pointer-events: auto;
   }
 }
 

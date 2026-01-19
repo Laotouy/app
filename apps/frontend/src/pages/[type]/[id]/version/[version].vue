@@ -85,6 +85,31 @@
           @on-navigate="$refs.downloadModal.hide"
           @on-download="onDownload(version.id)"
         />
+
+        <!-- 汉化包推荐 -->
+        <TranslationPromo
+          v-if="translationVersions.length > 0"
+          :translation-version="translationVersions"
+          @navigate="navigateToTranslation"
+        />
+
+        <!-- 汉化包未及时更新提示 -->
+        <div
+          v-else-if="project.translation_tracker && translationVersions.length === 0"
+          class="translation-pending-notice border-orange-500/50 bg-orange-500/10 rounded-2xl border border-solid p-4"
+        >
+          <div class="flex items-start gap-3">
+            <InfoIcon class="text-orange-400 mt-0.5 size-5 shrink-0" />
+            <div class="flex flex-col gap-1">
+              <span class="font-bold text-contrast">当前版本暂无汉化包</span>
+              <span class="text-sm text-secondary">
+                该版本的汉化包还未及时上传，可前往 QQ 群
+                <span class="text-orange-400 font-mono font-bold">1073724937</span>
+                反馈，我们将及时响应处理。
+              </span>
+            </div>
+          </div>
+        </div>
       </AutomaticAccordion>
     </NewModal>
 
@@ -1286,6 +1311,7 @@ import ChevronRightIcon from "~/assets/images/utils/chevron-right.svg?component"
 import { useBaseFetchFile } from "~/composables/fetch.js";
 import VersionSummary from "~/components/ui/VersionSummary.vue";
 import AutomaticAccordion from "~/components/ui/AutomaticAccordion.vue";
+import TranslationPromo from "~/components/ui/TranslationPromo.vue";
 
 export default defineNuxtComponent({
   components: {
@@ -1325,6 +1351,7 @@ export default defineNuxtComponent({
     UndoIcon,
     ConfirmModal,
     ButtonStyled,
+    TranslationPromo,
   },
   props: {
     project: {
@@ -1845,6 +1872,16 @@ export default defineNuxtComponent({
     // 数据已在setup中初始化，无需重复操作
   },
   methods: {
+    // 导航到汉化包版本页面
+    navigateToTranslation(translationData) {
+      if (translationData && translationData.project && translationData.version) {
+        const projectType = translationData.project.project_type;
+        const projectId = translationData.project.slug || translationData.project.id;
+        const versionId = translationData.version.version_number || translationData.version.id;
+        this.$router.push(`/${projectType}/${projectId}/version/${encodeURI(versionId)}`);
+        this.$refs.downloadModal.hide();
+      }
+    },
     // 打开重新提交对话框
     openResubmitDialog(link) {
       this.pendingResubmitLink = link;

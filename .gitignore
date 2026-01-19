@@ -72,3 +72,6 @@ apps/rust_build_tools.tar
 CLAUDE.md
 apps/*/CLAUDE.md
 UPSTREAM_SYNC.md
+
+# Docker persistent data
+/data/

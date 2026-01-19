@@ -91,6 +91,16 @@
             <GridIcon aria-hidden="true" />
             <span>软件</span>
           </NuxtLink>
+          <NuxtLink
+            to="/languages"
+            class="nav-link"
+            :class="{
+              active: route.name === 'search-languages' || route.path.startsWith('/language/'),
+            }"
+          >
+            <LanguagesIcon aria-hidden="true" />
+            <span>汉化</span>
+          </NuxtLink>
 
           <!-- More dropdown -->
           <div class="nav-more">
@@ -106,10 +116,6 @@
               <NuxtLink to="/plugins" class="dropdown-link">
                 <PlugIcon aria-hidden="true" />
                 <span>插件</span>
-              </NuxtLink>
-              <NuxtLink to="/languages" class="dropdown-link">
-                <LanguagesIcon aria-hidden="true" />
-                <span>汉化</span>
               </NuxtLink>
             </div>
           </div>
@@ -194,6 +200,7 @@
         </div>
       </div>
     </header>
+
     <header class="mobile-navigation mobile-only">
       <div
         class="nav-menu nav-menu-browse"
@@ -372,6 +379,9 @@
             <BrandTextLogo aria-hidden="true" class="h-8 w-auto" />
           </NuxtLink>
           <p class="footer-tagline">中国最活跃的 Minecraft 中文资源社区</p>
+          <a href="javascript:void(0)" class="footer-qq-group" @click="copyQQGroup">
+            QQ 群：1078515449
+          </a>
           <div class="footer-social">
             <a
               href="https://github.com/bbsmc/app"
@@ -504,11 +514,24 @@ import { getProjectTypeMessage } from "~/utils/i18n-project-type.ts";
 import { commonMessages } from "~/utils/common-messages.ts";
 import CollectionCreateModal from "~/components/ui/CollectionCreateModal.vue";
 import OrganizationCreateModal from "~/components/ui/OrganizationCreateModal.vue";
+import { addNotification } from "~/composables/notifs";
 
 const { formatMessage } = useVIntl();
 
 const auth = await useAuth();
 const unreadNotifications = ref(0);
+
+// 复制 QQ 群号
+const copyQQGroup = () => {
+  navigator.clipboard.writeText("1078515449").then(() => {
+    addNotification({
+      group: "main",
+      title: "已复制",
+      text: "QQ 群号 1078515449 已复制到剪贴板",
+      type: "success",
+    });
+  });
+};
 
 const flags = useFeatureFlags();
 
@@ -1296,6 +1319,18 @@ const { cycle: changeTheme } = useTheme();
     line-height: 1.6;
     max-width: 280px;
     margin: 0;
+  }
+
+  .footer-qq-group {
+    font-size: 0.85rem;
+    color: var(--color-secondary);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-brand);
+    }
   }
 
   .footer-social {

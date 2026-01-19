@@ -614,6 +614,53 @@
             @navigate="navigateToTranslation"
           />
 
+          <!-- 汉化包未及时更新提示：需要选择了版本且有可下载版本时才显示 -->
+          <div
+            v-else-if="
+              project.translation_tracking &&
+              !translationRecommendation &&
+              currentGameVersion &&
+              (filteredRelease || filteredBeta || filteredAlpha)
+            "
+            class="translation-pending-notice border-orange-500/50 bg-orange-500/10 rounded-2xl border border-solid p-4"
+          >
+            <div class="flex items-start gap-3">
+              <InfoIcon class="text-orange-400 mt-0.5 size-5 shrink-0" />
+              <div class="flex flex-col gap-1">
+                <span class="font-bold text-contrast">当前版本暂无汉化包</span>
+                <span class="text-sm text-secondary">
+                  该版本的汉化包还未及时上传，可前往 QQ 群
+                  <span class="text-orange-400 font-mono font-bold">1073724937</span>
+                  反馈，我们将及时响应处理。
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 资源未被汉化提示：组织 6FNyvmc5 的资源且未开启汉化追踪 -->
+          <div
+            v-else-if="
+              organization &&
+              organization.id === '6FNyvmc5' &&
+              !project.translation_tracking &&
+              currentGameVersion &&
+              (filteredRelease || filteredBeta || filteredAlpha)
+            "
+            class="translation-pending-notice rounded-2xl border border-solid border-gray-500/50 bg-gray-500/10 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <InfoIcon class="mt-0.5 size-5 shrink-0 text-gray-400" />
+              <div class="flex flex-col gap-1">
+                <span class="font-bold text-contrast">该资源暂未汉化</span>
+                <span class="text-sm text-secondary">
+                  如果需要汉化此资源，可前往 QQ 群
+                  <span class="font-mono font-bold text-gray-400">1073724937</span>
+                  反馈，我们将评估后进行汉化。
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- 服务器推荐 -->
           <ServerPromo v-if="projectAffKey" @navigate="navigateToServer" />
         </div>
@@ -1399,6 +1446,27 @@
           </nuxt-link>
         </div>
 
+        <!-- 资源未被汉化提示：组织 6FNyvmc5 的资源且未开启汉化追踪 -->
+        <div
+          v-if="
+            organization &&
+            organization.id === '6FNyvmc5' &&
+            !project.translation_tracking &&
+            !translationSourceProject
+          "
+          class="card flex-card experimental-styles-within"
+        >
+          <div class="flex items-center gap-2">
+            <TranslateIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
+            <h2 class="!mb-0">暂未汉化</h2>
+          </div>
+          <p style="font-size: 0.875rem; color: var(--color-text); line-height: 1.6; margin: 0">
+            该资源暂未进行汉化，如果需要汉化此资源，可前往 QQ 群
+            <span class="font-mono font-bold">1073724937</span>
+            反馈，我们将评估后进行汉化。
+          </p>
+        </div>
+
         <div
           v-if="
             organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3', 'bbsmc-cn'].includes(organization.slug)
@@ -2175,13 +2243,16 @@ const currentMember = computed(() => {
   return val;
 });
 
-versions.value = data.$computeVersions(versions.value, allMembers.value);
+// 上游修复: 防止 labrinth 下线时页面崩溃
+versions.value = data.$computeVersions(versions.value ?? [], allMembers.value);
 
 // 问：为什么要这样做，而不是计算 featuredVersions 的版本？
 // 答：它会错误地生成版本 slug，因为它没有所有版本的完整上下文。例如，如果 Forge 的版本 1.1.0 是特色版本，
 // 但 Fabric 的版本 1.1.0 不是，但 Fabric 版本先上传，则 Forge 版本将链接到 Fabric 版本
-const featuredIds = featuredVersions.value.map((x) => x.id);
-featuredVersions.value = versions.value.filter((version) => featuredIds.includes(version.id));
+const featuredIds = (featuredVersions.value ?? []).map((x) => x.id);
+featuredVersions.value = (versions.value ?? []).filter((version) =>
+  featuredIds.includes(version.id),
+);
 
 featuredVersions.value.sort((a, b) => {
   const aLatest = a.game_versions[a.game_versions.length - 1];

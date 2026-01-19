@@ -48,7 +48,7 @@
         <Button :action="() => linkModal?.hide()"> <XIcon /> Cancel </Button>
         <Button
           color="primary"
-          :disabled="linkValidationErrorMessage || !linkUrl"
+          :disabled="!!linkValidationErrorMessage || !linkUrl"
           :action="
             () => {
               if (editor) markdownCommands.replaceSelection(editor, linkMarkdown)
@@ -180,7 +180,7 @@
         <Button :action="() => videoModal?.hide()"> <XIcon /> Cancel </Button>
         <Button
           color="primary"
-          :disabled="linkValidationErrorMessage || !linkUrl"
+          :disabled="!!linkValidationErrorMessage || !linkUrl"
           :action="
             () => {
               if (editor) markdownCommands.replaceSelection(editor, videoMarkdown)
@@ -221,7 +221,7 @@
       </div>
     </div>
     <div ref="editorRef" :class="{ hide: previewMode }" />
-    <div v-if="!previewMode" class="info-blurb">
+    <div v-if="!previewMode" class="info-blurb mt-2">
       <div class="info-blurb">
         <!--        <InfoIcon />-->
         <!--        <span-->
@@ -328,21 +328,35 @@ onMounted(() => {
 
   editorThemeCompartment = new Compartment()
 
+  // 上游修复: 修复 markdown 编辑器滚动问题
   const theme = EditorView.theme({
     // in defaults.scss there's references to .cm-content and such to inherit global styles
+    '&': {
+      borderRadius: 'var(--radius-md)',
+      background: 'var(--color-button-bg)',
+      border: '0.25rem solid transparent',
+      transition: 'border-color 0.1s ease-in-out',
+    },
+    '&.cm-focused': {
+      'box-shadow': 'inset 0 0 0 transparent, 0 0 0 0.25rem var(--color-brand-shadow)',
+      color: 'var(--color-contrast)',
+      outline: 'none',
+    },
+    '.cm-focused': {
+      border: 'none',
+    },
     '.cm-content': {
       marginBlockEnd: '0.5rem',
       padding: '0.5rem',
       minHeight: '200px',
       caretColor: 'var(--color-contrast)',
       width: '100%',
-      overflowX: 'scroll',
-      maxHeight: props.maxHeight ? `${props.maxHeight}px` : 'unset',
-      overflowY: 'scroll',
     },
     '.cm-scroller': {
+      borderRadius: 'var(--radius-md)',
       height: '100%',
-      overflow: 'visible',
+      maxHeight: props.maxHeight ? `${props.maxHeight}px` : 'unset',
+      overflow: 'auto',
     },
   })
 
@@ -553,29 +567,42 @@ watch(
         })
       }
 
+      // 上游修复: 修复 markdown 编辑器滚动问题
       if (editorThemeCompartment) {
         editor.dispatch({
           effects: [
             editorThemeCompartment.reconfigure(
               EditorView.theme({
                 // in defaults.scss there's references to .cm-content and such to inherit global styles
+                '&': {
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-button-bg)',
+                  border: '0.25rem solid transparent',
+                  transition: 'border-color 0.1s ease-in-out',
+                },
+                '&.cm-focused': {
+                  'box-shadow': 'inset 0 0 0 transparent, 0 0 0 0.25rem var(--color-brand-shadow)',
+                  color: 'var(--color-contrast)',
+                  outline: 'none',
+                },
+                '.cm-focused': {
+                  border: 'none',
+                },
                 '.cm-content': {
                   marginBlockEnd: '0.5rem',
                   padding: '0.5rem',
                   minHeight: '200px',
                   caretColor: 'var(--color-contrast)',
                   width: '100%',
-                  overflowX: 'scroll',
-                  maxHeight: props.maxHeight ? `${props.maxHeight}px` : 'unset',
-                  overflowY: 'scroll',
-
                   opacity: newValue ? 0.6 : 1,
                   pointerEvents: newValue ? 'none' : 'all',
                   cursor: newValue ? 'not-allowed' : 'auto',
                 },
                 '.cm-scroller': {
+                  borderRadius: 'var(--radius-md)',
                   height: '100%',
-                  overflow: 'visible',
+                  maxHeight: props.maxHeight ? `${props.maxHeight}px` : 'unset',
+                  overflow: 'auto',
                 },
               }),
             ),
