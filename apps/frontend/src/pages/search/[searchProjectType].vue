@@ -370,6 +370,7 @@ import { Pagination, ScrollablePanel, Checkbox, Avatar } from "@modrinth/ui";
 import { BanIcon, DropdownIcon, CheckIcon, FilterXIcon, DownloadIcon } from "@modrinth/assets";
 import ProjectCard from "~/components/ui/ProjectCard.vue";
 import LogoAnimated from "~/components/brand/LogoAnimated.vue";
+import { addNotification } from "~/composables/notifs.js";
 
 import ClientIcon from "~/assets/images/categories/client.svg?component";
 import ServerIcon from "~/assets/images/categories/server.svg?component";
@@ -610,6 +611,7 @@ const {
   data: rawResults,
   refresh: refreshSearch,
   pending: searchLoading,
+  error: searchError,
 } = useLazyFetch(
   () => {
     const config = useRuntimeConfig();
@@ -750,6 +752,24 @@ const results = shallowRef(toRaw(rawResults));
 const pageCount = computed(() =>
   results.value ? Math.ceil(results.value.total_hits / results.value.limit) : 1,
 );
+
+// 监听搜索错误并显示通知
+watch(searchError, (error) => {
+  if (error) {
+    const statusCode = error?.statusCode || error?.response?.status;
+    const errorData = error?.data;
+
+    if (statusCode === 429 || errorData?.error === "ratelimit_error") {
+      const description = errorData?.description || "您的请求过于频繁";
+      addNotification({
+        group: "main",
+        title: "请求过于频繁",
+        text: `${description}，请稍后再试。`,
+        type: "warn",
+      });
+    }
+  }
+});
 
 const router = useNativeRouter();
 

@@ -548,10 +548,24 @@ try {
   }
 } catch (err) {
   console.error(err);
+  // 检查是否为 FetchError 并提取状态码
+  const statusCode = err?.response?.status || err?.statusCode || err?.data?.statusCode || 404;
+  const errorType = err?.data?.error;
+
+  // 如果是限流错误，使用 429 状态码
+  if (statusCode === 429 || errorType === "ratelimit_error") {
+    throw createError({
+      fatal: true,
+      statusCode: 429,
+      message: err?.data?.description || "请求过于频繁",
+    });
+  }
+
+  // 其他错误使用原状态码或默认 404
   throw createError({
     fatal: true,
-    statusCode: 404,
-    message: formatMessage(messages.collectionNotFoundError),
+    statusCode: statusCode,
+    message: err?.data?.description || err?.message || formatMessage(messages.collectionNotFoundError),
   });
 }
 

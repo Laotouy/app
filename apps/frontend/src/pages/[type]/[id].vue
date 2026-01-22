@@ -1,5 +1,8 @@
 <template>
-  <div v-if="route.name.startsWith('type-id-settings')" class="normal-page">
+  <div v-if="!route.name">
+    <!-- 加载中或错误状态，不渲染任何内容 -->
+  </div>
+  <div v-else-if="route.name?.startsWith('type-id-settings')" class="normal-page">
     <div class="normal-page__sidebar">
       <aside class="universal-card">
         <Breadcrumbs
@@ -122,7 +125,7 @@
         :project="project"
         :versions="versions"
         :current-member="currentMember"
-        :is-settings="route.name.startsWith('type-id-settings')"
+        :is-settings="route.name?.startsWith('type-id-settings')"
         :route-name="route.name"
         :set-processing="setProcessing"
         :collapsed="collapsedChecklist"
@@ -1114,7 +1117,7 @@
           :project="project"
           :versions="versions"
           :current-member="currentMember"
-          :is-settings="route.name.startsWith('type-id-settings')"
+          :is-settings="route.name?.startsWith('type-id-settings')"
           :route-name="route.name"
           :set-processing="setProcessing"
           :collapsed="collapsedChecklist"
@@ -1996,16 +1999,66 @@ let project,
   resetOrganization,
   translationPackProject,
   translationSourceProject;
+
+/**
+ * 检查错误消息是否为网络相关错误
+ * @param {string} message - 错误消息
+ * @returns {boolean}
+ */
+const isNetworkError = (message) => {
+  const networkErrorPatterns = [
+    'Failed to fetch',
+    'CORS',
+    'NetworkError',
+    'timeout',
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ETIMEDOUT',
+    'Network request failed',
+  ];
+  return networkErrorPatterns.some((pattern) => message.includes(pattern));
+};
+
+/**
+ * 处理 API 错误并抛出适当的 createError
+ * @param {Error} error - 错误对象
+ * @throws {H3Error} - 抛出格式化的错误
+ */
+const handleApiError = (error) => {
+  const statusCode = error?.statusCode || error?.status ||
+                     error?.response?.status || error?.data?.statusCode || 404;
+  const errorData = error?.data;
+  const errorType = errorData?.error;
+  const message = error?.message || '';
+
+  // 优先检查限流错误
+  if (statusCode === 429 || errorType === 'ratelimit_error') {
+    throw createError({
+      fatal: true,
+      statusCode: 429,
+      message: errorData?.description || '请求过于频繁',
+    });
+  }
+
+  // 检查网络错误（CORS、连接失败、超时等）
+  if (isNetworkError(message)) {
+    throw createError({
+      fatal: true,
+      statusCode: 503,
+      message: '服务暂时不可用，请稍后重试',
+    });
+  }
+
+  // 其他错误使用原状态码
+  throw createError({
+    fatal: true,
+    statusCode: statusCode,
+    message: errorData?.description || error?.statusMessage || message || '资源不存在',
+  });
+};
+
 try {
-  [
-    { data: project, refresh: resetProject },
-    { data: allMembers, refresh: resetMembers },
-    { data: dependencies },
-    { data: featuredVersions },
-    { data: versions },
-    { data: wikis },
-    { data: organization, refresh: resetOrganization },
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     useAsyncData(`project/${route.params.id}`, () => useBaseFetch(`project/${route.params.id}`), {
       transform: (project) => {
         if (project) {
@@ -2051,6 +2104,55 @@ try {
     ),
   ]);
 
+  /**
+   * 从 Promise.allSettled 结果中提取数据
+   * @param {PromiseSettledResult} result - Promise.allSettled 的单个结果
+   * @param {boolean} needRefresh - 是否需要返回 refresh 函数
+   * @returns {{ data: Ref, refresh?: Function, error?: Ref }}
+   */
+  const extractResult = (result, needRefresh = false) => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    }
+    return needRefresh
+      ? { data: ref(null), refresh: () => {}, error: ref(result.reason) }
+      : { data: ref(null), error: ref(result.reason) };
+  };
+
+  const [
+    projectResult,
+    membersResult,
+    dependenciesResult,
+    featuredVersionsResult,
+    versionsResult,
+    wikisResult,
+    organizationResult,
+  ] = results;
+
+  // 提取各个请求的结果
+  let projectError;
+  ({ data: project, refresh: resetProject, error: projectError } = extractResult(projectResult, true));
+  ({ data: allMembers, refresh: resetMembers } = extractResult(membersResult, true));
+  ({ data: dependencies } = extractResult(dependenciesResult));
+  ({ data: featuredVersions } = extractResult(featuredVersionsResult));
+  ({ data: versions } = extractResult(versionsResult));
+  ({ data: wikis } = extractResult(wikisResult));
+  ({ data: organization, refresh: resetOrganization } = extractResult(organizationResult, true));
+
+  // 只检查主要资源（project）的错误
+  // organization、wiki 等返回 404 是正常的，不应触发错误页面
+  /**
+   * 获取错误值，处理 ref 和普通值两种情况
+   * @param {Ref|Error|null} err - 可能是 ref 或普通错误对象
+   * @returns {Error|null}
+   */
+  const getErrorValue = (err) => err?.value !== undefined ? err.value : err;
+  const mainError = getErrorValue(projectError);
+
+  if (mainError) {
+    handleApiError(mainError);
+  }
+
   versions = shallowRef(toRaw(versions));
   featuredVersions = shallowRef(toRaw(featuredVersions));
 
@@ -2085,12 +2187,9 @@ try {
   } else {
     translationSourceProject = ref(null);
   }
-} catch {
-  throw createError({
-    fatal: true,
-    statusCode: 404,
-    message: "资源不存在",
-  });
+} catch (err) {
+  // 使用通用错误处理函数
+  handleApiError(err);
 }
 
 // 提供 ProjectPageContext 供子组件使用
@@ -2287,7 +2386,7 @@ const description = computed(() => {
   } by ${members.value.find((x) => x.is_owner)?.user?.username || "创作者"} 在 BBSMC`;
 });
 
-if (!route.name.startsWith("type-id-settings")) {
+if (!route.name?.startsWith("type-id-settings")) {
   useSeoMeta({
     title: () => title.value,
     description: () => description.value,
@@ -3129,7 +3228,7 @@ const navLinks = computed(() => {
 .tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .tag-list__item {
@@ -3178,7 +3277,7 @@ const navLinks = computed(() => {
   background: var(--bg-card, var(--color-raised-bg));
   border: 1px solid var(--color-divider);
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px 18px;
   transition: all 0.3s var(--ease-out, ease);
 
   &:hover {
@@ -3192,8 +3291,8 @@ const navLinks = computed(() => {
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--color-text-dark, var(--color-text));
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid var(--color-divider);
     display: flex;
     align-items: center;
@@ -3210,7 +3309,7 @@ const navLinks = computed(() => {
 
   // Card Section Spacing
   section {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 
     &:last-child {
       margin-bottom: 0;
@@ -3222,7 +3321,7 @@ const navLinks = computed(() => {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--color-secondary);
-    margin: 0 0 8px 0;
+    margin: 0 0 6px 0;
     text-transform: uppercase;
     letter-spacing: 0.02em;
   }
@@ -4281,8 +4380,8 @@ const navLinks = computed(() => {
       background: var(--bg-card, var(--color-raised-bg));
       border: 1px solid var(--color-divider);
       border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
       transition: all 0.3s var(--ease-out, ease);
 
       &:hover {
@@ -4294,8 +4393,8 @@ const navLinks = computed(() => {
       h2 {
         font-size: 1rem;
         font-weight: 700;
-        margin-bottom: 12px;
-        padding-bottom: 10px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -4313,10 +4412,10 @@ const navLinks = computed(() => {
       .tag-list {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
 
         .tag-list__item {
-          padding: 6px 12px;
+          padding: 4px 10px;
           border-radius: 8px;
           font-size: 0.8rem;
           font-weight: 500;
@@ -4353,10 +4452,10 @@ const navLinks = computed(() => {
 
       // Enhanced Details List - Clean, no background
       .details-list {
-        gap: 4px;
+        gap: 2px;
 
         .details-list__item {
-          padding: 8px 4px;
+          padding: 6px 4px;
           border-radius: 8px;
           background: transparent;
           border: none;
@@ -4386,13 +4485,13 @@ const navLinks = computed(() => {
       .links-list {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
 
         a {
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 8px 4px;
+          padding: 6px 4px;
           background: transparent;
           border-radius: 8px;
           color: var(--color-text);

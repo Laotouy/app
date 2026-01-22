@@ -97,7 +97,7 @@ pub fn app_setup(
     let mut scheduler = scheduler::Scheduler::new();
 
     let limiter: KeyedRateLimiter = Arc::new(
-        RateLimiter::keyed(Quota::per_minute(NonZeroU32::new(300).unwrap()))
+        RateLimiter::keyed(Quota::per_minute(NonZeroU32::new(500).unwrap()))
             .with_middleware::<StateInformationMiddleware>(),
     );
     let limiter_clone = Arc::clone(&limiter);
