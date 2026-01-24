@@ -59,6 +59,8 @@ pub struct LabrinthConfig {
     pub redis_pool: RedisPool,
     pub clickhouse: Client,
     pub file_host: Arc<dyn file_hosting::FileHost + Send + Sync>,
+    /// 私有桶文件存储（用于付费插件），可选
+    pub private_file_host: Option<Arc<file_hosting::S3PrivateHost>>,
     pub scheduler: Arc<scheduler::Scheduler>,
     pub ip_salt: Pepper,
     pub search_config: search::SearchConfig,
@@ -77,6 +79,7 @@ pub fn app_setup(
     search_config: search::SearchConfig,
     clickhouse: &mut Client,
     file_host: Arc<dyn file_hosting::FileHost + Send + Sync>,
+    private_file_host: Option<Arc<file_hosting::S3PrivateHost>>,
 ) -> LabrinthConfig {
     info!("启动 Labrinth 于 {}", dotenvy::var("BIND_ADDR").unwrap());
 
@@ -669,6 +672,7 @@ pub fn app_setup(
         redis_pool,
         clickhouse: clickhouse.clone(),
         file_host,
+        private_file_host,
         scheduler: Arc::new(scheduler),
         ip_salt,
         search_config,
@@ -700,6 +704,7 @@ pub fn app_config(
     .app_data(web::Data::new(labrinth_config.redis_pool.clone()))
     .app_data(web::Data::new(labrinth_config.pool.clone()))
     .app_data(web::Data::new(labrinth_config.file_host.clone()))
+    .app_data(web::Data::new(labrinth_config.private_file_host.clone()))
     .app_data(web::Data::new(labrinth_config.search_config.clone()))
     .app_data(labrinth_config.session_queue.clone())
     .app_data(labrinth_config.payouts_queue.clone())
