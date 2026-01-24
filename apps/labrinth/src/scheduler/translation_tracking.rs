@@ -3,11 +3,11 @@
 //! 每 5 分钟执行一次，检查启用了汉化追踪的项目，
 //! 同步上游更新并更新汉化内容。
 
+use crate::database::models::DatabaseError;
+use crate::database::models::ids::{ProjectId, generate_project_id};
 use crate::database::models::project_item::{Project, ProjectBuilder};
-use crate::database::models::ids::{generate_project_id, ProjectId};
 use crate::database::models::team_item::TeamBuilder;
 use crate::database::models::thread_item::ThreadBuilder;
-use crate::database::models::DatabaseError;
 use crate::database::redis::RedisPool;
 use crate::models::projects::{MonetizationStatus, ProjectStatus};
 use crate::models::threads::ThreadType;
@@ -284,7 +284,9 @@ async fn run_translation_tracking(
             project.downloads
         );
 
-        if let Err(e) = process_tracked_project(pool, project, &cn_org, redis).await {
+        if let Err(e) =
+            process_tracked_project(pool, project, &cn_org, redis).await
+        {
             warn!("处理项目 {} ({}) 失败: {}", project.name, project.id, e);
             // 继续处理下一个项目，不中断整个任务
         }
@@ -456,13 +458,8 @@ async fn process_tracked_project(
     .await?;
 
     // 清除新创建的汉化资源缓存
-    Project::clear_cache(
-        project_id,
-        Some(cn_slug.clone()),
-        None,
-        redis,
-    )
-    .await?;
+    Project::clear_cache(project_id, Some(cn_slug.clone()), None, redis)
+        .await?;
 
     info!(
         "成功创建汉化资源: {} (id={})，已更新原项目 translation_tracker={}",
