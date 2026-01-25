@@ -9,18 +9,6 @@ license.workspace = true
 name = "labrinth"
 path = "src/main.rs"
 
-[[bin]]
-name = "test_s3_private"
-path = "src/bin/test_s3_private.rs"
-
-[[bin]]
-name = "test_cdn_url"
-path = "src/bin/test_cdn_url.rs"
-
-[[bin]]
-name = "upload_demo"
-path = "src/bin/upload_demo.rs"
-
 [dependencies]
 # Web 框架
 actix-web.workspace = true
