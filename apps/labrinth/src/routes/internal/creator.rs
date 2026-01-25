@@ -3,7 +3,7 @@
 //! 提供管理员审核高级创作者申请的功能。
 
 use super::ApiError;
-use crate::auth::check_is_moderator_from_headers;
+use crate::auth::check_is_admin_from_headers;
 use crate::database::models::UserId as DBUserId;
 use crate::database::models::creator_application_item::{
     ApplicationStatus, CreatorApplication,
@@ -94,7 +94,7 @@ pub async fn list_applications(
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
-    check_is_moderator_from_headers(
+    check_is_admin_from_headers(
         &req,
         &**pool,
         &redis,
@@ -176,7 +176,7 @@ pub async fn approve_application(
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
-    let user = check_is_moderator_from_headers(
+    let user = check_is_admin_from_headers(
         &req,
         &**pool,
         &redis,
@@ -245,7 +245,7 @@ pub async fn reject_application(
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
-    let user = check_is_moderator_from_headers(
+    let user = check_is_admin_from_headers(
         &req,
         &**pool,
         &redis,

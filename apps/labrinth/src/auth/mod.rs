@@ -17,7 +17,10 @@ pub use checks::{
 };
 use serde::{Deserialize, Serialize};
 // pub use pat::{generate_pat, PersonalAccessToken};
-pub use validate::{check_is_moderator_from_headers, get_user_from_headers};
+pub use validate::{
+    check_is_admin_from_headers, check_is_moderator_from_headers,
+    get_user_from_headers,
+};
 
 use crate::file_hosting::FileHostingError;
 use crate::models::error::ApiError;

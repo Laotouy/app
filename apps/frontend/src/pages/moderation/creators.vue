@@ -262,12 +262,12 @@ import ChevronRightIcon from "~/assets/images/utils/chevron-right.svg?component"
 const auth = await useAuth();
 const nuxtApp = useNuxtApp();
 
-// 权限检查 - 在 setup 顶层进行，确保 SSR 时也能正确处理
-if (!auth.value?.user || !["admin", "moderator"].includes(auth.value.user.role)) {
+// 权限检查 - 只有管理员可以访问
+if (!auth.value?.user || auth.value.user.role !== "admin") {
   throw createError({
     statusCode: 403,
     statusMessage: "权限不足",
-    message: "您没有权限访问此页面",
+    message: "只有管理员可以访问此页面",
   });
 }
 
