@@ -417,6 +417,7 @@ async fn process_tracked_project(
         project_id: Some(project_id),
         report_id: None,
         ban_appeal_id: None,
+        creator_application_id: None,
     };
     thread_builder.insert(&mut transaction).await?;
 

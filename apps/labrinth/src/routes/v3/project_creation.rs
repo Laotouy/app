@@ -889,6 +889,7 @@ async fn project_create_inner(
             project_id: Some(id),
             report_id: None,
             ban_appeal_id: None,
+            creator_application_id: None,
         }
         .insert(&mut *transaction)
         .await?;

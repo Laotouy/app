@@ -27,11 +27,15 @@ pub mod user_subscription_item;
 pub mod version_item;
 pub mod wiki_item;
 
+pub mod creator_application_item;
 pub mod issues;
 pub mod user_ban_item;
 pub mod wiki_cache_item;
 
 pub use collection_item::Collection;
+pub use creator_application_item::{
+    ApplicationStatus, CreatorApplication, CreatorApplicationBuilder,
+};
 pub use forum::Discussion;
 pub use forum::PostBuilder;
 pub use forum::PostQuery;

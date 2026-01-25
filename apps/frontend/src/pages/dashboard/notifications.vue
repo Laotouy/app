@@ -49,6 +49,15 @@
               case 'organization_invite': {
                 return '团队邀请';
               }
+              case 'creator_application_message': {
+                return '创作者申请消息';
+              }
+              case 'creator_application_approved': {
+                return '创作者申请通过';
+              }
+              case 'creator_application_rejected': {
+                return '创作者申请拒绝';
+              }
               default: {
                 return x;
               }

@@ -112,6 +112,21 @@ pub enum NotificationBody {
         thread_id: ThreadId,
         message_id: ThreadMessageId,
     },
+    /// 创作者申请线程有新消息
+    CreatorApplicationMessage {
+        application_id: i64,
+        thread_id: ThreadId,
+        message_id: ThreadMessageId,
+    },
+    /// 创作者申请已批准
+    CreatorApplicationApproved {
+        application_id: i64,
+    },
+    /// 创作者申请已拒绝
+    CreatorApplicationRejected {
+        application_id: i64,
+        reason: Option<String>,
+    },
     Unknown,
 }
 
@@ -339,6 +354,29 @@ impl From<DBNotification> for Notification {
                     "您的申诉有新回复".to_string(),
                     "管理员在您的封禁申诉中发送了新消息，请查看。".to_string(),
                     "/settings/account".to_string(),
+                    vec![],
+                ),
+                NotificationBody::CreatorApplicationMessage { .. } => (
+                    "您的创作者申请有新回复".to_string(),
+                    "管理员在您的高级创作者申请中发送了新消息，请查看。"
+                        .to_string(),
+                    "/settings/creator".to_string(),
+                    vec![],
+                ),
+                NotificationBody::CreatorApplicationApproved { .. } => (
+                    "恭喜！您的高级创作者申请已通过".to_string(),
+                    "您现在可以发布付费插件了。".to_string(),
+                    "/settings/creator".to_string(),
+                    vec![],
+                ),
+                NotificationBody::CreatorApplicationRejected {
+                    reason, ..
+                } => (
+                    "您的高级创作者申请未通过".to_string(),
+                    reason
+                        .clone()
+                        .unwrap_or_else(|| "请查看详情。".to_string()),
+                    "/settings/creator".to_string(),
                     vec![],
                 ),
                 NotificationBody::Unknown => {

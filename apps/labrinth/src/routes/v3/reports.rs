@@ -214,6 +214,7 @@ pub async fn report_create(
         project_id: None,
         report_id: Some(report.id),
         ban_appeal_id: None,
+        creator_application_id: None,
     }
     .insert(&mut transaction)
     .await?;

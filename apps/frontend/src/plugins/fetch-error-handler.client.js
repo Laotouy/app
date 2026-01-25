@@ -31,9 +31,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           text: `${description}。如有疑问，请前往账户设置查看详情或发起申诉。`,
           type: "error",
         });
-        return;
       }
     }
   });
 });
-

@@ -82,40 +82,43 @@ async fn main() -> std::io::Result<()> {
         };
 
     // 初始化私有桶存储（用于付费插件）
-    let private_file_host: Option<Arc<S3PrivateHost>> = if storage_backend == "s3" {
-        match dotenvy::var("S3_PRIVATE_BUCKET_NAME") {
-            Ok(bucket) if bucket != "none" && !bucket.is_empty() => {
-                let cdn_url = dotenvy::var("CDN_PRIVATE_URL").ok();
-                let cdn_url = cdn_url.as_deref().filter(|s| *s != "none" && !s.is_empty());
+    let private_file_host: Option<Arc<S3PrivateHost>> =
+        if storage_backend == "s3" {
+            match dotenvy::var("S3_PRIVATE_BUCKET_NAME") {
+                Ok(bucket) if bucket != "none" && !bucket.is_empty() => {
+                    let cdn_url = dotenvy::var("CDN_PRIVATE_URL").ok();
+                    let cdn_url = cdn_url
+                        .as_deref()
+                        .filter(|s| *s != "none" && !s.is_empty());
 
-                match S3PrivateHost::new_with_cdn(
-                    &bucket,
-                    &dotenvy::var("S3_URL").unwrap(),
-                    &dotenvy::var("S3_ACCESS_TOKEN").unwrap(),
-                    &dotenvy::var("S3_SECRET").unwrap(),
-                    cdn_url,
-                ) {
-                    Ok(host) => {
-                        info!("私有桶存储已启用: {}", bucket);
-                        if cdn_url.is_some() {
-                            info!("私有桶 CDN URL 已配置");
+                    match S3PrivateHost::new_with_cdn(
+                        &bucket,
+                        &dotenvy::var("S3_URL").unwrap(),
+                        &dotenvy::var("S3_ACCESS_TOKEN").unwrap(),
+                        &dotenvy::var("S3_SECRET").unwrap(),
+                        cdn_url,
+                    ) {
+                        Ok(host) => {
+                            info!("私有桶存储已启用: {}", bucket);
+                            if cdn_url.is_some() {
+                                info!("私有桶 CDN URL 已配置");
+                            }
+                            Some(Arc::new(host))
                         }
-                        Some(Arc::new(host))
-                    }
-                    Err(e) => {
-                        error!("初始化私有桶存储失败: {:?}", e);
-                        None
+                        Err(e) => {
+                            error!("初始化私有桶存储失败: {:?}", e);
+                            None
+                        }
                     }
                 }
+                _ => {
+                    info!("私有桶存储未配置，付费插件功能将不可用");
+                    None
+                }
             }
-            _ => {
-                info!("私有桶存储未配置，付费插件功能将不可用");
-                None
-            }
-        }
-    } else {
-        None
-    };
+        } else {
+            None
+        };
 
     info!("初始化 clickhouse 连接");
     let mut clickhouse = clickhouse::init_client().await.unwrap();

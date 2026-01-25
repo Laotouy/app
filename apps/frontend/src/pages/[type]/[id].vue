@@ -2007,14 +2007,14 @@ let project,
  */
 const isNetworkError = (message) => {
   const networkErrorPatterns = [
-    'Failed to fetch',
-    'CORS',
-    'NetworkError',
-    'timeout',
-    'ECONNREFUSED',
-    'ENOTFOUND',
-    'ETIMEDOUT',
-    'Network request failed',
+    "Failed to fetch",
+    "CORS",
+    "NetworkError",
+    "timeout",
+    "ECONNREFUSED",
+    "ENOTFOUND",
+    "ETIMEDOUT",
+    "Network request failed",
   ];
   return networkErrorPatterns.some((pattern) => message.includes(pattern));
 };
@@ -2025,18 +2025,18 @@ const isNetworkError = (message) => {
  * @throws {H3Error} - 抛出格式化的错误
  */
 const handleApiError = (error) => {
-  const statusCode = error?.statusCode || error?.status ||
-                     error?.response?.status || error?.data?.statusCode || 404;
+  const statusCode =
+    error?.statusCode || error?.status || error?.response?.status || error?.data?.statusCode || 404;
   const errorData = error?.data;
   const errorType = errorData?.error;
-  const message = error?.message || '';
+  const message = error?.message || "";
 
   // 优先检查限流错误
-  if (statusCode === 429 || errorType === 'ratelimit_error') {
+  if (statusCode === 429 || errorType === "ratelimit_error") {
     throw createError({
       fatal: true,
       statusCode: 429,
-      message: errorData?.description || '请求过于频繁',
+      message: errorData?.description || "请求过于频繁",
     });
   }
 
@@ -2045,15 +2045,15 @@ const handleApiError = (error) => {
     throw createError({
       fatal: true,
       statusCode: 503,
-      message: '服务暂时不可用，请稍后重试',
+      message: "服务暂时不可用，请稍后重试",
     });
   }
 
   // 其他错误使用原状态码
   throw createError({
     fatal: true,
-    statusCode: statusCode,
-    message: errorData?.description || error?.statusMessage || message || '资源不存在',
+    statusCode,
+    message: errorData?.description || error?.statusMessage || message || "资源不存在",
   });
 };
 
@@ -2111,7 +2111,7 @@ try {
    * @returns {{ data: Ref, refresh?: Function, error?: Ref }}
    */
   const extractResult = (result, needRefresh = false) => {
-    if (result.status === 'fulfilled') {
+    if (result.status === "fulfilled") {
       return result.value;
     }
     return needRefresh
@@ -2131,7 +2131,11 @@ try {
 
   // 提取各个请求的结果
   let projectError;
-  ({ data: project, refresh: resetProject, error: projectError } = extractResult(projectResult, true));
+  ({
+    data: project,
+    refresh: resetProject,
+    error: projectError,
+  } = extractResult(projectResult, true));
   ({ data: allMembers, refresh: resetMembers } = extractResult(membersResult, true));
   ({ data: dependencies } = extractResult(dependenciesResult));
   ({ data: featuredVersions } = extractResult(featuredVersionsResult));
@@ -2146,7 +2150,7 @@ try {
    * @param {Ref|Error|null} err - 可能是 ref 或普通错误对象
    * @returns {Error|null}
    */
-  const getErrorValue = (err) => err?.value !== undefined ? err.value : err;
+  const getErrorValue = (err) => (err?.value !== undefined ? err.value : err);
   const mainError = getErrorValue(projectError);
 
   if (mainError) {

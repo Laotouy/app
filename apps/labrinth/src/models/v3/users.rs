@@ -81,6 +81,12 @@ pub struct User {
     pub wiki_ban_time: DateTime<Utc>,
     pub wiki_overtake_count: i64,
 
+    /// 是否为高级创作者（可发布付费插件）
+    pub is_premium_creator: bool,
+    /// 高级创作者认证时间
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub creator_verified_at: Option<DateTime<Utc>>,
+
     /// 用户当前的活跃封禁列表（None 表示未查询）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_bans: Option<Vec<UserBanSummary>>,
@@ -149,6 +155,8 @@ impl From<DBUser> for User {
             stripe_customer_id: None,
             wiki_ban_time: data.wiki_ban_time,
             wiki_overtake_count: data.wiki_overtake_count,
+            is_premium_creator: data.is_premium_creator,
+            creator_verified_at: data.creator_verified_at,
             active_bans,
         }
     }
@@ -237,6 +245,8 @@ impl User {
             stripe_customer_id: db_user.stripe_customer_id,
             wiki_ban_time: db_user.wiki_ban_time,
             wiki_overtake_count: db_user.wiki_overtake_count,
+            is_premium_creator: db_user.is_premium_creator,
+            creator_verified_at: db_user.creator_verified_at,
             active_bans,
         }
     }

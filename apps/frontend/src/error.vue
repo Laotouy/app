@@ -45,7 +45,10 @@
         <!-- Error Details (for non-404 errors) -->
         <div v-if="!is404" class="error-details">
           <span class="error-code">Error {{ error.statusCode }}</span>
-          <span v-if="error.message && error.message !== errorContent.subtitle" class="error-message-detail">
+          <span
+            v-if="error.message && error.message !== errorContent.subtitle"
+            class="error-message-detail"
+          >
             {{ error.message }}
           </span>
         </div>
@@ -130,7 +133,7 @@ const PROJECT_PATH_PREFIXES = [
 
 // 检查是否是项目页面
 const isProjectPage = computed(() =>
-  PROJECT_PATH_PREFIXES.some((prefix) => route.path.startsWith(prefix))
+  PROJECT_PATH_PREFIXES.some((prefix) => route.path.startsWith(prefix)),
 );
 
 // 检查是否是用户页面
@@ -138,28 +141,24 @@ const isUserPage = computed(() => route.path.startsWith("/user/"));
 
 // QQ群链接组件
 const QQGroupLink = () =>
-  h(
-    "span",
-    {},
-    [
-      "如果问题持续存在，欢迎加入我们的 ",
-      h(
-        "a",
-        {
-          href: "https://qm.qq.com/cgi-bin/qm/qr?k=YOUR_KEY&jump_from=webapi",
-          target: "_blank",
-          rel: "noopener",
-          class: "help-link",
-          onClick: (e) => {
-            e.preventDefault();
-            copyQQGroup();
-          },
+  h("span", {}, [
+    "如果问题持续存在，欢迎加入我们的 ",
+    h(
+      "a",
+      {
+        href: "https://qm.qq.com/cgi-bin/qm/qr?k=YOUR_KEY&jump_from=webapi",
+        target: "_blank",
+        rel: "noopener",
+        class: "help-link",
+        onClick: (e) => {
+          e.preventDefault();
+          copyQQGroup();
         },
-        "QQ 群 (1078515449)"
-      ),
-      " 反馈问题。",
-    ]
-  );
+      },
+      "QQ 群 (1078515449)",
+    ),
+    " 反馈问题。",
+  ]);
 
 // 复制QQ群号
 const copyQQGroup = () => {
@@ -206,10 +205,7 @@ const errorMessages = {
     title: "请求过于频繁",
     subtitle: "您的请求速度过快，请稍后再试。",
     listTitle: "建议：",
-    listItems: [
-      { text: "请等待几秒钟后再次尝试。" },
-      { text: "避免在短时间内频繁刷新页面。" },
-    ],
+    listItems: [{ text: "请等待几秒钟后再次尝试。" }, { text: "避免在短时间内频繁刷新页面。" }],
   },
   // 451 法律原因
   451: {
@@ -221,20 +217,14 @@ const errorMessages = {
     title: "糟糕！",
     subtitle: "服务器出错了。",
     listTitle: "请稍后再试：",
-    listItems: [
-      { text: "服务器可能正在维护或遇到临时问题。" },
-      { component: QQGroupLink },
-    ],
+    listItems: [{ text: "服务器可能正在维护或遇到临时问题。" }, { component: QQGroupLink }],
   },
   // 502 网关错误
   502: {
     title: "糟糕！",
     subtitle: "服务器网关出错了。",
     listTitle: "请稍后再试：",
-    listItems: [
-      { text: "服务器可能正在重启或部署更新。" },
-      { component: QQGroupLink },
-    ],
+    listItems: [{ text: "服务器可能正在重启或部署更新。" }, { component: QQGroupLink }],
   },
   // 503 服务不可用
   503: {
@@ -252,20 +242,14 @@ const errorMessages = {
     title: "请求超时",
     subtitle: "服务器响应时间过长。",
     listTitle: "请稍后再试：",
-    listItems: [
-      { text: "服务器可能正忙，请稍后重试。" },
-      { component: QQGroupLink },
-    ],
+    listItems: [{ text: "服务器可能正忙，请稍后重试。" }, { component: QQGroupLink }],
   },
   // 默认错误
   default: {
     title: "糟糕！",
     subtitle: "出错了。",
     listTitle: "请在几分钟后再试：",
-    listItems: [
-      { text: "如果您在执行某个操作，请稍后重试。" },
-      { component: QQGroupLink },
-    ],
+    listItems: [{ text: "如果您在执行某个操作，请稍后重试。" }, { component: QQGroupLink }],
   },
 };
 

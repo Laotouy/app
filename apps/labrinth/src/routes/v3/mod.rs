@@ -23,6 +23,7 @@ pub mod version_creation;
 pub mod version_file;
 pub mod versions;
 
+pub mod creator;
 pub mod issues;
 pub mod oauth_clients;
 #[allow(clippy::unnecessary_unwrap, clippy::explicit_auto_deref)]
@@ -50,7 +51,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(versions::config)
             .configure(forum::config)
             .configure(issues::config)
-            .configure(bans::config),
+            .configure(bans::config)
+            .configure(creator::config),
     );
 }
 

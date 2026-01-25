@@ -67,6 +67,11 @@ pub struct User {
     pub wiki_overtake_count: i64,
     pub phone_number: Option<String>,
 
+    /// 是否为高级创作者（可发布付费插件）
+    pub is_premium_creator: bool,
+    /// 高级创作者认证时间
+    pub creator_verified_at: Option<DateTime<Utc>>,
+
     /// 用户当前的活跃封禁列表（需要单独调用 UserBan::get_user_active_bans 填充）
     #[serde(default)]
     pub active_bans: Vec<UserBanInfo>,
@@ -202,7 +207,8 @@ impl User {
                             created, role, badges,
                             github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
                             email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,
-                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number
+                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,
+                            is_premium_creator, creator_verified_at
                         FROM users
                         WHERE id = ANY($1) OR LOWER(username) = ANY($2)
                         ",
@@ -238,6 +244,8 @@ impl User {
                             wiki_overtake_count: u.wiki_overtake_count,
                             wiki_ban_time: u.wiki_ban_time,
                             phone_number: u.phone_number,
+                            is_premium_creator: u.is_premium_creator,
+                            creator_verified_at: u.creator_verified_at,
                             active_bans: Vec::new(),  // 第二步填充
                         };
 

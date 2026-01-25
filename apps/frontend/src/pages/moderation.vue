@@ -22,6 +22,9 @@
           <NavStackItem link="/moderation/translation-tracking" label="汉化监控">
             <CalendarClockIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem link="/moderation/creators" label="高级创作者">
+            <StarIcon aria-hidden="true" />
+          </NavStackItem>
         </NavStack>
       </aside>
     </div>
@@ -40,6 +43,7 @@ import ReportIcon from "~/assets/images/utils/report.svg?component";
 import LanguagesIcon from "~/assets/images/utils/languages.svg?component";
 import ShieldIcon from "~/assets/images/utils/shield.svg?component";
 import CalendarClockIcon from "~/assets/images/utils/calendar-clock.svg?component";
+import StarIcon from "~/assets/images/utils/star.svg?component";
 
 definePageMeta({
   middleware: "auth",

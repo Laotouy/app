@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                        SELECT id, email,\n                            avatar_url, raw_avatar_url, username, bio,\n                            created, role, badges,\n                            github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,\n                            email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,\n                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number\n                        FROM users\n                        WHERE id = ANY($1) OR LOWER(username) = ANY($2)\n                        ",
+  "query": "\n                        SELECT id, email,\n                            avatar_url, raw_avatar_url, username, bio,\n                            created, role, badges,\n                            github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,\n                            email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,\n                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,\n                            is_premium_creator, creator_verified_at\n                        FROM users\n                        WHERE id = ANY($1) OR LOWER(username) = ANY($2)\n                        ",
   "describe": {
     "columns": [
       {
@@ -132,6 +132,16 @@
         "ordinal": 25,
         "name": "phone_number",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 26,
+        "name": "is_premium_creator",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 27,
+        "name": "creator_verified_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -166,8 +176,10 @@
       true,
       false,
       false,
+      true,
+      false,
       true
     ]
   },
-  "hash": "a27486451081fccbcf628fc5ea623e62d5fbd731f9f41e99770cba2e84462098"
+  "hash": "2607671d4d4fe4867ad72604513139d4586206c9cc407193231358daff933561"
 }

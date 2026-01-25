@@ -6,9 +6,7 @@
 //! - 文件存在检查
 //! - 文件删除
 
-use crate::file_hosting::{
-    DeleteFileData, FileHostingError, UploadFileData,
-};
+use crate::file_hosting::{DeleteFileData, FileHostingError, UploadFileData};
 use bytes::Bytes;
 use chrono::Utc;
 use s3::bucket::Bucket;
@@ -65,9 +63,7 @@ impl S3PrivateHost {
             None,
             None,
         )
-        .map_err(|_| {
-            FileHostingError::S3Error("创建凭证时出错".to_string())
-        })?;
+        .map_err(|_| FileHostingError::S3Error("创建凭证时出错".to_string()))?;
 
         // 创建用于操作的 bucket
         let mut bucket = Bucket::new(
@@ -95,7 +91,9 @@ impl S3PrivateHost {
                 credentials,
             )
             .map_err(|_| {
-                FileHostingError::S3Error("创建 CDN Bucket 实例时出错".to_string())
+                FileHostingError::S3Error(
+                    "创建 CDN Bucket 实例时出错".to_string(),
+                )
             })?;
             cdn_bucket.set_path_style();
             cdn_bucket.set_request_timeout(None);
@@ -204,16 +202,13 @@ impl S3PrivateHost {
     }
 
     /// 检查文件是否存在
-    pub async fn object_exists(&self, file_path: &str) -> Result<bool, FileHostingError> {
-        self.bucket
-            .object_exists(file_path)
-            .await
-            .map_err(|e| {
-                FileHostingError::S3Error(format!(
-                    "检查文件存在失败: {:?}",
-                    e
-                ))
-            })
+    pub async fn object_exists(
+        &self,
+        file_path: &str,
+    ) -> Result<bool, FileHostingError> {
+        self.bucket.object_exists(file_path).await.map_err(|e| {
+            FileHostingError::S3Error(format!("检查文件存在失败: {:?}", e))
+        })
     }
 
     /// 删除文件
@@ -221,15 +216,9 @@ impl S3PrivateHost {
         &self,
         file_path: &str,
     ) -> Result<DeleteFileData, FileHostingError> {
-        self.bucket
-            .delete_object(file_path)
-            .await
-            .map_err(|e| {
-                FileHostingError::S3Error(format!(
-                    "删除文件失败: {:?}",
-                    e
-                ))
-            })?;
+        self.bucket.delete_object(file_path).await.map_err(|e| {
+            FileHostingError::S3Error(format!("删除文件失败: {:?}", e))
+        })?;
 
         Ok(DeleteFileData {
             file_id: file_path.to_string(),
@@ -238,15 +227,13 @@ impl S3PrivateHost {
     }
 
     /// 获取文件内容（用于内部操作，如病毒扫描等）
-    pub async fn get_object(&self, file_path: &str) -> Result<Vec<u8>, FileHostingError> {
-        let response = self.bucket
-            .get_object(file_path)
-            .await
-            .map_err(|e| {
-                FileHostingError::S3Error(format!(
-                    "获取文件失败: {:?}",
-                    e
-                ))
+    pub async fn get_object(
+        &self,
+        file_path: &str,
+    ) -> Result<Vec<u8>, FileHostingError> {
+        let response =
+            self.bucket.get_object(file_path).await.map_err(|e| {
+                FileHostingError::S3Error(format!("获取文件失败: {:?}", e))
             })?;
 
         Ok(response.to_vec())
@@ -275,14 +262,14 @@ mod tests {
             .unwrap_or_else(|_| "bbsmc-private".to_string());
         let url = std::env::var("S3_URL")
             .unwrap_or_else(|_| "http://localhost:9000".to_string());
-        let access_token = std::env::var("S3_ACCESS_TOKEN")
-            .expect("S3_ACCESS_TOKEN not set");
-        let secret = std::env::var("S3_SECRET")
-            .expect("S3_SECRET not set");
+        let access_token =
+            std::env::var("S3_ACCESS_TOKEN").expect("S3_ACCESS_TOKEN not set");
+        let secret = std::env::var("S3_SECRET").expect("S3_SECRET not set");
 
         // 创建 host
-        let host = S3PrivateHost::new(&bucket_name, &url, &access_token, &secret)
-            .expect("Failed to create S3PrivateHost");
+        let host =
+            S3PrivateHost::new(&bucket_name, &url, &access_token, &secret)
+                .expect("Failed to create S3PrivateHost");
 
         // 测试文件路径
         let test_path = "/test/integration_test.txt";
@@ -341,4 +328,3 @@ mod tests {
         println!("All tests passed!");
     }
 }
-

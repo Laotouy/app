@@ -244,6 +244,8 @@ impl TempUser {
                 wiki_ban_time: Default::default(),
                 wiki_overtake_count: 0,
                 phone_number: None,
+                is_premium_creator: false,
+                creator_verified_at: None,
                 active_bans: vec![],
             }
             .insert(transaction)
@@ -1578,6 +1580,8 @@ pub async fn create_account_with_password(
         wiki_ban_time: Default::default(),
         wiki_overtake_count: 0,
         phone_number: None,
+        is_premium_creator: false,
+        creator_verified_at: None,
         active_bans: vec![],
     }
     .insert(&mut transaction)

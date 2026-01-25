@@ -564,8 +564,9 @@ try {
   // 其他错误使用原状态码或默认 404
   throw createError({
     fatal: true,
-    statusCode: statusCode,
-    message: err?.data?.description || err?.message || formatMessage(messages.collectionNotFoundError),
+    statusCode,
+    message:
+      err?.data?.description || err?.message || formatMessage(messages.collectionNotFoundError),
   });
 }
 

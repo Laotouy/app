@@ -1554,6 +1554,7 @@ pub async fn approve_version_link(
                 project_id: None,
                 report_id: None,
                 ban_appeal_id: None,
+                creator_application_id: None,
             }
             .insert(&mut transaction)
             .await?;
@@ -1738,6 +1739,7 @@ pub async fn reject_version_link(
                 project_id: None,
                 report_id: None,
                 ban_appeal_id: None,
+                creator_application_id: None,
             }
             .insert(&mut transaction)
             .await?;
@@ -2080,6 +2082,7 @@ pub async fn resubmit_version_link(
             project_id: None,
             report_id: None,
             ban_appeal_id: None,
+            creator_application_id: None,
         }
         .insert(&mut transaction)
         .await?;

@@ -335,6 +335,14 @@ generate_ids!(
     BanAppealId
 );
 
+generate_ids!(
+    pub generate_creator_application_id,
+    CreatorApplicationId,
+    8,
+    "SELECT EXISTS(SELECT 1 FROM creator_applications WHERE id=$1)",
+    CreatorApplicationId
+);
+
 #[derive(
     Copy, Clone, Debug, PartialEq, Eq, Type, Hash, Serialize, Deserialize,
 )]
@@ -923,3 +931,9 @@ impl From<BanAppealId> for ids::BanAppealId {
         ids::BanAppealId(id.0 as u64)
     }
 }
+
+#[derive(
+    Copy, Clone, Debug, Type, PartialEq, Eq, Hash, Serialize, Deserialize,
+)]
+#[sqlx(transparent)]
+pub struct CreatorApplicationId(pub i64);

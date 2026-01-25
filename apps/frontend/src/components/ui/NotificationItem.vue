@@ -43,6 +43,10 @@
           class="creator-color"
         />
         <VersionIcon v-else-if="type === 'project_update' && project && version" />
+        <StarIcon
+          v-else-if="type === 'creator_application_message' || type === 'creator_application_approved' || type === 'creator_application_rejected'"
+          class="creator-color"
+        />
         <NotificationIcon v-else />
       </template>
     </DoubleIcon>
@@ -197,6 +201,19 @@
         <nuxt-link v-else-if="user" :to="getUserLink(user)" class="title-link">
           {{ user.username }} </nuxt-link
         >.
+      </template>
+      <template v-else-if="type === 'creator_application_message'">
+        <nuxt-link to="/settings/creator" class="title-link">您的高级创作者申请</nuxt-link>
+        有新回复
+      </template>
+      <template v-else-if="type === 'creator_application_approved'">
+        🎉 恭喜！
+        <nuxt-link to="/settings/creator" class="title-link">您的高级创作者申请</nuxt-link>
+        已通过，您现在可以发布付费插件了！
+      </template>
+      <template v-else-if="type === 'creator_application_rejected'">
+        <nuxt-link to="/settings/creator" class="title-link">您的高级创作者申请</nuxt-link>
+        未通过<template v-if="notification.body.reason">，原因：{{ notification.body.reason }}</template>
       </template>
       <nuxt-link v-else :to="notification.link" class="title-link">
         <span v-html="renderString(notification.title)" />
@@ -418,6 +435,7 @@ import { formatDateTime } from "@modrinth/utils";
 import InvitationIcon from "~/assets/images/utils/user-plus.svg?component";
 import ModerationIcon from "~/assets/images/sidebar/admin.svg?component";
 import NotificationIcon from "~/assets/images/sidebar/notifications.svg?component";
+import StarIcon from "~/assets/images/utils/star.svg?component";
 import ReadIcon from "~/assets/images/utils/check-circle.svg?component";
 import CalendarIcon from "~/assets/images/utils/calendar.svg?component";
 import VersionIcon from "~/assets/images/utils/version.svg?component";

@@ -1365,6 +1365,7 @@ pub async fn create_appeal(
         project_id: None,
         report_id: None,
         ban_appeal_id: Some(appeal_id),
+        creator_application_id: None,
     }
     .insert(&mut transaction)
     .await?;

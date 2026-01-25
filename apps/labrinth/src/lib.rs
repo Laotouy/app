@@ -364,6 +364,8 @@ pub fn app_setup(
                                                     wiki_overtake_count: u.wiki_overtake_count,
                                                     wiki_ban_time: u.wiki_ban_time,
                                                     phone_number: None,
+                                                    is_premium_creator: false,
+                                                    creator_verified_at: None,
                                                     active_bans: vec![],
                                                 };
 
