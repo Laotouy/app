@@ -6,7 +6,7 @@ interface ThemeSettings {
 }
 
 export function useThemeSettings(getDefaultTheme?: () => Theme) {
-  getDefaultTheme ??= () => "dark";
+  getDefaultTheme ??= () => "light";
 
   const $settings = useCookie<ThemeSettings>("color-mode", {
     maxAge: 60 * 60 * 24 * 365 * 10,

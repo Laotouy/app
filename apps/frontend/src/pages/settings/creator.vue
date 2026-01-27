@@ -541,11 +541,11 @@ const refreshThread = async () => {
   }
 
   &.btn-primary {
-    background: var(--color-primary);
-    color: white;
+    background: var(--color-brand);
+    color: var(--color-brand-inverted);
 
     &:hover:not(:disabled) {
-      background: var(--color-primary-dark);
+      filter: brightness(0.85);
     }
   }
 
