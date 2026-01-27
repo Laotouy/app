@@ -1520,13 +1520,13 @@
               class="details-list__item"
             >
               <CalendarIcon aria-hidden="true" />
-              <div>发布于 {{ fromNow(project.approved) }}</div>
+              <div>发布于 {{ formatDate(project.approved) }}</div>
             </div>
 
             <!--            提交-->
             <div v-else v-tooltip="formatDateTime(project.published)" class="details-list__item">
               <CalendarIcon aria-hidden="true" />
-              <div>提交于 {{ fromNow(project.published) }}</div>
+              <div>提交于 {{ formatDate(project.published) }}</div>
             </div>
 
             <!--            发布-->
@@ -1536,7 +1536,7 @@
               class="details-list__item"
             >
               <ScaleIcon aria-hidden="true" />
-              <div>发布于 {{ fromNow(project.queued) }}</div>
+              <div>发布于 {{ formatDate(project.queued) }}</div>
             </div>
 
             <!--            更新-->
@@ -1546,7 +1546,7 @@
               class="details-list__item"
             >
               <VersionIcon aria-hidden="true" />
-              <div>更新于 {{ fromNow(project.updated) }}</div>
+              <div>更新于 {{ formatDate(project.updated) }}</div>
             </div>
           </div>
         </div>
@@ -1909,6 +1909,10 @@ const webDisplayLabel = (x) => {
 const fromNow = (date) => {
   const currentDate = useCurrentDate();
   return dayjs(date).from(currentDate.value);
+};
+
+const formatDate = (date) => {
+  return dayjs(date).format("YYYY-MM-DD");
 };
 
 const licenseIdDisplay = computed(() => {

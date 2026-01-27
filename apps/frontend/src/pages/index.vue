@@ -177,7 +177,7 @@
                   </div>
                   <div class="resource-stat update">
                     <UpdatedIcon class="stat-icon" />
-                    <span>{{ fromNow(project.date_modified) }}</span>
+                    <span>{{ formatDate(project.date_modified) }}</span>
                   </div>
                 </div>
               </div>
@@ -185,7 +185,83 @@
           </div>
         </section>
 
-        <!-- Community News -->
+        <!-- 热门汉化包 -->
+        <section v-if="latestModpackTranslations.length > 0" class="section">
+          <header class="section-header">
+            <div class="section-title-group">
+              <span class="section-label">HOT</span>
+              <h2 class="section-title">热门汉化包</h2>
+            </div>
+            <NuxtLink to="/languages" class="section-more">浏览全部 →</NuxtLink>
+          </header>
+
+          <div class="resource-grid">
+            <NuxtLink
+              v-for="project in latestModpackTranslations"
+              :key="project.project_id"
+              :to="getProjectLink(project)"
+              class="resource-card"
+            >
+              <!-- Gallery Image -->
+              <div class="resource-gallery" :style="getGalleryStyle(project)">
+                <div class="resource-type-badge">汉化</div>
+              </div>
+
+              <!-- Card Body -->
+              <div class="resource-body">
+                <!-- Header: Icon + Title -->
+                <div class="resource-header">
+                  <img
+                    v-if="project.icon_url"
+                    :src="project.icon_url"
+                    :alt="project.title"
+                    class="resource-icon"
+                  />
+                  <span v-else class="resource-icon-placeholder"><PackageClosedIcon /></span>
+                  <div class="resource-title-wrap">
+                    <div class="resource-name">{{ project.title }}</div>
+                    <div class="resource-author">by {{ project.author }}</div>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <p class="resource-desc">{{ project.description }}</p>
+
+                <!-- Tags: Loaders + Version -->
+                <div class="resource-tags">
+                  <span
+                    v-for="loader in (project.loaders || []).slice(0, 3)"
+                    :key="loader"
+                    class="tag loader"
+                  >
+                    {{ formatLoader(loader) }}
+                  </span>
+                  <span v-if="project.versions?.[0]" class="tag version">{{
+                    project.versions[0]
+                  }}</span>
+                </div>
+
+                <!-- Footer Stats -->
+                <div class="resource-footer">
+                  <div class="resource-stat">
+                    <DownloadIcon class="stat-icon" />
+                    <span>{{ formatNumber(project.downloads) }}</span>
+                  </div>
+                  <div class="resource-stat">
+                    <HeartIcon class="stat-icon" />
+                    <span>{{ formatNumber(project.follows) }}</span>
+                  </div>
+                  <div class="resource-stat update">
+                    <UpdatedIcon class="stat-icon" />
+                    <span>{{ formatDate(project.date_modified) }}</span>
+                  </div>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </section>
+
+        <!-- 社区资讯 - 暂时隐藏
         <section v-if="notices.length > 0" class="section">
           <header class="section-header">
             <div class="section-title-group">
@@ -213,8 +289,9 @@
             </NuxtLink>
           </div>
         </section>
+        -->
 
-        <!-- Discussions -->
+        <!-- 热门讨论 - 暂时隐藏
         <section class="section">
           <header class="section-header">
             <div class="section-title-group">
@@ -250,11 +327,44 @@
             </NuxtLink>
           </div>
         </section>
+        -->
       </div>
 
       <!-- Sidebar -->
       <aside class="sidebar">
-        <!-- 测评专栏 -->
+        <!-- 汉化包推荐 -->
+        <div v-if="translations.length > 0" class="sidebar-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title"><LanguagesIcon class="sidebar-icon" /> 最近更新汉化</h3>
+            <NuxtLink to="/languages" class="sidebar-more">更多 →</NuxtLink>
+          </div>
+          <div class="sidebar-body">
+            <div class="translation-list">
+              <NuxtLink
+                v-for="item in translations"
+                :key="item.project_id"
+                :to="`/language/${item.slug}`"
+                class="translation-item"
+                :title="item.title"
+              >
+                <img :src="item.icon_url" :alt="item.title" class="translation-icon" />
+                <div class="translation-info">
+                  <div class="translation-title">{{ item.title }}</div>
+                  <div class="translation-meta">
+                    <span class="meta-item">
+                      <DownloadIcon class="stat-icon" /> {{ formatNumber(item.downloads) }}
+                    </span>
+                    <span class="meta-item">
+                      <UpdatedIcon class="stat-icon" /> {{ fromNow(item.date_modified) }}
+                    </span>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- 测评专栏 - 暂时隐藏
         <div class="sidebar-card">
           <div class="sidebar-header">
             <h3 class="sidebar-title"><StarIcon class="sidebar-icon" /> 测评专栏</h3>
@@ -279,6 +389,7 @@
             </div>
           </div>
         </div>
+        -->
 
         <!-- 友情链接 -->
         <div class="sidebar-card">
@@ -331,11 +442,42 @@ import {
   UpdatedIcon,
 } from "@modrinth/assets";
 
-// Data
-const hotProjects = ref([]);
-const forums = ref([]);
-const notices = ref([]);
-const articles = ref([]);
+// 使用 useAsyncData 获取所有主页数据，支持 SSR
+const { data: pageData } = await useAsyncData('homepage-data', async () => {
+  const [
+    projectsResponse,
+    forumsResponse,
+    noticesResponse,
+    articlesResponse,
+    translationsResponse,
+    latestModpackTranslationsResponse,
+  ] = await Promise.all([
+    useBaseFetch(`search?limit=6&index=relevance`),
+    useBaseFetch(`forum`, { apiVersion: 3 }),
+    useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
+    useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
+    useBaseFetch(`search?limit=5&index=updated&facets=[["project_type:language"]]`),
+    useBaseFetch(`search?limit=6&index=relevance&facets=[["project_type:language"]]`),
+  ]);
+
+  return {
+    hotProjects: projectsResponse.hits ?? [],
+    forums: (forumsResponse.forums ?? []).slice(0, 5),
+    notices: (noticesResponse.forums ?? []).slice(0, 5),
+    articles: (articlesResponse.forums ?? []).slice(0, 3),
+    translations: translationsResponse.hits ?? [],
+    latestModpackTranslations: latestModpackTranslationsResponse.hits ?? [],
+  };
+});
+
+// 从 pageData 中提取数据
+const hotProjects = computed(() => pageData.value?.hotProjects ?? []);
+const forums = computed(() => pageData.value?.forums ?? []);
+const notices = computed(() => pageData.value?.notices ?? []);
+const articles = computed(() => pageData.value?.articles ?? []);
+const translations = computed(() => pageData.value?.translations ?? []);
+const latestModpackTranslations = computed(() => pageData.value?.latestModpackTranslations ?? []);
+
 const stats = ref({
   projects: 12580,
   downloads: 1580000,
@@ -397,33 +539,15 @@ const dragStartX = ref(0);
 const dragCurrentX = ref(0);
 const hasDragged = ref(false);
 
-// Fetch data
-async function fetchData() {
-  try {
-    const [projectsResponse, forumsResponse, noticesResponse, articlesResponse] = await Promise.all(
-      [
-        useBaseFetch(`search?limit=6&index=relevance`),
-        useBaseFetch(`forum`, { apiVersion: 3 }),
-        useBaseFetch(`forum/notice/lists`, { apiVersion: 3 }),
-        useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
-      ],
-    );
-
-    hotProjects.value = projectsResponse.hits ?? [];
-    forums.value = (forumsResponse.forums ?? []).slice(0, 5);
-    notices.value = (noticesResponse.forums ?? []).slice(0, 5);
-    articles.value = (articlesResponse.forums ?? []).slice(0, 3);
-  } catch (e) {
-    console.error("Failed to fetch data:", e);
-  }
-}
-
-await fetchData();
 
 // Time formatting
 const fromNow = (date) => {
   const currentDate = useCurrentDate();
   return dayjs(date).from(currentDate.value);
+};
+
+const formatDate = (date) => {
+  return dayjs(date).format("YYYY-MM-DD");
 };
 
 // Number formatting
@@ -1681,6 +1805,71 @@ onUnmounted(() => {
 .article-meta {
   font-size: 0.75rem;
   color: var(--color-secondary);
+}
+
+// Translation List
+.translation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.translation-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-elevated, #12151a);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+    transform: translateX(4px);
+  }
+}
+
+.translation-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.translation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.translation-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.translation-meta {
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .stat-icon {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 // Quick Links

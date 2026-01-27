@@ -151,7 +151,7 @@
                   class="z-[1] flex cursor-help items-center gap-1 text-nowrap font-medium xl:self-center"
                 >
                   <CalendarIcon class="xl:hidden" />
-                  {{ formatRelativeTime(version.date_published) }}
+                  {{ formatDate(version.date_published) }}
                 </div>
                 <div
                   class="pointer-events-none z-[1] flex items-center gap-1 font-medium xl:self-center"
@@ -362,6 +362,8 @@ const tags = useTags();
 const flags = useFeatureFlags();
 const formatRelativeTime = useRelativeTime();
 const auth = await useAuth();
+const nuxtApp = useNuxtApp();
+const formatDate = (date) => nuxtApp.$dayjs(date).format("YYYY-MM-DD");
 
 // const emits = defineEmits(["onDownload"]);
 

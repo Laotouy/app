@@ -120,6 +120,7 @@
             </div>
           </div>
 
+          <!-- 论坛模块暂时隐藏
           <NuxtLink
             to="/forums/chat"
             class="nav-link"
@@ -128,6 +129,7 @@
             <MessageIcon aria-hidden="true" />
             <span>论坛</span>
           </NuxtLink>
+          -->
         </nav>
 
         <!-- Actions -->
