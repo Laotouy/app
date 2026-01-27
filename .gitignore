@@ -75,3 +75,5 @@ UPSTREAM_SYNC.md
 
 # Docker persistent data
 /data/
+/docs/paid-plugins-progress.md
+/docs/paid-plugins-design.md

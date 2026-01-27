@@ -107,6 +107,10 @@
             </template>
           </IntlFormatted>
         </div>
+
+        <p class="legal-notice">
+          登录即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink to="/legal/privacy">隐私政策</NuxtLink>
+        </p>
       </section>
     </template>
   </div>

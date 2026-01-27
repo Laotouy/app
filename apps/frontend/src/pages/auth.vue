@@ -78,4 +78,21 @@
   gap: var(--gap-md);
   flex-wrap: wrap;
 }
+
+.legal-notice {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.legal-notice a {
+  color: var(--color-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal-notice a:hover {
+  color: var(--color-contrast);
+}
 </style>

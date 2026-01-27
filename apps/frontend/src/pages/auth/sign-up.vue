@@ -91,21 +91,6 @@
         :description="formatMessage(messages.subscribeLabel)"
       />
 
-      <!--      <p>-->
-      <!--        <IntlFormatted :message-id="messages.legalDisclaimer">-->
-      <!--          <template #terms-link="{ children }">-->
-      <!--            <NuxtLink to="/legal2/terms" class="text-link">-->
-      <!--              <component :is="() => children" />-->
-      <!--            </NuxtLink>-->
-      <!--          </template>-->
-      <!--          <template #privacy-policy-link="{ children }">-->
-      <!--            <NuxtLink to="/legal2/privacy" class="text-link">-->
-      <!--              <component :is="() => children" />-->
-      <!--            </NuxtLink>-->
-      <!--          </template>-->
-      <!--        </IntlFormatted>-->
-      <!--      </p>-->
-
       <TACaptcha ref="captcha" v-model="token" />
 
       <button
@@ -123,6 +108,10 @@
           {{ formatMessage(commonMessages.signInButton) }}
         </NuxtLink>
       </div>
+
+      <p class="legal-notice">
+        注册即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink to="/legal/privacy">隐私政策</NuxtLink>
+      </p>
     </section>
   </div>
 </template>
