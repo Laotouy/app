@@ -6,9 +6,9 @@
   >
     <VersionChannelIndicator :channel="version.version_type" />
     <div class="flex min-w-0 flex-col gap-1">
-      <h1 class="my-0 truncate text-nowrap text-base font-extrabold leading-none text-contrast">
+      <span class="my-0 truncate text-nowrap text-base font-extrabold leading-none text-contrast">
         [站内下载] {{ version.name }}
-      </h1>
+      </span>
       <p class="m-0 truncate text-nowrap text-xs font-semibold text-secondary">
         {{ version.version_number }}
       </p>
@@ -53,7 +53,7 @@
     >
       <VersionChannelIndicator :channel="version.version_type" />
       <div class="flex min-w-0 flex-col gap-1">
-        <h1 class="my-0 truncate text-nowrap text-base font-extrabold leading-none text-contrast">
+        <span class="my-0 truncate text-nowrap text-base font-extrabold leading-none text-contrast">
           [{{
             u.platform === "quark"
               ? "夸克云盘"
@@ -67,7 +67,7 @@
                       ? "迅雷"
                       : "第三方云盘"
           }}] {{ version.name }}
-        </h1>
+        </span>
         <p class="m-0 truncate text-nowrap text-xs font-semibold text-secondary">
           {{ version.version_number }}
         </p>
