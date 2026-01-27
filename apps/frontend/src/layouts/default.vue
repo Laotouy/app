@@ -463,7 +463,18 @@
             Modrinth 无从属关系，网站遵循 LGPL 协议开源。
           </p>
           <p class="footer-copyright">
-            © 2019-2025 青岛柒兮网络科技有限公司 | 鲁B2-20210590 | 鲁ICP备2021009459号-12
+            © 2019-2026 青岛柒兮网络科技有限公司 |
+            <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">鲁B2-20210590</a> |
+            <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">鲁ICP备2021009459号-12</a> |
+            <a
+              href="https://beian.mps.gov.cn/#/query/webSearch?code=37021002001586"
+              target="_blank"
+              rel="noopener"
+              class="police-beian"
+            >
+              <img src="~/assets/images/beian-police.png" alt="公安备案" />
+              鲁公网安备37021002001586号
+            </a>
           </p>
         </div>
       </div>
@@ -1463,6 +1474,29 @@ const { cycle: changeTheme } = useTheme();
     font-size: 0.75rem;
     color: var(--color-text-inactive);
     margin: 0;
+
+    a {
+      color: var(--color-text-inactive);
+      text-decoration: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--color-secondary);
+        text-decoration: underline;
+      }
+    }
+
+    .police-beian {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+
+      img {
+        width: 14px;
+        height: 14px;
+        vertical-align: middle;
+      }
+    }
   }
 }
 
