@@ -25,6 +25,125 @@
         </div>
       </div>
 
+      <!-- 商户配置（仅高级创作者可见） -->
+      <div v-if="auth.user.is_premium_creator" class="merchant-section">
+        <h3>支付商户配置</h3>
+        <p class="merchant-desc">
+          配置您的支付商户信息，用于接收付费插件的销售收入。
+        </p>
+
+        <!-- 已配置商户 -->
+        <div v-if="merchant" class="merchant-card">
+          <div class="merchant-info">
+            <div class="merchant-row">
+              <span class="label">店铺 ID：</span>
+              <span class="value">{{ merchant.sid }}</span>
+            </div>
+            <div class="merchant-row">
+              <span class="label">验证状态：</span>
+              <span :class="['value', 'status', merchant.verified ? 'verified' : 'unverified']">
+                {{ merchant.verified ? "已验证" : "未验证" }}
+              </span>
+            </div>
+            <div class="merchant-row">
+              <span class="label">配置时间：</span>
+              <span class="value">{{ formatDateTime(merchant.updated_at) }}</span>
+            </div>
+          </div>
+          <div class="merchant-actions">
+            <button class="btn btn-secondary" :disabled="verifying" @click="verifyMerchant">
+              <UpdatedIcon v-if="verifying" class="animate-spin" />
+              <CheckIcon v-else />
+              {{ verifying ? "验证中..." : "重新验证" }}
+            </button>
+            <button class="btn btn-secondary" @click="showMerchantForm = true">
+              <EditIcon />
+              修改配置
+            </button>
+            <button class="btn btn-danger" :disabled="deleting" @click="deleteMerchant">
+              <XIcon />
+              删除配置
+            </button>
+          </div>
+        </div>
+
+        <!-- 未配置商户 -->
+        <template v-else>
+          <!-- 开通指引 -->
+          <div class="merchant-guide">
+            <div class="guide-content">
+              <h4>如何开通支付商户？</h4>
+              <p>
+                为保障交易安全，平台使用接受监管的合法一清支付宝支付商户进行资金结算。
+                如需开通商户账号，请联系客服进行申请。
+              </p>
+              <ul class="guide-steps">
+                <li>扫描右侧二维码添加客服企业微信</li>
+                <li>提供您的 BBSMC 用户名和联系方式</li>
+                <li>客服将协助您完成商户开通</li>
+                <li>获取店铺 ID 和密钥后在下方配置</li>
+              </ul>
+            </div>
+            <div class="guide-qr">
+              <img :src="paymentServiceQr" alt="客服微信二维码" />
+              <p class="qr-hint">微信扫一扫，添加客服</p>
+              <p class="qr-time">在线时间: 9:00 - 23:00</p>
+            </div>
+          </div>
+
+          <!-- 配置按钮或表单 -->
+          <div v-if="!showMerchantForm" class="merchant-empty">
+            <p>您还没有配置支付商户，请先完成配置才能发布付费插件。</p>
+            <button class="btn btn-primary" @click="showMerchantForm = true">
+              <PlusIcon />
+              配置商户
+            </button>
+          </div>
+
+          <!-- 商户配置表单 -->
+          <div v-else class="merchant-form">
+          <div class="form-group">
+            <label for="merchant-sid">
+              <span class="label-title">店铺 ID (SID)</span>
+              <span class="required">*</span>
+            </label>
+            <input
+              id="merchant-sid"
+              v-model="merchantForm.sid"
+              type="number"
+              min="1"
+              placeholder="请输入支付平台的店铺 ID"
+            />
+          </div>
+          <div class="form-group">
+            <label for="merchant-key">
+              <span class="label-title">密钥</span>
+              <span class="required">*</span>
+            </label>
+            <input
+              id="merchant-key"
+              v-model="merchantForm.secret_key"
+              type="password"
+              placeholder="请输入支付平台的密钥"
+              maxlength="128"
+            />
+          </div>
+          <div class="form-actions">
+            <ButtonStyled color="primary">
+              <button :disabled="!canSubmitMerchant || savingMerchant" @click="saveMerchant">
+                <UpdatedIcon v-if="savingMerchant" class="animate-spin" />
+                <CheckIcon v-else />
+                {{ savingMerchant ? "保存中..." : "保存配置" }}
+              </button>
+            </ButtonStyled>
+            <ButtonStyled>
+              <button @click="cancelMerchantForm">取消</button>
+            </ButtonStyled>
+          </div>
+        </div>
+        </template>
+      </div>
+
       <!-- 有待处理或已审核的申请 -->
       <template v-else-if="application">
         <!-- 待审核 -->
@@ -201,6 +320,7 @@ import EditIcon from "~/assets/images/utils/edit.svg?component";
 import PlusIcon from "~/assets/images/utils/plus.svg?component";
 import SendIcon from "~/assets/images/utils/send.svg?component";
 import UpdatedIcon from "~/assets/images/utils/updated.svg?component";
+import paymentServiceQr from "~/assets/images/payment-service-qr.png";
 
 const auth = await useAuth();
 const nuxtApp = useNuxtApp();
@@ -223,11 +343,37 @@ const { data: application, refresh: refreshApplication } = await useAsyncData(
   },
 );
 
+// 获取商户配置
+const { data: merchant, refresh: refreshMerchant } = await useAsyncData(
+  "merchant-config",
+  async () => {
+    if (!auth.value?.user?.is_premium_creator) return null;
+    try {
+      return await useBaseFetch("user/payment/merchant", { method: "GET" });
+    } catch (error) {
+      if (error.statusCode !== 404) {
+        console.error("获取商户配置失败:", error);
+      }
+      return null;
+    }
+  },
+);
+
 // 响应式状态
 const showApplyForm = ref(false);
 const submitting = ref(false);
 const threadExpanded = ref(false);
 const thread = ref(null);
+
+// 商户配置状态
+const showMerchantForm = ref(false);
+const savingMerchant = ref(false);
+const verifying = ref(false);
+const deleting = ref(false);
+const merchantForm = ref({
+  sid: "",
+  secret_key: "",
+});
 
 const form = ref({
   real_name: "",
@@ -243,6 +389,13 @@ const canSubmit = computed(() => {
   // 简单的身份证格式验证：18位，最后一位可以是数字或X
   const idCardValid = /^\d{17}[\dXx]$/.test(idCard);
   return form.value.real_name.trim() && form.value.contact_info.trim() && idCardValid;
+});
+
+// 商户表单验证
+const canSubmitMerchant = computed(() => {
+  const sid = merchantForm.value.sid;
+  const key = merchantForm.value.secret_key?.trim();
+  return sid && Number(sid) > 0 && key && key.length >= 8;
 });
 
 // 辅助函数
@@ -321,6 +474,110 @@ const refreshThread = async () => {
       console.error("刷新对话失败:", err);
     }
   }
+};
+
+// ============ 商户配置相关方法 ============
+
+// 保存商户配置
+const saveMerchant = async () => {
+  if (!canSubmitMerchant.value || savingMerchant.value) return;
+  savingMerchant.value = true;
+  try {
+    await useBaseFetch("user/payment/merchant", {
+      method: "POST",
+      body: {
+        sid: Number(merchantForm.value.sid),
+        secret_key: merchantForm.value.secret_key.trim(),
+      },
+    });
+    nuxtApp.$notify({
+      group: "main",
+      title: "成功",
+      text: "商户配置已保存并验证通过",
+      type: "success",
+    });
+    showMerchantForm.value = false;
+    merchantForm.value = { sid: "", secret_key: "" };
+    await refreshMerchant();
+  } catch (error) {
+    console.error("保存商户配置失败:", error);
+    nuxtApp.$notify({
+      group: "main",
+      title: "错误",
+      text: error.data?.description || "保存商户配置失败",
+      type: "error",
+    });
+  } finally {
+    savingMerchant.value = false;
+  }
+};
+
+// 验证商户配置
+const verifyMerchant = async () => {
+  if (verifying.value) return;
+  verifying.value = true;
+  try {
+    const result = await useBaseFetch("user/payment/merchant/verify", { method: "GET" });
+    if (result.success) {
+      nuxtApp.$notify({
+        group: "main",
+        title: "验证成功",
+        text: result.message || "商户配置验证通过",
+        type: "success",
+      });
+      await refreshMerchant();
+    } else {
+      nuxtApp.$notify({
+        group: "main",
+        title: "验证失败",
+        text: result.message || "商户配置验证未通过",
+        type: "error",
+      });
+    }
+  } catch (error) {
+    console.error("验证商户配置失败:", error);
+    nuxtApp.$notify({
+      group: "main",
+      title: "错误",
+      text: error.data?.description || "验证商户配置失败",
+      type: "error",
+    });
+  } finally {
+    verifying.value = false;
+  }
+};
+
+// 删除商户配置
+const deleteMerchant = async () => {
+  if (deleting.value) return;
+  if (!confirm("确定要删除商户配置吗？删除后您将无法接收付费插件的收入。")) return;
+  deleting.value = true;
+  try {
+    await useBaseFetch("user/payment/merchant", { method: "DELETE" });
+    nuxtApp.$notify({
+      group: "main",
+      title: "成功",
+      text: "商户配置已删除",
+      type: "success",
+    });
+    await refreshMerchant();
+  } catch (error) {
+    console.error("删除商户配置失败:", error);
+    nuxtApp.$notify({
+      group: "main",
+      title: "错误",
+      text: error.data?.description || "删除商户配置失败",
+      type: "error",
+    });
+  } finally {
+    deleting.value = false;
+  }
+};
+
+// 取消商户表单
+const cancelMerchantForm = () => {
+  showMerchantForm.value = false;
+  merchantForm.value = { sid: "", secret_key: "" };
 };
 </script>
 
@@ -575,5 +832,175 @@ const refreshThread = async () => {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+// ============ 商户配置样式 ============
+
+.merchant-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-divider);
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .merchant-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin: 0 0 1rem 0;
+  }
+}
+
+.merchant-guide {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--color-raised-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+
+  .guide-content {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1rem;
+      color: var(--color-text);
+    }
+
+    p {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    .guide-steps {
+      margin: 0;
+      padding-left: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+
+      li {
+        margin-bottom: 0.35rem;
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  .guide-qr {
+    flex-shrink: 0;
+    text-align: center;
+
+    img {
+      width: 120px;
+      height: 120px;
+      border-radius: var(--radius-sm);
+    }
+
+    .qr-hint {
+      margin: 0.5rem 0 0.25rem 0;
+      font-size: 0.8rem;
+      color: var(--color-text);
+    }
+
+    .qr-time {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .guide-content {
+      .guide-steps {
+        text-align: left;
+      }
+    }
+  }
+}
+
+.merchant-card {
+  padding: 1rem;
+  background: var(--color-raised-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+
+.merchant-info {
+  margin-bottom: 1rem;
+}
+
+.merchant-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .label {
+    color: var(--color-text-secondary);
+    min-width: 5rem;
+  }
+
+  .value {
+    color: var(--color-text);
+
+    &.status.verified {
+      color: rgb(21, 128, 61);
+    }
+
+    &.status.unverified {
+      color: rgb(217, 119, 6);
+    }
+  }
+}
+
+.merchant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.merchant-empty {
+  padding: 1.5rem;
+  background: var(--color-raised-bg);
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-md);
+  text-align: center;
+
+  p {
+    margin: 0 0 1rem 0;
+    color: var(--color-text-secondary);
+  }
+}
+
+.merchant-form {
+  padding: 1rem;
+  background: var(--color-raised-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(185, 28, 28);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  &:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+  }
 }
 </style>
