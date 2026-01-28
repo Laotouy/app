@@ -1,7 +1,9 @@
 <template>
   <div class="legal-content">
     <h1>内容规则</h1>
-    <p>欢迎使用BBSMC资源社区！为了维护良好的社区环境，保护所有用户的权益，请您在发布和使用资源时遵守以下规则。违反这些规则可能导致资源被删除、账号被暂停或永久封禁。</p>
+    <p>
+      欢迎使用BBSMC资源社区！为了维护良好的社区环境，保护所有用户的权益，请您在发布和使用资源时遵守以下规则。违反这些规则可能导致资源被删除、账号被暂停或永久封禁。
+    </p>
 
     <h2>一、禁止内容</h2>
     <p>以下类型的内容严禁在BBSMC资源社区发布：</p>
@@ -59,7 +61,10 @@
       <li><strong>无敌/God Mode</strong>：使玩家免受伤害的工具</li>
       <li><strong>刷物品/Duplication</strong>：非法复制物品的工具</li>
     </ul>
-    <p><strong>例外情况</strong>：用于服务器管理、反作弊检测或单人游戏的合法工具，需在描述中明确说明其合法用途。</p>
+    <p>
+      <strong>例外情况</strong
+      >：用于服务器管理、反作弊检测或单人游戏的合法工具，需在描述中明确说明其合法用途。
+    </p>
 
     <h2>三、资源发布规范</h2>
 
@@ -192,7 +197,9 @@
     <p>我们将在收到申诉后的3个工作日内进行审核并回复。</p>
 
     <h2>九、规则更新</h2>
-    <p>BBSMC资源社区保留随时修改本内容规则的权利。规则更新后，我们将通过网站公告或其他适当方式通知用户。继续使用本平台即表示您接受更新后的规则。</p>
+    <p>
+      BBSMC资源社区保留随时修改本内容规则的权利。规则更新后，我们将通过网站公告或其他适当方式通知用户。继续使用本平台即表示您接受更新后的规则。
+    </p>
     <p>如有任何疑问，请联系：<a href="mailto:18922569@qq.com">18922569@qq.com</a></p>
   </div>
 </template>
@@ -205,12 +212,43 @@ useHead({ title: "内容规则 - BBSMC资源社区" });
 .legal-content {
   padding: var(--spacing-card-lg);
   line-height: 1.8;
-  h1 { font-size: 1.75rem; margin-bottom: 1.5rem; color: var(--color-heading); }
-  h2 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--color-heading); }
-  h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--color-heading); }
-  p { margin-bottom: 1rem; }
-  ol, ul { margin-bottom: 1rem; padding-left: 1.5rem; li { margin-bottom: 0.5rem; } }
-  strong { font-weight: 600; }
-  a { color: var(--color-link); text-decoration: underline; &:hover { color: var(--color-link-hover); } }
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-heading);
+  }
+  h2 {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: var(--color-heading);
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-heading);
+  }
+  p {
+    margin-bottom: 1rem;
+  }
+  ol,
+  ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    li {
+      margin-bottom: 0.5rem;
+    }
+  }
+  strong {
+    font-weight: 600;
+  }
+  a {
+    color: var(--color-link);
+    text-decoration: underline;
+    &:hover {
+      color: var(--color-link-hover);
+    }
+  }
 }
 </style>

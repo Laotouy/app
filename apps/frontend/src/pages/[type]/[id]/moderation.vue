@@ -24,7 +24,9 @@
           <nuxt-link to="/legal2/rules" class="text-link" target="_blank">内容规则</nuxt-link>
           社区管理员已要求您进行更改才能批准。请阅读以下社区管理员的留言，并在重新提交前解决他们的意见。
         </p>
-        <p class="warning"><IssuesIcon /> 重复提交而不回应社区管理员的留言回复可能会导致帐户被封禁。</p>
+        <p class="warning">
+          <IssuesIcon /> 重复提交而不回应社区管理员的留言回复可能会导致帐户被封禁。
+        </p>
       </template>
       <h3>当前可见性</h3>
       <ul class="visibility-info">

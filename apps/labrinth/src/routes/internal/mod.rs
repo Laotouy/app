@@ -5,6 +5,7 @@ pub mod flows;
 pub mod gdpr;
 pub mod moderation;
 pub mod pats;
+pub mod payment;
 pub mod session;
 
 pub use super::ApiError;
@@ -23,6 +24,7 @@ pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
             .configure(moderation::config)
             .configure(creator::config)
             // .configure(billing::config)
-            .configure(gdpr::config),
+            .configure(gdpr::config)
+            .configure(payment::config),
     );
 }

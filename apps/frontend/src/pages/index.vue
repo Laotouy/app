@@ -443,7 +443,7 @@ import {
 } from "@modrinth/assets";
 
 // 使用 useAsyncData 获取所有主页数据，支持 SSR
-const { data: pageData } = await useAsyncData('homepage-data', async () => {
+const { data: pageData } = await useAsyncData("homepage-data", async () => {
   const [
     projectsResponse,
     forumsResponse,
@@ -538,7 +538,6 @@ const isDragging = ref(false);
 const dragStartX = ref(0);
 const dragCurrentX = ref(0);
 const hasDragged = ref(false);
-
 
 // Time formatting
 const fromNow = (date) => {

@@ -670,10 +670,10 @@ watch(statusFilter, () => {
     cursor: not-allowed;
   }
   &.btn-primary {
-    background: var(--color-primary);
-    color: white;
+    background: var(--color-brand);
+    color: var(--color-brand-inverted);
     &:hover:not(:disabled) {
-      background: var(--color-primary-dark);
+      filter: brightness(0.85);
     }
   }
   &.btn-secondary {
@@ -809,6 +809,7 @@ watch(statusFilter, () => {
   border: 2px solid var(--color-divider);
   border-radius: var(--radius-md);
   background: var(--color-raised-bg);
+  color: var(--color-text);
   cursor: pointer;
   display: flex;
   align-items: center;

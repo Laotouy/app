@@ -26,6 +26,7 @@ pub mod versions;
 pub mod creator;
 pub mod issues;
 pub mod oauth_clients;
+pub mod payment_merchant;
 #[allow(clippy::unnecessary_unwrap, clippy::explicit_auto_deref)]
 mod wikis;
 
@@ -45,14 +46,17 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(tags::config)
             .configure(teams::config)
             .configure(threads::config)
+            // creator 和 payment_merchant 必须在 users 之前，
+            // 因为 users 中的 user/{id} 会匹配 user/creator 和 user/payment
+            .configure(creator::config)
+            .configure(payment_merchant::config)
             .configure(users::config)
             .configure(version_file::config)
             .configure(payouts::config)
             .configure(versions::config)
             .configure(forum::config)
             .configure(issues::config)
-            .configure(bans::config)
-            .configure(creator::config),
+            .configure(bans::config),
     );
 }
 

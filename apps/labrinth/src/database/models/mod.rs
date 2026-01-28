@@ -29,6 +29,7 @@ pub mod wiki_item;
 
 pub mod creator_application_item;
 pub mod issues;
+pub mod payment_merchant_item;
 pub mod user_ban_item;
 pub mod wiki_cache_item;
 
@@ -44,6 +45,7 @@ pub use ids::*;
 pub use image_item::Image;
 pub use oauth_client_item::OAuthClient;
 pub use organization_item::Organization;
+pub use payment_merchant_item::{PaymentMerchant, PaymentMerchantBuilder};
 pub use project_item::Project;
 pub use team_item::Team;
 pub use team_item::TeamMember;

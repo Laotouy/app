@@ -199,6 +199,15 @@ pub async fn approve_application(
         return Err(ApiError::InvalidInput("该申请已被处理".to_string()));
     }
 
+    // 提前获取用户名，用于后续清除缓存（避免事务后额外查询）
+    let username = crate::database::models::User::get_id(
+        application.user_id,
+        &**pool,
+        &redis,
+    )
+    .await?
+    .map(|u| u.username);
+
     let reviewer_id = DBUserId(user.id.0 as i64);
     let review_note = body.review_note.as_deref();
 
@@ -221,9 +230,9 @@ pub async fn approve_application(
 
     transaction.commit().await?;
 
-    // 清除用户缓存
+    // 清除用户缓存（包括用户名缓存）
     crate::database::models::User::clear_caches(
-        &[(application.user_id, None)],
+        &[(application.user_id, username)],
         &redis,
     )
     .await?;

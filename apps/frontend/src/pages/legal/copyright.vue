@@ -1,10 +1,14 @@
 <template>
   <div class="legal-content">
     <h1>版权政策</h1>
-    <p>BBSMC资源社区尊重知识产权，致力于保护原创作者的合法权益。本政策说明了如何处理版权侵权投诉以及相关的权利保护机制。</p>
+    <p>
+      BBSMC资源社区尊重知识产权，致力于保护原创作者的合法权益。本政策说明了如何处理版权侵权投诉以及相关的权利保护机制。
+    </p>
 
     <h2>一、版权保护原则</h2>
-    <p>BBSMC资源社区遵守《中华人民共和国著作权法》及相关法律法规，对于侵犯他人著作权的行为采取零容忍态度。我们承诺：</p>
+    <p>
+      BBSMC资源社区遵守《中华人民共和国著作权法》及相关法律法规，对于侵犯他人著作权的行为采取零容忍态度。我们承诺：
+    </p>
     <ul>
       <li>及时处理版权侵权投诉</li>
       <li>对经核实的侵权内容采取删除或屏蔽措施</li>
@@ -17,7 +21,9 @@
 
     <h3>1. 投诉方式</h3>
     <ul>
-      <li><strong>邮件投诉</strong>：发送邮件至 <a href="mailto:18922569@qq.com">18922569@qq.com</a></li>
+      <li>
+        <strong>邮件投诉</strong>：发送邮件至 <a href="mailto:18922569@qq.com">18922569@qq.com</a>
+      </li>
       <li><strong>在线投诉</strong>：通过网站内的举报功能提交</li>
     </ul>
 
@@ -86,7 +92,8 @@
     <ol>
       <li>您的身份证明材料</li>
       <li>被删除或屏蔽内容的说明</li>
-      <li>您拥有合法权利的证明材料，如：
+      <li>
+        您拥有合法权利的证明材料，如：
         <ul>
           <li>原作者授权书</li>
           <li>开源许可证说明</li>
@@ -167,13 +174,44 @@ useHead({ title: "版权政策 - BBSMC资源社区" });
 .legal-content {
   padding: var(--spacing-card-lg);
   line-height: 1.8;
-  h1 { font-size: 1.75rem; margin-bottom: 1.5rem; color: var(--color-heading); }
-  h2 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--color-heading); }
-  h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--color-heading); }
-  p { margin-bottom: 1rem; }
-  ol, ul { margin-bottom: 1rem; padding-left: 1.5rem; li { margin-bottom: 0.5rem; } }
-  strong { font-weight: 600; }
-  a { color: var(--color-link); text-decoration: underline; &:hover { color: var(--color-link-hover); } }
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-heading);
+  }
+  h2 {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: var(--color-heading);
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-heading);
+  }
+  p {
+    margin-bottom: 1rem;
+  }
+  ol,
+  ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    li {
+      margin-bottom: 0.5rem;
+    }
+  }
+  strong {
+    font-weight: 600;
+  }
+  a {
+    color: var(--color-link);
+    text-decoration: underline;
+    &:hover {
+      color: var(--color-link-hover);
+    }
+  }
   .notice-box {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
@@ -181,7 +219,12 @@ useHead({ title: "版权政策 - BBSMC资源社区" });
     padding: 1rem;
     margin: 1rem 0;
     font-size: 0.9rem;
-    p { margin-bottom: 0.5rem; &:last-child { margin-bottom: 0; } }
+    p {
+      margin-bottom: 0.5rem;
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
   }
 }
 </style>

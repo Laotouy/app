@@ -1,9 +1,16 @@
 <template>
   <div>
+    <ModalConfirm
+      ref="deleteMerchantModal"
+      title="确定要删除商户配置吗？"
+      description="删除后您将无法接收付费插件的收入。此操作不可撤销。"
+      proceed-label="确认删除"
+      @proceed="deleteMerchant"
+    />
     <section class="universal-card">
       <h2 class="text-2xl">高级创作者</h2>
       <p class="description">
-        成为高级创作者可以发布付费插件，获得销售收入。平台不收取佣金，仅支付通道收取约 2.5% 手续费。
+        成为高级创作者可以发布付费插件，获得销售收入。平台收取支付通道约 2.5% 手续费。
       </p>
       <div class="notice-card">
         <InfoIcon class="notice-icon" />
@@ -28,12 +35,10 @@
       <!-- 商户配置（仅高级创作者可见） -->
       <div v-if="auth.user.is_premium_creator" class="merchant-section">
         <h3>支付商户配置</h3>
-        <p class="merchant-desc">
-          配置您的支付商户信息，用于接收付费插件的销售收入。
-        </p>
+        <p class="merchant-desc">配置您的支付商户信息，用于接收付费插件的销售收入。</p>
 
-        <!-- 已配置商户 -->
-        <div v-if="merchant" class="merchant-card">
+        <!-- 已配置商户（非编辑状态） -->
+        <div v-if="merchant && !showMerchantForm" class="merchant-card">
           <div class="merchant-info">
             <div class="merchant-row">
               <span class="label">店铺 ID：</span>
@@ -56,52 +61,19 @@
               <CheckIcon v-else />
               {{ verifying ? "验证中..." : "重新验证" }}
             </button>
-            <button class="btn btn-secondary" @click="showMerchantForm = true">
+            <button class="btn btn-secondary" @click="editMerchant">
               <EditIcon />
               修改配置
             </button>
-            <button class="btn btn-danger" :disabled="deleting" @click="deleteMerchant">
+            <button class="btn btn-danger" :disabled="deleting" @click="showDeleteMerchantModal">
               <XIcon />
               删除配置
             </button>
           </div>
         </div>
 
-        <!-- 未配置商户 -->
-        <template v-else>
-          <!-- 开通指引 -->
-          <div class="merchant-guide">
-            <div class="guide-content">
-              <h4>如何开通支付商户？</h4>
-              <p>
-                为保障交易安全，平台使用接受监管的合法一清支付宝支付商户进行资金结算。
-                如需开通商户账号，请联系客服进行申请。
-              </p>
-              <ul class="guide-steps">
-                <li>扫描右侧二维码添加客服企业微信</li>
-                <li>提供您的 BBSMC 用户名和联系方式</li>
-                <li>客服将协助您完成商户开通</li>
-                <li>获取店铺 ID 和密钥后在下方配置</li>
-              </ul>
-            </div>
-            <div class="guide-qr">
-              <img :src="paymentServiceQr" alt="客服微信二维码" />
-              <p class="qr-hint">微信扫一扫，添加客服</p>
-              <p class="qr-time">在线时间: 9:00 - 23:00</p>
-            </div>
-          </div>
-
-          <!-- 配置按钮或表单 -->
-          <div v-if="!showMerchantForm" class="merchant-empty">
-            <p>您还没有配置支付商户，请先完成配置才能发布付费插件。</p>
-            <button class="btn btn-primary" @click="showMerchantForm = true">
-              <PlusIcon />
-              配置商户
-            </button>
-          </div>
-
-          <!-- 商户配置表单 -->
-          <div v-else class="merchant-form">
+        <!-- 商户配置表单（新建或编辑） -->
+        <div v-else-if="showMerchantForm" class="merchant-form">
           <div class="form-group">
             <label for="merchant-sid">
               <span class="label-title">店铺 ID (SID)</span>
@@ -141,6 +113,36 @@
             </ButtonStyled>
           </div>
         </div>
+
+        <!-- 未配置商户引导 -->
+        <template v-else>
+          <div class="merchant-guide">
+            <div class="guide-content">
+              <h4>如何开通支付商户？</h4>
+              <p>
+                为保障交易安全，平台使用接受监管的合法一清支付宝支付商户进行资金结算。
+                如需开通商户账号，请联系客服进行申请。
+              </p>
+              <ul class="guide-steps">
+                <li>扫描右侧二维码添加客服企业微信</li>
+                <li>提供您的 BBSMC 用户名和联系方式</li>
+                <li>客服将协助您完成商户开通</li>
+                <li>获取店铺 ID 和密钥后在下方配置</li>
+              </ul>
+            </div>
+            <div class="guide-qr">
+              <img :src="paymentServiceQr" alt="客服微信二维码" />
+              <p class="qr-hint">微信扫一扫，添加客服</p>
+              <p class="qr-time">在线时间: 9:00 - 23:00</p>
+            </div>
+          </div>
+          <div class="merchant-empty">
+            <p>您还没有配置支付商户，请先完成配置才能发布付费插件。</p>
+            <button class="btn btn-primary" @click="showMerchantForm = true">
+              <PlusIcon />
+              配置商户
+            </button>
+          </div>
         </template>
       </div>
 
@@ -312,6 +314,7 @@
 import { ref, computed } from "vue";
 import { ButtonStyled } from "@modrinth/ui";
 import ConversationThread from "~/components/ui/thread/ConversationThread.vue";
+import ModalConfirm from "~/components/ui/ModalConfirm.vue";
 import CheckIcon from "~/assets/images/utils/check.svg?component";
 import XIcon from "~/assets/images/utils/x.svg?component";
 import InfoIcon from "~/assets/images/utils/info.svg?component";
@@ -349,7 +352,7 @@ const { data: merchant, refresh: refreshMerchant } = await useAsyncData(
   async () => {
     if (!auth.value?.user?.is_premium_creator) return null;
     try {
-      return await useBaseFetch("user/payment/merchant", { method: "GET" });
+      return await useBaseFetch("payment/merchant", { method: "GET", apiVersion: 3 });
     } catch (error) {
       if (error.statusCode !== 404) {
         console.error("获取商户配置失败:", error);
@@ -370,6 +373,7 @@ const showMerchantForm = ref(false);
 const savingMerchant = ref(false);
 const verifying = ref(false);
 const deleting = ref(false);
+const deleteMerchantModal = ref(null);
 const merchantForm = ref({
   sid: "",
   secret_key: "",
@@ -483,8 +487,9 @@ const saveMerchant = async () => {
   if (!canSubmitMerchant.value || savingMerchant.value) return;
   savingMerchant.value = true;
   try {
-    await useBaseFetch("user/payment/merchant", {
+    await useBaseFetch("payment/merchant", {
       method: "POST",
+      apiVersion: 3,
       body: {
         sid: Number(merchantForm.value.sid),
         secret_key: merchantForm.value.secret_key.trim(),
@@ -517,7 +522,7 @@ const verifyMerchant = async () => {
   if (verifying.value) return;
   verifying.value = true;
   try {
-    const result = await useBaseFetch("user/payment/merchant/verify", { method: "GET" });
+    const result = await useBaseFetch("payment/merchant/verify", { method: "GET", apiVersion: 3 });
     if (result.success) {
       nuxtApp.$notify({
         group: "main",
@@ -547,13 +552,17 @@ const verifyMerchant = async () => {
   }
 };
 
+// 显示删除确认框
+const showDeleteMerchantModal = () => {
+  deleteMerchantModal.value?.show();
+};
+
 // 删除商户配置
 const deleteMerchant = async () => {
   if (deleting.value) return;
-  if (!confirm("确定要删除商户配置吗？删除后您将无法接收付费插件的收入。")) return;
   deleting.value = true;
   try {
-    await useBaseFetch("user/payment/merchant", { method: "DELETE" });
+    await useBaseFetch("payment/merchant", { method: "DELETE", apiVersion: 3 });
     nuxtApp.$notify({
       group: "main",
       title: "成功",
@@ -572,6 +581,15 @@ const deleteMerchant = async () => {
   } finally {
     deleting.value = false;
   }
+};
+
+// 编辑商户配置
+const editMerchant = () => {
+  if (merchant.value) {
+    merchantForm.value.sid = merchant.value.sid.toString();
+    merchantForm.value.secret_key = ""; // 密钥需要重新输入
+  }
+  showMerchantForm.value = true;
 };
 
 // 取消商户表单
