@@ -247,11 +247,11 @@
       </div>
     </section>
 
-    <!-- 管理员设置区域 -->
+    <!-- 超级管理员设置区域 -->
     <section v-if="isAdminUser" class="universal-card">
       <div class="label">
         <h3>
-          <span class="label__title size-card-header">管理员设置</span>
+          <span class="label__title size-card-header">超级管理员设置</span>
         </h3>
       </div>
       <div class="adjacent-input">
@@ -286,7 +286,7 @@
           @click="saveAdminChanges()"
         >
           <SaveIcon aria-hidden="true" />
-          保存管理员设置
+          保存超级管理员设置
         </button>
       </div>
     </section>
@@ -469,7 +469,7 @@ const saveAdminChanges = async () => {
     });
     addNotification({
       group: "main",
-      title: "管理员设置已保存",
+      title: "超级管理员设置已保存",
       text: translationTracking.value ? "已启用汉化追踪" : "已关闭汉化追踪",
       type: "success",
     });

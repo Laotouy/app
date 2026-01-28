@@ -571,7 +571,7 @@
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-2">
           <span class="text-secondary">
-            请说明您认为此封禁存在问题的原因。管理员将会审核您的申诉并通过消息线程与您沟通。
+            请说明您认为此封禁存在问题的原因。超级管理员将会审核您的申诉并通过消息线程与您沟通。
           </span>
         </div>
         <div class="flex flex-col gap-2">
@@ -870,7 +870,7 @@ async function submitAppeal() {
     data.$notify({
       group: "main",
       title: "申诉已提交",
-      text: "您的申诉已提交，管理员将会审核并通过消息线程与您沟通",
+      text: "您的申诉已提交，超级管理员将会审核并通过消息线程与您沟通",
       type: "success",
     });
 

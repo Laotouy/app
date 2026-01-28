@@ -32,7 +32,7 @@
                 return '状态变更';
               }
               case 'moderator_message': {
-                return '版主消息';
+                return '社区管理员消息';
               }
               case 'project_update': {
                 return '资源更新';

@@ -834,13 +834,13 @@
             <p><strong>版本链接审核说明：</strong></p>
             <p>以下情况将<span class="highlight-green">自动通过审核</span>，无需等待：</p>
             <ul>
-              <li>您是<strong>平台管理员</strong>或<strong>版主</strong></li>
+              <li>您是<strong>超级管理员</strong>或<strong>社区管理员</strong></li>
               <li>您是<strong>目标项目的团队成员</strong>（拥有上传版本权限）</li>
               <li>您是<strong>目标项目所属组织的成员</strong>（拥有上传版本权限）</li>
             </ul>
             <p>
               其他情况需要<span class="highlight-orange">等待审核</span
-              >。审核将由<strong>目标项目的团队成员</strong>（拥有审核权限）或<strong>平台管理员/版主</strong>进行处理，通过后您的翻译才会在目标版本显示。
+              >。审核将由<strong>目标项目的团队成员</strong>（拥有审核权限）或<strong>超级管理员/社区管理员</strong>进行处理，通过后您的翻译才会在目标版本显示。
             </p>
           </div>
         </div>

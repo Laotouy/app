@@ -32,7 +32,7 @@
           <InfoIcon class="status-icon" />
           <div class="status-content">
             <h3>申请审核中</h3>
-            <p>您的申请正在等待管理员审核，请耐心等待。</p>
+            <p>您的申请正在等待超级管理员审核，请耐心等待。</p>
             <div class="meta">提交时间：{{ formatDateTime(application.created_at) }}</div>
           </div>
         </div>

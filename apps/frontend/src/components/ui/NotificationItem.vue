@@ -107,7 +107,7 @@
           {{ project.title }}
         </nuxt-link>
         <template v-if="tags.rejectedStatuses.includes(notification.body.new_status)">
-          版主已将
+          社区管理员已将
           <Badge :type="notification.body.new_status" />
         </template>
         <template v-else>
@@ -182,13 +182,13 @@
       <template v-else-if="type === 'moderator_message' && thread && project && !report">
         您的资源
         <nuxt-link :to="getProjectLink(project)" class="title-link">{{ project.title }}</nuxt-link
-        >, 收到版主的
+        >, 收到社区管理员的
         <template v-if="notification.grouped_notifs"> 消息 </template>
         <template v-else>消息</template>
       </template>
 
       <template v-else-if="type === 'moderator_message' && thread && report">
-        版主已回复您
+        社区管理员已回复您
         <template v-if="version">
           <nuxt-link :to="getVersionLink(project, version)" class="title-link">
             {{ version.name }}
