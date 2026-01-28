@@ -102,7 +102,7 @@ import {
   HomeIcon,
   UndoIcon,
 } from "@modrinth/assets";
-import { addNotification } from "~/composables/notifs";
+import { addNotification } from "~/composables/notifs.js";
 
 const props = defineProps({
   error: {

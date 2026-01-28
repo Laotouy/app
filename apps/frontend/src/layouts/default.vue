@@ -499,7 +499,6 @@ import {
   SettingsIcon,
   HomeIcon,
   PlugIcon,
-  MessageIcon,
   PlusIcon,
   DropdownIcon,
   LogOutIcon,
@@ -519,7 +518,7 @@ import {
   MoonIcon,
   SunIcon,
 } from "@modrinth/assets";
-import { ButtonStyled, OverflowMenu, Avatar } from "@modrinth/ui";
+import { OverflowMenu, Avatar } from "@modrinth/ui";
 
 import { provide } from "vue";
 import CrossIcon from "assets/images/utils/x.svg";
@@ -530,7 +529,7 @@ import { getProjectTypeMessage } from "~/utils/i18n-project-type.ts";
 import { commonMessages } from "~/utils/common-messages.ts";
 import CollectionCreateModal from "~/components/ui/CollectionCreateModal.vue";
 import OrganizationCreateModal from "~/components/ui/OrganizationCreateModal.vue";
-import { addNotification } from "~/composables/notifs";
+import { addNotification } from "~/composables/notifs.js";
 
 const { formatMessage } = useVIntl();
 

@@ -133,7 +133,7 @@ export const userCollectProject = async (collection, projectId) => {
   });
 };
 
-export const userFollowProject = async (project) => {
+export const userFollowProject = (project) => {
   const config = useRuntimeConfig();
   const auth = useState("auth");
   const userState = useState("user");

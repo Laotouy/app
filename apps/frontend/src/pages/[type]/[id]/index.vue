@@ -21,13 +21,13 @@ defineProps({
   versions: {
     type: Array,
     default() {
-      return {};
+      return [];
     },
   },
   members: {
     type: Array,
     default() {
-      return {};
+      return [];
     },
   },
   organization: {

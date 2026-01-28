@@ -1,9 +1,6 @@
 <template>
   <div>
-    <Modal
-      ref="modalSubmit"
-      :header="isRejected(project) ? '重新提交审核' : '提交审核'"
-    >
+    <Modal ref="modalSubmit" :header="isRejected(project) ? '重新提交审核' : '提交审核'">
       <div class="modal-submit universal-body">
         <span>
           您正在提交资源 <span class="project-title">{{ project.title }}</span> 给社区管理员审核

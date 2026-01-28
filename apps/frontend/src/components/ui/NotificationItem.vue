@@ -44,7 +44,11 @@
         />
         <VersionIcon v-else-if="type === 'project_update' && project && version" />
         <StarIcon
-          v-else-if="type === 'creator_application_message' || type === 'creator_application_approved' || type === 'creator_application_rejected'"
+          v-else-if="
+            type === 'creator_application_message' ||
+            type === 'creator_application_approved' ||
+            type === 'creator_application_rejected'
+          "
           class="creator-color"
         />
         <NotificationIcon v-else />
@@ -213,7 +217,9 @@
       </template>
       <template v-else-if="type === 'creator_application_rejected'">
         <nuxt-link to="/settings/creator" class="title-link">您的高级创作者申请</nuxt-link>
-        未通过<template v-if="notification.body.reason">，原因：{{ notification.body.reason }}</template>
+        未通过<template v-if="notification.body.reason"
+          >，原因：{{ notification.body.reason }}</template
+        >
       </template>
       <nuxt-link v-else :to="notification.link" class="title-link">
         <span v-html="renderString(notification.title)" />

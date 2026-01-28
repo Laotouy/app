@@ -360,7 +360,7 @@ const props = defineProps({
 
 const tags = useTags();
 const flags = useFeatureFlags();
-const formatRelativeTime = useRelativeTime();
+// useRelativeTime available if needed
 const auth = await useAuth();
 const nuxtApp = useNuxtApp();
 const formatDate = (date) => nuxtApp.$dayjs(date).format("YYYY-MM-DD");

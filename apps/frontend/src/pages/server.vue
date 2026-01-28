@@ -237,7 +237,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ButtonStyled } from "@modrinth/ui";
 import { isDarkTheme } from "~/plugins/theme/themes.ts";
-import { creators, getCreatorByKey } from "~/config/affiliates";
+import { getCreatorByKey } from "~/config/affiliates.ts";
 
 const router = useRouter();
 const route = useRoute();

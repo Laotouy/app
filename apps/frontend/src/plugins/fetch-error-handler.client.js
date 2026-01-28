@@ -1,9 +1,9 @@
 import { FetchError } from "ofetch";
-import { addNotification } from "~/composables/notifs";
+import { addNotification } from "~/composables/notifs.js";
 
 export default defineNuxtPlugin((nuxtApp) => {
   // 全局错误处理器
-  nuxtApp.hook("vue:error", (error, instance, info) => {
+  nuxtApp.hook("vue:error", (error, _instance, _info) => {
     // 检查是否为 FetchError
     if (error instanceof FetchError) {
       const statusCode = error.response?.status;

@@ -11,7 +11,7 @@
       :to="query ? (link.href ? `?${query}=${link.href}` : '?') : link.href"
       class="nav-tab-link z-[1] flex flex-row items-center gap-2 px-5 py-3 transition-colors duration-200"
       :class="{
-        'text-brand font-semibold': activeIndex === index && !subpageSelected,
+        'font-semibold text-brand': activeIndex === index && !subpageSelected,
         'text-secondary': activeIndex === index && subpageSelected,
         'text-secondary hover:text-contrast': activeIndex !== index,
       }"

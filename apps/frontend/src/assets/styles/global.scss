@@ -22,9 +22,14 @@ html {
   --violet: #8b5cf6;
 
   // Typography - 使用国内可访问的系统字体
-  --font-display: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
-  --font-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB",
+    "Helvetica Neue", sans-serif;
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB",
+    "Helvetica Neue", sans-serif;
+  --font-mono:
+    "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
 
   // Easing
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -191,8 +196,12 @@ html {
       linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
     background-size: 80px 80px;
-    mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0,0,0,0.3) 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0,0,0,0.3) 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(
+      ellipse 60% 50% at 50% 30%,
+      rgba(0, 0, 0, 0.3) 0%,
+      transparent 70%
+    );
   }
 
   --color-text-inverted: var(--color-bg);
@@ -266,10 +275,12 @@ html {
   --shadow-inset-sm: inset 0px -1px 2px hsla(221, 39%, 11%, 0.15);
 
   --shadow-raised-lg: 0px 2px 4px hsla(221, 39%, 11%, 0.2);
-  --shadow-raised: 0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.15),
+  --shadow-raised:
+    0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.15),
     1px 2px 2.2px -1.7px hsl(var(--shadow-color) / 0.12),
     4.4px 8.8px 9.7px -3.4px hsl(var(--shadow-color) / 0.09);
-  --shadow-floating: hsla(0, 0%, 0%, 0) 0px 0px 0px 0px, hsla(0, 0%, 0%, 0) 0px 0px 0px 0px,
+  --shadow-floating:
+    hsla(0, 0%, 0%, 0) 0px 0px 0px 0px, hsla(0, 0%, 0%, 0) 0px 0px 0px 0px,
     hsla(0, 0%, 0%, 0.1) 0px 4px 6px -1px, hsla(0, 0%, 0%, 0.1) 0px 2px 4px -1px;
 
   --shadow-card: rgba(50, 50, 100, 0.1) 0px 2px 4px 0px;
@@ -301,8 +312,8 @@ html {
     rgba(255, 255, 255, 0.35) 0%,
     rgba(255, 255, 255, 0.2695) 100%
   );
-  --landing-blob-shadow: 2px 2px 12px rgba(0, 0, 0, 0.16),
-    inset 2px 2px 64px rgba(255, 255, 255, 0.45);
+  --landing-blob-shadow:
+    2px 2px 12px rgba(0, 0, 0, 0.16), inset 2px 2px 64px rgba(255, 255, 255, 0.45);
 
   --landing-card-bg: rgba(255, 255, 255, 0.8);
   --landing-card-shadow: 2px 2px 12px rgba(0, 0, 0, 0.16);
@@ -358,8 +369,12 @@ html {
       linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
     background-size: 100px 100px;
-    mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0,0,0,0.5) 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0,0,0,0.5) 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0, 0, 0, 0.5) 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(
+      ellipse 60% 50% at 50% 30%,
+      rgba(0, 0, 0, 0.5) 0%,
+      transparent 70%
+    );
   }
 
   --color-text-inverted: var(--color-bg);
@@ -428,7 +443,8 @@ html {
 
   --shadow-raised-lg: 0px 2px 4px hsla(221, 39%, 11%, 0.2);
   --shadow-raised: 0px -2px 4px hsla(221, 39%, 11%, 0.1);
-  --shadow-floating: hsla(0, 0%, 0%, 0) 0px 0px 0px 0px, hsla(0, 0%, 0%, 0) 0px 0px 0px 0px,
+  --shadow-floating:
+    hsla(0, 0%, 0%, 0) 0px 0px 0px 0px, hsla(0, 0%, 0%, 0) 0px 0px 0px 0px,
     hsla(0, 0%, 0%, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 
   --shadow-card: rgba(0, 0, 0, 0.25) 0px 2px 4px 0px;
@@ -477,7 +493,8 @@ html {
   --active-filter: brightness(140%);
 
   --landing-maze-bg: url("https://cdn.bbsmc.net/raw/landing-new/landing.webp");
-  --landing-maze-gradient-bg: linear-gradient(0deg, #31375f 0%, rgba(8, 14, 55, 0) 100%),
+  --landing-maze-gradient-bg:
+    linear-gradient(0deg, #31375f 0%, rgba(8, 14, 55, 0) 100%),
     url("https://cdn.bbsmc.net/raw/landing-new/landing-lower.webp");
   --landing-maze-outer-bg: linear-gradient(180deg, #06060d 0%, #0d1828 100%);
 
@@ -504,7 +521,8 @@ html {
     rgba(44, 48, 79, 0.35) 0%,
     rgba(32, 35, 50, 0.2695) 100%
   );
-  --landing-blob-shadow: 2px 2px 12px rgba(0, 0, 0, 0.16), inset 2px 2px 64px rgba(57, 61, 94, 0.45);
+  --landing-blob-shadow:
+    2px 2px 12px rgba(0, 0, 0, 0.16), inset 2px 2px 64px rgba(57, 61, 94, 0.45);
 
   --landing-card-bg: rgba(59, 63, 85, 0.15);
   --landing-card-shadow: 2px 2px 12px rgba(0, 0, 0, 0.16);
@@ -556,8 +574,12 @@ body {
   // Defaults
   background-color: var(--color-bg);
   color: var(--color-text);
-  --font-standard: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", Inter, "Helvetica Neue", Roboto, sans-serif;
-  --mono-font: "SF Mono", Monaco, Inconsolata, "Fira Mono", "Droid Sans Mono", "Source Code Pro", ui-monospace, monospace;
+  --font-standard:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", Inter,
+    "Helvetica Neue", Roboto, sans-serif;
+  --mono-font:
+    "SF Mono", Monaco, Inconsolata, "Fira Mono", "Droid Sans Mono", "Source Code Pro", ui-monospace,
+    monospace;
   font-family: var(--font-standard);
   font-size: 15px;
   font-weight: var(--font-weight-regular);
@@ -568,7 +590,7 @@ body {
 
   // Layered background gradient - adapts to theme
   &::before {
-    content: '';
+    content: "";
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -577,7 +599,7 @@ body {
 
   // Grid pattern overlay
   &::after {
-    content: '';
+    content: "";
     position: fixed;
     inset: 0;
     pointer-events: none;

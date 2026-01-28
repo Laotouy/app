@@ -1671,7 +1671,7 @@ import AutomaticAccordion from "~/components/ui/AutomaticAccordion.vue";
 import TranslationPromo from "~/components/ui/TranslationPromo.vue";
 import ServerPromo from "~/components/ui/ServerPromo.vue";
 import { getVersionsToDisplay } from "~/helpers/projects.js";
-import { projectAffiliates } from "~/config/affiliates";
+import { projectAffiliates } from "~/config/affiliates.ts";
 const data = useNuxtApp();
 const route = useNativeRoute();
 

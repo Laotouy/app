@@ -425,18 +425,14 @@ import dayjs from "dayjs";
 import {
   BoxIcon,
   PackageClosedIcon,
-  GlobeIcon,
   LanguagesIcon,
-  MessageIcon,
   StarIcon,
   PlugIcon,
   GlassesIcon,
   PaintBrushIcon,
   BracesIcon,
   WrenchIcon,
-  GameIcon,
   LinkIcon,
-  SparklesIcon,
   HeartIcon,
   DownloadIcon,
   UpdatedIcon,
@@ -472,9 +468,7 @@ const { data: pageData } = await useAsyncData("homepage-data", async () => {
 
 // 从 pageData 中提取数据
 const hotProjects = computed(() => pageData.value?.hotProjects ?? []);
-const forums = computed(() => pageData.value?.forums ?? []);
-const notices = computed(() => pageData.value?.notices ?? []);
-const articles = computed(() => pageData.value?.articles ?? []);
+// forums, notices, articles available from pageData if needed
 const translations = computed(() => pageData.value?.translations ?? []);
 const latestModpackTranslations = computed(() => pageData.value?.latestModpackTranslations ?? []);
 
@@ -625,18 +619,7 @@ const getGalleryStyle = (project) => {
   return imageUrl ? `background-image: url(${imageUrl})` : "";
 };
 
-// Forum category label
-const getCategoryLabel = (category) => {
-  const labels = {
-    chat: "闲聊",
-    project: "资源",
-    article: "专栏",
-    notice: "公告",
-    help: "求助",
-    share: "分享",
-  };
-  return labels[category] || category;
-};
+// getCategoryLabel available if needed for forum categories
 
 // Loader formatting
 const formatLoader = (loader) => {
