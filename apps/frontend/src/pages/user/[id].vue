@@ -128,7 +128,7 @@
             >
               <CalendarIcon class="h-6 w-6 text-secondary" />
               注册日期
-              {{ formatRelativeTime(user.created) }}
+              {{ formatDate(user.created) }}
             </div>
           </template>
           <template #actions>
@@ -582,6 +582,7 @@ const { formatMessage } = vintl;
 const formatCompactNumber = useCompactNumber();
 
 const formatRelativeTime = useRelativeTime();
+const formatDate = (date) => data.$dayjs(date).format("YYYY-MM-DD");
 
 const messages = defineMessages({
   profileProjectsStats: {

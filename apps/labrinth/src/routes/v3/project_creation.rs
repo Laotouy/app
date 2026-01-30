@@ -896,18 +896,18 @@ async fn project_create_inner(
         User::clear_project_cache(&[current_user.id.into()], redis).await?;
 
         // 如果是付费资源，插入定价信息
-        if project_create_data.is_paid {
-            if let Some(price) = project_create_data.price {
-                // 将 i32 转换为 Decimal
-                let price_decimal = Decimal::from(price);
-                models::ProjectPricing::upsert(
-                    id,
-                    price_decimal,
-                    project_create_data.validity_days,
-                    &mut *transaction,
-                )
-                .await?;
-            }
+        if project_create_data.is_paid
+            && let Some(price) = project_create_data.price
+        {
+            // 将 i32 转换为 Decimal
+            let price_decimal = Decimal::from(price);
+            models::ProjectPricing::upsert(
+                id,
+                price_decimal,
+                project_create_data.validity_days,
+                &mut *transaction,
+            )
+            .await?;
         }
 
         for image_id in project_create_data.uploaded_images {
@@ -1031,6 +1031,9 @@ async fn project_create_inner(
             translation_tracker: None,
             translation_source: None,
             is_paid: project_create_data.is_paid,
+            user_has_purchased: None, // 新创建的项目不返回购买状态
+            price: project_create_data.price.map(rust_decimal::Decimal::from),
+            validity_days: project_create_data.validity_days,
         };
 
         Ok(HttpResponse::Ok().json(response))

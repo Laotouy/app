@@ -9,7 +9,9 @@ use crate::auth::{
 };
 use crate::database::models::notification_item::NotificationBuilder;
 use crate::database::models::project_item::{GalleryItem, ModCategory};
+use crate::database::models::project_pricing_item::ProjectPricing;
 use crate::database::models::thread_item::ThreadMessageBuilder;
+use crate::database::models::user_purchase_item::UserPurchase;
 use crate::database::models::{TeamMember, ids as db_ids, image_item};
 use crate::database::redis::RedisPool;
 use crate::database::{self, models as db_models};
@@ -208,9 +210,13 @@ pub async fn projects_get(
     .map(|x| x.1)
     .ok();
 
-    let projects =
+    let mut projects =
         filter_visible_projects(projects_data, &user_option, &pool, false)
             .await?;
+
+    // 批量设置用户购买状态
+    apply_purchase_status_batch(&mut projects, &user_option, &pool, &redis)
+        .await;
 
     Ok(HttpResponse::Ok().json(projects))
 }
@@ -240,7 +246,27 @@ pub async fn project_get(
     if let Some(data) = project_data
         && is_visible_project(&data.inner, &user_option, &pool, false).await?
     {
-        return Ok(HttpResponse::Ok().json(Project::from(data)));
+        let mut project = Project::from(data);
+
+        // 设置用户购买状态
+        project.user_has_purchased = get_user_purchase_status(
+            &user_option,
+            project.id.into(),
+            &pool,
+            &redis,
+        )
+        .await;
+
+        // 如果是付费项目，加载定价信息
+        if project.is_paid
+            && let Ok(Some(pricing)) =
+                ProjectPricing::get(project.id.into(), &**pool).await
+        {
+            project.price = Some(pricing.price);
+            project.validity_days = pricing.validity_days;
+        }
+
+        return Ok(HttpResponse::Ok().json(project));
     }
     Err(ApiError::NotFound)
 }
@@ -1965,7 +1991,14 @@ pub async fn add_gallery_item(
         }
     }
 
-    let bytes = if user.username == "BBSMC" || user.username == "Laotou" {
+    // 管理员用户可上传更大图片
+    let admin_usernames = dotenvy::var("ADMIN_USERNAMES").unwrap_or_default();
+    let is_admin = admin_usernames
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .any(|admin| admin == user.username.to_lowercase());
+
+    let bytes = if is_admin {
         read_from_payload(
             &mut payload,
             10 * (1 << 20),
@@ -2991,5 +3024,83 @@ pub async fn get_translation_links(
         Ok(HttpResponse::Ok().json(all_links))
     } else {
         Err(ApiError::NotFound)
+    }
+}
+
+// ==================== 用户购买状态辅助函数 ====================
+
+/// 获取单个项目的用户购买状态（考虑权限）
+///
+/// 返回值:
+/// - Some(true): 已登录且有访问权限（已购买/团队成员/管理员）
+/// - Some(false): 已登录但无访问权限
+/// - None: 未登录
+async fn get_user_purchase_status(
+    user_option: &Option<models::users::User>,
+    project_id: db_ids::ProjectId,
+    pool: &PgPool,
+    redis: &RedisPool,
+) -> Option<bool> {
+    let user = user_option.as_ref()?;
+    let user_id = db_ids::UserId(user.id.0 as i64);
+
+    // 1. 管理员和版主有所有权限
+    if user.role.is_admin() || user.role.is_mod() {
+        return Some(true);
+    }
+
+    // 2. 检查是否为项目团队成员
+    if let Ok(Some(_team_member)) = TeamMember::get_from_user_id_project(
+        project_id, user_id, false, // 不包含待接受的邀请
+        pool,
+    )
+    .await
+    {
+        return Some(true);
+    }
+
+    // 3. 检查是否已购买（使用缓存）
+    let purchased_set = UserPurchase::get_user_purchased_project_ids_cached(
+        user_id, pool, redis,
+    )
+    .await
+    .ok()?;
+
+    Some(purchased_set.contains(&project_id.0))
+}
+
+/// 批量为项目列表设置用户购买状态
+async fn apply_purchase_status_batch(
+    projects: &mut [Project],
+    user_option: &Option<models::users::User>,
+    pool: &PgPool,
+    redis: &RedisPool,
+) {
+    // 未登录用户，所有项目的购买状态都是 None（默认值）
+    let Some(user) = user_option else {
+        return;
+    };
+
+    let user_id = db_ids::UserId(user.id.0 as i64);
+
+    // 获取用户已购买的所有项目 ID（带缓存）
+    let purchased_set =
+        match UserPurchase::get_user_purchased_project_ids_cached(
+            user_id, pool, redis,
+        )
+        .await
+        {
+            Ok(set) => set,
+            Err(e) => {
+                log::error!("获取用户购买状态失败: {}", e);
+                return;
+            }
+        };
+
+    // 为每个项目设置购买状态
+    for project in projects.iter_mut() {
+        let project_id: db_ids::ProjectId = project.id.into();
+        project.user_has_purchased =
+            Some(purchased_set.contains(&project_id.0));
     }
 }

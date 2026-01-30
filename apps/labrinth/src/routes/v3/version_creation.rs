@@ -104,6 +104,7 @@ struct InitialFileData {
 }
 
 // under `/api/v1/version`
+#[allow(clippy::too_many_arguments)]
 pub async fn version_create(
     req: HttpRequest,
     mut payload: Multipart,
@@ -725,6 +726,7 @@ async fn version_create_inner(
     Ok(HttpResponse::Ok().json(response))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn upload_file_to_version(
     req: HttpRequest,
     url_data: web::Path<(VersionId,)>,

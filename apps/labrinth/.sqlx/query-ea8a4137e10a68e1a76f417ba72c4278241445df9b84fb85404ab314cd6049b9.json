@@ -61,7 +61,7 @@
       {
         "ordinal": 11,
         "name": "qr_code_url",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 12,

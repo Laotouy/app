@@ -128,6 +128,21 @@ pub struct Project {
 
     /// 是否为付费资源
     pub is_paid: bool,
+
+    /// 当前用户是否已购买此项目
+    /// - 已登录且已购买: Some(true)
+    /// - 已登录未购买: Some(false)
+    /// - 未登录: None
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_has_purchased: Option<bool>,
+
+    /// 付费资源价格（单位：元）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<rust_decimal::Decimal>,
+
+    /// 付费资源有效期（天数），None 表示永久
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validity_days: Option<i32>,
 }
 
 fn remove_duplicates(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
@@ -261,7 +276,30 @@ impl From<QueryProject> for Project {
             translation_tracker: m.translation_tracker.clone(),
             translation_source: m.translation_source.clone(),
             is_paid: m.is_paid,
+            // 默认为 None，需要在路由层根据用户登录状态设置
+            user_has_purchased: None,
+            price: None,
+            validity_days: None,
         }
+    }
+}
+
+impl Project {
+    /// 设置用户购买状态
+    pub fn with_purchase_status(mut self, purchased: Option<bool>) -> Self {
+        self.user_has_purchased = purchased;
+        self
+    }
+
+    /// 设置定价信息
+    pub fn with_pricing(
+        mut self,
+        price: Option<rust_decimal::Decimal>,
+        validity_days: Option<i32>,
+    ) -> Self {
+        self.price = price;
+        self.validity_days = validity_days;
+        self
     }
 }
 

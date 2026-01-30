@@ -17,11 +17,15 @@ use thiserror::Error;
 
 use super::Scheduler;
 
-/// bbsmc-cn 组织的 slug
-const CN_ORG_SLUG: &str = "bbsmc-cn";
+/// 汉化组织的 slug（从环境变量读取，默认为 bbsmc-cn）
+fn get_cn_org_slug() -> String {
+    dotenvy::var("CN_ORG_SLUG").unwrap_or_else(|_| "bbsmc-cn".to_string())
+}
 
-/// BBSMC 汉化组 QQ 群号
-const BBSMC_QQ_GROUP: &str = "1073724937";
+/// 汉化组 QQ 群号（从环境变量读取）
+fn get_qq_group() -> String {
+    dotenvy::var("CN_QQ_GROUP").unwrap_or_default()
+}
 
 /// 汉化包描述模板 - 第一部分：基本信息
 fn get_description_part1(slug: &str) -> String {
@@ -64,7 +68,7 @@ fn get_description_part3() -> String {
 **QQ 群号：{}**
 
 我们会尽快处理您的反馈和汉化请求！"#,
-        BBSMC_QQ_GROUP
+        get_qq_group()
     )
 }
 
@@ -167,7 +171,7 @@ async fn get_cn_organization(
         WHERE LOWER(slug) = LOWER($1)
         LIMIT 1
         "#,
-        CN_ORG_SLUG
+        get_cn_org_slug()
     )
     .fetch_optional(pool)
     .await?;
@@ -267,7 +271,7 @@ async fn run_translation_tracking(
     let cn_org = match cn_org {
         Some(org) => org,
         None => {
-            warn!("未找到 {} 组织，跳过汉化资源创建", CN_ORG_SLUG);
+            warn!("未找到 {} 组织，跳过汉化资源创建", get_cn_org_slug());
             return Ok(());
         }
     };

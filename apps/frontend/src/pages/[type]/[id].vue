@@ -754,10 +754,23 @@
 
           <!-- Hero Actions -->
           <div class="hero-actions">
-            <ButtonStyled size="large" color="green" class="hero-download-btn">
+            <!-- 可以下载时显示下载按钮 -->
+            <ButtonStyled v-if="canDownload" size="large" color="green" class="hero-download-btn">
               <button @click="(event) => onDownloadClick(event)">
                 <DownloadIcon aria-hidden="true" />
                 下载
+              </button>
+            </ButtonStyled>
+            <!-- 需要购买时显示购买按钮 -->
+            <ButtonStyled
+              v-else-if="needsPurchase"
+              size="large"
+              color="brand"
+              class="hero-download-btn"
+            >
+              <button @click="handlePurchaseClick">
+                <CurrencyIcon aria-hidden="true" />
+                购买
               </button>
             </ButtonStyled>
             <ButtonStyled v-if="projectAffKey" size="large" color="purple" type="transparent">
@@ -936,7 +949,8 @@
           </template>
           <template #actions>
             <div class="hidden sm:contents">
-              <ButtonStyled size="large" color="green">
+              <!-- 可以下载时显示下载按钮 -->
+              <ButtonStyled v-if="canDownload" size="large" color="green">
                 <button
                   @click="
                     (event) => {
@@ -946,6 +960,13 @@
                 >
                   <DownloadIcon aria-hidden="true" />
                   下载
+                </button>
+              </ButtonStyled>
+              <!-- 需要购买时显示购买按钮 -->
+              <ButtonStyled v-else-if="needsPurchase" size="large" color="brand">
+                <button @click="scrollToPurchase">
+                  <CurrencyIcon aria-hidden="true" />
+                  购买
                 </button>
               </ButtonStyled>
 
@@ -961,7 +982,9 @@
               </ButtonStyled>
             </div>
             <div class="contents sm:hidden">
+              <!-- 可以下载时显示下载按钮 -->
               <ButtonStyled
+                v-if="canDownload"
                 size="large"
                 circular
                 :color="route.name === 'type-id-version-version' ? `standard` : `brand`"
@@ -972,6 +995,12 @@
                   @click="(event) => onDownloadClick(event)"
                 >
                   <DownloadIcon aria-hidden="true" />
+                </button>
+              </ButtonStyled>
+              <!-- 需要购买时显示购买按钮 -->
+              <ButtonStyled v-else-if="needsPurchase" size="large" circular color="brand">
+                <button aria-label="Purchase" class="flex sm:hidden" @click="handlePurchaseClick">
+                  <CurrencyIcon aria-hidden="true" />
                 </button>
               </ButtonStyled>
 
@@ -1201,6 +1230,15 @@
       </div>
       <!--      侧边栏-->
       <div v-else class="normal-page__sidebar">
+        <!-- 付费资源购买区域 -->
+        <PurchaseButton
+          v-if="project.is_paid"
+          :project="project"
+          :current-member="currentMember"
+          class="purchase-card"
+          @purchase-success="() => router.go(0)"
+        />
+
         <div class="card flex-card experimental-styles-within">
           <h2>{{ formatMessage(compatibilityMessages.title) }}</h2>
           <section>
@@ -1679,6 +1717,7 @@ import VersionSummary from "~/components/ui/VersionSummary.vue";
 import AutomaticAccordion from "~/components/ui/AutomaticAccordion.vue";
 import TranslationPromo from "~/components/ui/TranslationPromo.vue";
 import ServerPromo from "~/components/ui/ServerPromo.vue";
+import PurchaseButton from "~/components/ui/PurchaseButton.vue";
 import { getVersionsToDisplay } from "~/helpers/projects.js";
 import { projectAffiliates } from "~/config/affiliates.ts";
 const data = useNuxtApp();
@@ -2392,6 +2431,30 @@ const following = computed(
     user.value.follows.find((x) => x.id === project.value.id),
 );
 
+// 判断是否有访问权限（已购买/团队成员/管理员）
+const hasAccessToProject = computed(() => {
+  // 后端返回的购买状态（已包含团队成员和管理员判断）
+  if (project.value?.user_has_purchased === true) return true;
+  // 前端额外检查 currentMember（处理 SSR 和缓存情况）
+  if (currentMember.value) return true;
+  return false;
+});
+
+// 判断是否可以下载：非付费资源或有访问权限的付费资源
+const canDownload = computed(() => {
+  if (!project?.value) return false;
+  // 非付费资源可以下载
+  if (!project.value.is_paid) return true;
+  // 付费资源需要有访问权限
+  return hasAccessToProject.value;
+});
+
+// 判断是否需要购买（付费资源且无访问权限）
+const needsPurchase = computed(() => {
+  if (!project?.value) return false;
+  return project.value.is_paid && !hasAccessToProject.value;
+});
+
 const title = computed(() => {
   if (!project || !project.value) return "";
   return `${project.value.title} - 我的世界 ${projectTypeDisplay.value === "Modpack" ? "整合包" : projectTypeDisplay.value}`;
@@ -2946,6 +3009,30 @@ function onDownloadClick(event) {
   // 打开下载弹框时获取汉化包推荐
   fetchTranslationRecommendation();
   downloadModal.value.show(event);
+}
+
+// 处理购买按钮点击
+function handlePurchaseClick() {
+  // 未登录时跳转到登录页面
+  if (!auth.value.user) {
+    navigateTo("/auth/sign-in");
+    return;
+  }
+  // 已登录时滚动到购买区域
+  scrollToPurchase();
+}
+
+// 滚动到购买区域
+function scrollToPurchase() {
+  const purchaseCard = document.querySelector(".purchase-card");
+  if (purchaseCard) {
+    purchaseCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    // 添加高亮动画效果
+    purchaseCard.classList.add("highlight-pulse");
+    setTimeout(() => {
+      purchaseCard.classList.remove("highlight-pulse");
+    }, 2000);
+  }
 }
 
 const navLinks = computed(() => {

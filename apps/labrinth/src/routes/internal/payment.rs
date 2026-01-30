@@ -1,14 +1,19 @@
 //! 支付回调路由（内部 API）
 //!
 //! 接收来自支付平台的回调通知。
-//! 验证签名后更新订单状态。
+//! 验证签名后更新订单状态并创建购买记录。
 
 use actix_web::{HttpRequest, HttpResponse, post, web};
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::BTreeMap;
 use subtle::ConstantTimeEq;
 
+use crate::database::models::ids::{ProjectId, UserId};
+use crate::database::models::payment_order_item::{OrderStatus, PaymentOrder};
+use crate::database::models::user_purchase_item::UserPurchase;
+use crate::database::redis::RedisPool;
 use crate::routes::ApiError;
 
 /// 验证请求 IP 是否在白名单中
@@ -52,6 +57,57 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 
 // ==================== 请求/响应结构 ====================
 
+/// 将字符串或数字反序列化为字符串
+fn deserialize_string_or_number<'de, D>(
+    deserializer: D,
+) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct StringOrNumberVisitor;
+
+    impl<'de> Visitor<'de> for StringOrNumberVisitor {
+        type Value = String;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string or a number")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<String, E>
+        where
+            E: de::Error,
+        {
+            Ok(value.to_string())
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<String, E>
+        where
+            E: de::Error,
+        {
+            Ok(value)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<String, E>
+        where
+            E: de::Error,
+        {
+            Ok(value.to_string())
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<String, E>
+        where
+            E: de::Error,
+        {
+            Ok(value.to_string())
+        }
+    }
+
+    deserializer.deserialize_any(StringOrNumberVisitor)
+}
+
 /// 支付回调数据
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,7 +120,8 @@ pub struct PaymentCallbackData {
     pub order_id: String,
     /// 交易流水号
     pub order_transaction_id: Option<String>,
-    /// 店铺 ID
+    /// 店铺 ID（可能是字符串或数字）
+    #[serde(deserialize_with = "deserialize_string_or_number")]
     pub sid: String,
     /// 订单标题
     pub title: String,
@@ -72,7 +129,8 @@ pub struct PaymentCallbackData {
     pub pay_type: String,
     /// 用户显示名称
     pub user_display_name: String,
-    /// 金额（分）
+    /// 金额（分，可能是字符串或数字）
+    #[serde(deserialize_with = "deserialize_string_or_number")]
     pub money: String,
     /// 结算状态
     pub settlement: String,
@@ -106,7 +164,8 @@ pub struct CallbackResponse {
 pub async fn payment_callback(
     req: HttpRequest,
     body: web::Json<PaymentCallbackRequest>,
-    _pool: web::Data<PgPool>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
 ) -> Result<HttpResponse, ApiError> {
     // 验证 IP 白名单
     if let Err(msg) = verify_ip_whitelist(&req) {
@@ -168,34 +227,45 @@ pub async fn payment_callback(
         }));
     }
 
-    // TODO: 实现完整的回调处理逻辑
-    // 1. 根据 other_order_no 查询 BBSMC 订单
-    // 2. 更新订单状态为已支付
-    // 3. 触发后续业务逻辑（如解锁付费内容、发放商品等）
+    // 处理支付回调业务逻辑
+    let result = process_payment_callback(
+        &data.other_order_no,
+        &data.order_id,
+        &pool,
+        &redis,
+    )
+    .await;
 
-    log::info!(
-        "支付回调处理成功: order_id={}, other_order_no={}, money={}分",
-        data.order_id,
-        data.other_order_no,
-        data.money
-    );
-
-    Ok(HttpResponse::Ok().json(CallbackResponse {
-        code: 200,
-        message: "success".to_string(),
-    }))
+    match result {
+        Ok(_) => {
+            log::info!(
+                "支付回调处理成功: order_id={}, other_order_no={}, money={}分",
+                data.order_id,
+                data.other_order_no,
+                data.money
+            );
+            Ok(HttpResponse::Ok().json(CallbackResponse {
+                code: 200,
+                message: "success".to_string(),
+            }))
+        }
+        Err(e) => {
+            log::error!(
+                "支付回调处理失败: order_id={}, other_order_no={}, error={}",
+                data.order_id,
+                data.other_order_no,
+                e
+            );
+            // 返回 200 避免支付平台重试（业务错误需人工处理）
+            Ok(HttpResponse::Ok().json(CallbackResponse {
+                code: 500,
+                message: e,
+            }))
+        }
+    }
 }
 
 /// 验证支付签名
-///
-/// 签名算法:
-/// 1. 将 data 中的所有 key 按字母排序
-/// 2. 拼接所有 value（不包含 key，只有 value）
-/// 3. 在末尾添加 keycode
-/// 4. 在开头也添加 keycode
-/// 5. MD5 后转大写
-///
-/// 即: MD5(keycode + value1 + value2 + ... + keycode).toUpperCase()
 fn verify_payment_signature(
     data: &PaymentCallbackData,
     sign: &str,
@@ -229,20 +299,113 @@ fn verify_payment_signature(
     // 使用常量时间比较，防止时序攻击
     let is_valid = constant_time_compare(&expected, sign);
     if !is_valid {
-        log::debug!("签名不匹配: actual={}", sign);
+        log::debug!("签名不匹配: expected={}, actual={}", expected, sign);
     }
 
     is_valid
 }
 
 /// 常量时间字符串比较，防止时序攻击
-///
-/// 使用 subtle crate 实现真正的常量时间比较，
-/// 即使长度不同也不会提前返回（会填充到相同长度后比较）
 fn constant_time_compare(a: &str, b: &str) -> bool {
     let a_bytes = a.as_bytes();
     let b_bytes = b.as_bytes();
-
-    // subtle 的 ct_eq 会处理长度不等的情况，始终执行相同数量的操作
     a_bytes.ct_eq(b_bytes).into()
+}
+
+// ==================== 支付回调业务处理 ====================
+
+/// 处理支付回调业务逻辑
+async fn process_payment_callback(
+    order_no: &str,
+    external_order_id: &str,
+    pool: &PgPool,
+    redis: &RedisPool,
+) -> Result<(), String> {
+    // 1. 开始事务
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(|e| format!("开始事务失败: {}", e))?;
+
+    // 2. 查询订单
+    let order = PaymentOrder::get_by_order_no(order_no, &mut *transaction)
+        .await
+        .map_err(|e| format!("查询订单失败: {}", e))?
+        .ok_or_else(|| format!("订单不存在: {}", order_no))?;
+
+    // 3. 幂等性检查
+    if order.status == OrderStatus::Paid {
+        log::info!(
+            "订单已处理过，跳过: order_no={}, external_order_id={}",
+            order_no,
+            external_order_id
+        );
+        return Ok(());
+    }
+
+    // 4. 验证订单状态
+    if order.status != OrderStatus::Pending {
+        return Err(format!(
+            "订单状态异常: order_no={}, status={:?}",
+            order_no, order.status
+        ));
+    }
+
+    // 5. 更新订单为已支付
+    let paid_order = PaymentOrder::mark_as_paid(order_no, &mut transaction)
+        .await
+        .map_err(|e| format!("更新订单状态失败: {}", e))?
+        .ok_or_else(|| format!("更新订单状态失败: {}", order_no))?;
+
+    log::info!("订单状态已更新为已支付: order_no={}", order_no);
+
+    // 6. 计算购买有效期
+    let expires_at = paid_order
+        .validity_days
+        .map(|days| Utc::now() + Duration::days(days as i64));
+
+    // 7. 创建用户购买记录
+    let purchase = UserPurchase::create(
+        paid_order.user_id,
+        paid_order.project_id,
+        Some(order_no.to_string()),
+        paid_order.amount,
+        expires_at,
+        &mut transaction,
+    )
+    .await
+    .map_err(|e| format!("创建购买记录失败: {}", e))?;
+
+    log::info!(
+        "购买记录已创建: user_id={}, project_id={}, purchase_id={}",
+        paid_order.user_id.0,
+        paid_order.project_id.0,
+        purchase.id.0
+    );
+
+    // 8. 提交事务
+    transaction
+        .commit()
+        .await
+        .map_err(|e| format!("提交事务失败: {}", e))?;
+
+    // 9. 更新 Redis 缓存
+    if let Err(e) = UserPurchase::add_to_user_purchase_cache(
+        UserId(paid_order.user_id.0),
+        ProjectId(paid_order.project_id.0),
+        redis,
+    )
+    .await
+    {
+        log::warn!("更新购买缓存失败: {:?}", e);
+    }
+
+    log::info!(
+        "支付回调处理完成: order_no={}, user_id={}, project_id={}",
+        order_no,
+        paid_order.user_id.0,
+        paid_order.project_id.0
+    );
+
+    Ok(())
 }

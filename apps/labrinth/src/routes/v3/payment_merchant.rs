@@ -266,17 +266,17 @@ async fn verify_merchant_on_platform(
 ) -> Result<VerifyResponse, ApiError> {
     // 获取支付平台 API 配置
     let api_url = dotenvy::var("SEVENPAY_API_URL").unwrap_or_default();
-    let verify_path = dotenvy::var("SEVENPAY_VERIFY_MERCHANT_PATH")
-        .unwrap_or_else(|_| "/api-server-web/verifyMerchant".to_string());
+    let verify_path =
+        dotenvy::var("SEVENPAY_VERIFY_MERCHANT_PATH").unwrap_or_default();
 
-    if api_url.is_empty() {
+    if api_url.is_empty() || verify_path.is_empty() {
         return Ok(VerifyResponse {
             success: false,
             message: "支付平台配置未完成".to_string(),
         });
     }
 
-    // 生成签名: MD5(sid + secret_key)
+    // 生成签名
     let sid_str = sid.to_string();
     let sign_raw = format!("{}{}", sid_str, secret_key);
     let sign = format!("{:x}", md5::compute(&sign_raw));

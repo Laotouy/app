@@ -41,7 +41,13 @@ pub async fn check_text_risk(
     pos: &str,
     redis: &RedisPool,
 ) -> Result<bool, ApiError> {
-    if ["bbsmc", "mzxiaoliu"].contains(&username.to_lowercase().as_str()) {
+    // 管理员用户跳过风险检查
+    let admin_usernames = dotenvy::var("ADMIN_USERNAMES").unwrap_or_default();
+    if admin_usernames
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .any(|admin| admin == username.to_lowercase())
+    {
         return Ok(true);
     }
     let site_url = dotenvy::var("SITE_URL")?;
@@ -117,7 +123,13 @@ pub async fn check_image_risk(
     pos: &str,
     redis: &RedisPool,
 ) -> Result<bool, ApiError> {
-    if ["bbsmc", "mzxiaoliu"].contains(&username.to_lowercase().as_str()) {
+    // 管理员用户跳过风险检查
+    let admin_usernames = dotenvy::var("ADMIN_USERNAMES").unwrap_or_default();
+    if admin_usernames
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .any(|admin| admin == username.to_lowercase())
+    {
         return Ok(true);
     }
 

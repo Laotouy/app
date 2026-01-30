@@ -193,6 +193,27 @@ pub fn app_setup(
         redis_pool.clone(),
     );
 
+    // 每 5 分钟清理超过 12 小时未付款的待支付订单
+    let pool_ref = pool.clone();
+    scheduler.run(std::time::Duration::from_secs(60 * 5), move || {
+        let pool_ref = pool_ref.clone();
+        async move {
+            match database::models::PaymentOrder::delete_stale_pending_orders(
+                &pool_ref,
+            )
+            .await
+            {
+                Ok(count) if count > 0 => {
+                    info!("已清理 {} 个过期未付款订单", count);
+                }
+                Err(e) => {
+                    log::error!("清理过期订单失败: {:?}", e);
+                }
+                _ => {}
+            }
+        }
+    });
+
     let session_queue = web::Data::new(AuthQueue::new());
 
     let pool_ref = pool.clone();

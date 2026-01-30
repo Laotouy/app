@@ -85,6 +85,7 @@ struct InitialFileData {
 }
 
 // 在 `/api/v1/version` 下
+#[allow(clippy::too_many_arguments)]
 #[post("version")]
 pub async fn version_create(
     req: HttpRequest,
@@ -332,6 +333,7 @@ async fn get_example_version_fields(
 }
 
 // 在 /api/v1/version/{version_id} 下
+#[allow(clippy::too_many_arguments)]
 #[post("{version_id}/file")]
 pub async fn upload_file_to_version(
     req: HttpRequest,

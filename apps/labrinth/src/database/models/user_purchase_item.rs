@@ -1,8 +1,15 @@
 use super::DatabaseError;
 use super::ids::*;
+use crate::database::redis::RedisPool;
 use chrono::{DateTime, Utc};
+use redis::cmd;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+/// Redis 缓存 namespace 和过期时间
+const USER_PURCHASES_NAMESPACE: &str = "user_purchases";
+const USER_PURCHASES_EXPIRY_SECS: i64 = 300; // 5 分钟
 
 /// 购买状态
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -243,5 +250,185 @@ impl UserPurchase {
         .await?;
 
         Ok(result.rows_affected())
+    }
+
+    // ==================== 带 Redis 缓存的方法 ====================
+
+    /// 获取用户已购买的项目 ID 集合（带缓存）
+    ///
+    /// 缓存策略：
+    /// - Key: `user_purchases:{user_id}`
+    /// - Value: Set<project_id>
+    /// - 过期时间: 5 分钟
+    pub async fn get_user_purchased_project_ids_cached<'a, E>(
+        user_id: UserId,
+        executor: E,
+        redis: &RedisPool,
+    ) -> Result<HashSet<i64>, DatabaseError>
+    where
+        E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+    {
+        let cache_key = format!("{}:{}", USER_PURCHASES_NAMESPACE, user_id.0);
+
+        // 尝试从缓存获取
+        if let Ok(mut conn) = redis.pool.get().await {
+            let cached: Result<Vec<String>, _> = cmd("SMEMBERS")
+                .arg(&cache_key)
+                .query_async(&mut *conn)
+                .await;
+
+            if let Ok(members) = cached
+                && !members.is_empty()
+            {
+                let project_ids: HashSet<i64> = members
+                    .into_iter()
+                    .filter_map(|s| s.parse::<i64>().ok())
+                    .collect();
+                return Ok(project_ids);
+            }
+        }
+
+        // 缓存未命中，从数据库查询
+        let now = Utc::now();
+        let results = sqlx::query!(
+            "
+            SELECT project_id FROM user_purchases
+            WHERE user_id = $1 AND status = 'active'
+              AND (expires_at IS NULL OR expires_at > $2)
+            ",
+            user_id.0,
+            now,
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let project_ids: HashSet<i64> =
+            results.into_iter().map(|row| row.project_id).collect();
+
+        // 写入缓存
+        if let Ok(mut conn) = redis.pool.get().await {
+            // 使用 pipeline 批量操作
+            let mut pipe = redis::pipe();
+
+            // 先删除旧缓存
+            pipe.del(&cache_key);
+
+            if !project_ids.is_empty() {
+                // 添加所有项目 ID 到集合
+                for pid in &project_ids {
+                    pipe.sadd(&cache_key, pid.to_string());
+                }
+            } else {
+                // 如果没有购买记录，添加一个占位符（避免缓存穿透）
+                pipe.sadd(&cache_key, "_empty_");
+            }
+
+            // 设置过期时间
+            pipe.expire(&cache_key, USER_PURCHASES_EXPIRY_SECS);
+
+            let _: Result<(), _> = pipe.query_async(&mut *conn).await;
+        }
+
+        Ok(project_ids)
+    }
+
+    /// 批量检查用户是否购买了指定项目（带缓存）
+    ///
+    /// 返回用户已购买的项目 ID 集合（只包含在 project_ids 中且已购买的）
+    pub async fn check_purchases_batch_cached<'a, E>(
+        user_id: UserId,
+        project_ids: &[ProjectId],
+        executor: E,
+        redis: &RedisPool,
+    ) -> Result<HashSet<i64>, DatabaseError>
+    where
+        E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+    {
+        if project_ids.is_empty() {
+            return Ok(HashSet::new());
+        }
+
+        let all_purchased = Self::get_user_purchased_project_ids_cached(
+            user_id, executor, redis,
+        )
+        .await?;
+
+        // 过滤出用户购买的项目
+        let purchased: HashSet<i64> = project_ids
+            .iter()
+            .filter(|pid| all_purchased.contains(&pid.0))
+            .map(|pid| pid.0)
+            .collect();
+
+        Ok(purchased)
+    }
+
+    /// 清除用户购买缓存
+    ///
+    /// 在以下场景调用：
+    /// - 用户完成新购买
+    /// - 用户退款
+    /// - 购买过期
+    pub async fn clear_user_purchase_cache(
+        user_id: UserId,
+        redis: &RedisPool,
+    ) -> Result<(), DatabaseError> {
+        let cache_key = format!("{}:{}", USER_PURCHASES_NAMESPACE, user_id.0);
+
+        if let Ok(mut conn) = redis.pool.get().await {
+            let _: Result<(), _> =
+                cmd("DEL").arg(&cache_key).query_async(&mut *conn).await;
+        }
+
+        Ok(())
+    }
+
+    /// 向用户购买缓存添加项目（用于购买成功后立即更新缓存）
+    pub async fn add_to_user_purchase_cache(
+        user_id: UserId,
+        project_id: ProjectId,
+        redis: &RedisPool,
+    ) -> Result<(), DatabaseError> {
+        let cache_key = format!("{}:{}", USER_PURCHASES_NAMESPACE, user_id.0);
+
+        if let Ok(mut conn) = redis.pool.get().await {
+            // 先检查缓存是否存在
+            let exists: Result<bool, _> =
+                cmd("EXISTS").arg(&cache_key).query_async(&mut *conn).await;
+
+            if let Ok(true) = exists {
+                // 缓存存在，添加新的项目 ID
+                let mut pipe = redis::pipe();
+                // 移除可能的空占位符
+                pipe.srem(&cache_key, "_empty_");
+                // 添加新项目
+                pipe.sadd(&cache_key, project_id.0.to_string());
+                // 刷新过期时间
+                pipe.expire(&cache_key, USER_PURCHASES_EXPIRY_SECS);
+                let _: Result<(), _> = pipe.query_async(&mut *conn).await;
+            }
+            // 如果缓存不存在，不需要处理（下次查询时会重新加载）
+        }
+
+        Ok(())
+    }
+
+    /// 从用户购买缓存移除项目（用于退款后立即更新缓存）
+    pub async fn remove_from_user_purchase_cache(
+        user_id: UserId,
+        project_id: ProjectId,
+        redis: &RedisPool,
+    ) -> Result<(), DatabaseError> {
+        let cache_key = format!("{}:{}", USER_PURCHASES_NAMESPACE, user_id.0);
+
+        if let Ok(mut conn) = redis.pool.get().await {
+            let _: Result<(), _> = cmd("SREM")
+                .arg(&cache_key)
+                .arg(project_id.0.to_string())
+                .query_async(&mut *conn)
+                .await;
+        }
+
+        Ok(())
     }
 }

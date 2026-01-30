@@ -228,29 +228,104 @@ impl PaymentOrder {
         }))
     }
 
-    /// 更新订单支付信息（收到支付平台回调后）
+    /// 获取用户对某项目的待支付订单
+    pub async fn get_pending_by_user_project<'a, E>(
+        user_id: UserId,
+        project_id: ProjectId,
+        executor: E,
+    ) -> Result<Option<Self>, DatabaseError>
+    where
+        E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+    {
+        let result = sqlx::query!(
+            "
+            SELECT id, order_no, external_order_no, user_id, project_id, seller_id,
+                   amount, platform_fee, seller_amount, status, payment_method,
+                   qr_code_url, validity_days, created_at, paid_at, expires_at
+            FROM payment_orders
+            WHERE user_id = $1 AND project_id = $2 AND status = 'pending'
+                  AND (expires_at IS NULL OR expires_at > NOW())
+            ORDER BY created_at DESC
+            LIMIT 1
+            ",
+            user_id.0,
+            project_id.0,
+        )
+        .fetch_optional(executor)
+        .await?;
+
+        Ok(result.map(|row| Self {
+            id: PaymentOrderId(row.id),
+            order_no: row.order_no,
+            external_order_no: row.external_order_no,
+            user_id: UserId(row.user_id),
+            project_id: ProjectId(row.project_id),
+            seller_id: UserId(row.seller_id),
+            amount: row.amount,
+            platform_fee: row.platform_fee.unwrap_or(Decimal::ZERO),
+            seller_amount: row.seller_amount,
+            status: OrderStatus::from_string(&row.status),
+            payment_method: row
+                .payment_method
+                .and_then(|m| PaymentMethod::from_string(&m)),
+            qr_code_url: row.qr_code_url,
+            validity_days: row.validity_days,
+            created_at: row.created_at,
+            paid_at: row.paid_at,
+            expires_at: row.expires_at,
+        }))
+    }
+
+    /// 更新订单支付信息（不存储二维码 URL，每次请求时重新生成）
     pub async fn update_payment_info(
         order_no: &str,
         external_order_no: &str,
         payment_method: PaymentMethod,
-        qr_code_url: Option<&str>,
         transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<bool, DatabaseError> {
         let result = sqlx::query!(
             "
             UPDATE payment_orders
-            SET external_order_no = $2, payment_method = $3, qr_code_url = $4
+            SET external_order_no = $2, payment_method = $3
             WHERE order_no = $1 AND status = 'pending'
             ",
             order_no,
             external_order_no,
             payment_method.as_str(),
-            qr_code_url,
         )
         .execute(&mut **transaction)
         .await?;
 
         Ok(result.rows_affected() > 0)
+    }
+
+    /// 删除用户对某项目的过期待支付订单
+    ///
+    /// 用于解决唯一约束冲突问题：当存在过期的 pending 订单时，
+    /// 先将其删除，然后才能创建新订单
+    pub async fn delete_expired_pending_orders<'a, E>(
+        user_id: UserId,
+        project_id: ProjectId,
+        executor: E,
+    ) -> Result<u64, DatabaseError>
+    where
+        E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+    {
+        let result = sqlx::query!(
+            "
+            DELETE FROM payment_orders
+            WHERE user_id = $1 AND project_id = $2
+                  AND status = 'pending'
+                  AND expires_at IS NOT NULL
+                  AND expires_at <= NOW()
+            ",
+            user_id.0,
+            project_id.0,
+        )
+        .execute(executor)
+        .await?;
+
+        Ok(result.rows_affected())
     }
 
     /// 标记订单为已支付
@@ -297,18 +372,18 @@ impl PaymentOrder {
         }))
     }
 
-    /// 标记过期订单
-    pub async fn expire_pending_orders(
-        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    /// 删除超过 12 小时未付款的待支付订单
+    pub async fn delete_stale_pending_orders(
+        pool: &sqlx::PgPool,
     ) -> Result<u64, DatabaseError> {
         let result = sqlx::query!(
             "
-            UPDATE payment_orders
-            SET status = 'expired'
-            WHERE status = 'pending' AND expires_at IS NOT NULL AND expires_at <= NOW()
+            DELETE FROM payment_orders
+            WHERE status = 'pending'
+              AND created_at < NOW() - INTERVAL '12 hours'
             "
         )
-        .execute(&mut **transaction)
+        .execute(pool)
         .await?;
 
         Ok(result.rows_affected())
