@@ -264,7 +264,7 @@ pub fn app_setup(
                                     m.updated updated, m.approved approved, m.queued, m.status status, m.requested_status requested_status,
                                     m.license_url license_url,
                                     m.team_id team_id, m.organization_id organization_id, m.license license, m.slug slug, m.moderation_message moderation_message, m.moderation_message_body moderation_message_body,
-                                    m.webhook_sent, m.color, m.wiki_open,m.issues_type issues_type, m.translation_tracking, m.translation_tracker,
+                                    m.webhook_sent, m.color, m.wiki_open,m.issues_type issues_type, m.translation_tracking, m.translation_tracker, m.is_paid,
                                     (SELECT slug FROM mods WHERE translation_tracker = m.slug AND m.slug IS NOT NULL LIMIT 1) as translation_source,
                                     t.id thread_id, m.monetization_status monetization_status,
                                     ARRAY_AGG(DISTINCT c.category) filter (where c.category is not null and mc.is_additional is false) categories,
@@ -318,6 +318,7 @@ pub fn app_setup(
                                             translation_tracking: m.translation_tracking,
                                             translation_tracker: m.translation_tracker.clone(),
                                             translation_source: m.translation_source.clone(),
+                                            is_paid: m.is_paid,
                                         };
                                         // println!("{:?}", inner);
 

@@ -27,6 +27,7 @@ pub mod creator;
 pub mod issues;
 pub mod oauth_clients;
 pub mod payment_merchant;
+pub mod project_pricing;
 #[allow(clippy::unnecessary_unwrap, clippy::explicit_auto_deref)]
 mod wikis;
 

@@ -125,6 +125,9 @@ pub struct Project {
 
     /// 汉化来源：哪个项目将当前项目作为汉化目标
     pub translation_source: Option<String>,
+
+    /// 是否为付费资源
+    pub is_paid: bool,
 }
 
 fn remove_duplicates(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
@@ -257,6 +260,7 @@ impl From<QueryProject> for Project {
             translation_tracking: m.translation_tracking,
             translation_tracker: m.translation_tracker.clone(),
             translation_source: m.translation_source.clone(),
+            is_paid: m.is_paid,
         }
     }
 }

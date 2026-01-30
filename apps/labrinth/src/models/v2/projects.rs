@@ -78,6 +78,8 @@ pub struct LegacyProject {
     pub translation_tracker: Option<String>,
     /// 汉化来源：哪个项目将当前项目作为汉化目标
     pub translation_source: Option<String>,
+    /// 是否为付费资源
+    pub is_paid: bool,
 }
 
 impl LegacyProject {
@@ -265,6 +267,7 @@ impl LegacyProject {
             translation_tracking: data.translation_tracking,
             translation_tracker: data.translation_tracker.clone(),
             translation_source: data.translation_source.clone(),
+            is_paid: data.is_paid,
         }
     }
 

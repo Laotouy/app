@@ -185,6 +185,7 @@ pub struct VersionFileBuilder {
     pub primary: bool,
     pub size: u32,
     pub file_type: Option<FileType>,
+    pub is_private: bool, // 是否存储在私有桶（付费资源）
 }
 
 impl VersionFileBuilder {
@@ -197,8 +198,8 @@ impl VersionFileBuilder {
 
         sqlx::query!(
             "
-            INSERT INTO files (id, version_id, url, filename, is_primary, size, file_type)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO files (id, version_id, url, filename, is_primary, size, file_type, is_private)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ",
             file_id as FileId,
             version_id as VersionId,
@@ -207,6 +208,7 @@ impl VersionFileBuilder {
             self.primary,
             self.size as i32,
             self.file_type.map(|x| x.as_str()),
+            self.is_private,
         )
         .execute(&mut **transaction)
         .await?;
@@ -739,13 +741,14 @@ impl Version {
                     pub primary: bool,
                     pub size: u32,
                     pub file_type: Option<FileType>,
+                    pub is_private: bool,
                 }
 
                 let file_ids = DashSet::new();
                 let reverse_file_map = DashMap::new();
                 let files : DashMap<VersionId, Vec<File>> = sqlx::query!(
                     "
-                    SELECT DISTINCT version_id, f.id, f.url, f.filename, f.is_primary, f.size, f.file_type
+                    SELECT DISTINCT version_id, f.id, f.url, f.filename, f.is_primary, f.size, f.file_type, f.is_private
                     FROM files f
                     WHERE f.version_id = ANY($1)
                     ",
@@ -759,6 +762,7 @@ impl Version {
                             primary: m.is_primary,
                             size: m.size as u32,
                             file_type: m.file_type.map(|x| FileType::from_string(&x)),
+                            is_private: m.is_private,
                         };
 
                         file_ids.insert(FileId(m.id));
@@ -964,6 +968,7 @@ impl Version {
                                         primary: x.primary,
                                         size: x.size,
                                         file_type: x.file_type,
+                                        is_private: x.is_private,
                                     }
                                 }).collect::<Vec<_>>();
 
@@ -986,6 +991,7 @@ impl Version {
                                         primary: false,
                                         size: 0,
                                         file_type: None,
+                                        is_private: false,
                                     });
                                 }
 
@@ -1048,7 +1054,7 @@ impl Version {
             |file_ids| async move {
                 let files = sqlx::query!(
                     "
-                    SELECT f.id, f.version_id, v.mod_id, f.url, f.filename, f.is_primary, f.size, f.file_type,
+                    SELECT f.id, f.version_id, v.mod_id, f.url, f.filename, f.is_primary, f.size, f.file_type, f.is_private,
                     JSONB_AGG(DISTINCT jsonb_build_object('algorithm', h.algorithm, 'hash', encode(h.hash, 'escape'))) filter (where h.hash is not null) hashes
                     FROM files f
                     INNER JOIN versions v on v.id = f.version_id
@@ -1088,6 +1094,7 @@ impl Version {
                                 primary: f.is_primary,
                                 size: f.size as u32,
                                 file_type: f.file_type.map(|x| FileType::from_string(&x)),
+                                is_private: f.is_private,
                             };
 
                             acc.insert(key, file);
@@ -1183,6 +1190,7 @@ pub struct QueryFile {
     pub primary: bool,
     pub size: u32,
     pub file_type: Option<FileType>,
+    pub is_private: bool, // 是否存储在私有桶（付费资源）
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -1196,6 +1204,7 @@ pub struct SingleFile {
     pub primary: bool,
     pub size: u32,
     pub file_type: Option<FileType>,
+    pub is_private: bool, // 是否存储在私有桶（付费资源）
 }
 
 impl std::cmp::Ord for QueryVersion {

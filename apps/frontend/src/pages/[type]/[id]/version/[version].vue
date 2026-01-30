@@ -903,7 +903,9 @@
       v-if="
         isEditing ||
         isCreating ||
-        version.files.filter((x) => x.url.includes('cdn.bbsmc.net')).length > 0
+        version.files.filter(
+          (x) => x.url.includes('cdn.bbsmc.net') || x.url.startsWith('private://'),
+        ).length > 0
       "
       class="version-page__files universal-card"
     >
@@ -929,7 +931,9 @@
       </div>
       <!--      非编辑-->
       <div
-        v-for="(file, index) in version.files.filter((x) => x.url.includes('cdn.bbsmc.net'))"
+        v-for="(file, index) in version.files.filter(
+          (x) => x.url.includes('cdn.bbsmc.net') || x.url.startsWith('private://'),
+        )"
         :key="file.hashes.sha1"
         :class="{
           file: true,
@@ -990,6 +994,7 @@
           </button>
         </ButtonStyled>
         <ButtonStyled v-else>
+          <!-- CDN 文件直接下载 -->
           <a
             v-if="file.url.includes('cdn.bbsmc.net')"
             :href="file.url"
@@ -1000,6 +1005,22 @@
             <DownloadIcon aria-hidden="true" />
           </a>
 
+          <!-- 私有文件通过 API 获取下载链接 -->
+          <a
+            v-else-if="isPrivateUrl(file.url)"
+            :href="privateDownload.getHref(file)"
+            class="raised-button"
+            :class="{ 'cursor-wait': privateDownload.isDownloading.value }"
+            :title="`Download ${file.filename}`"
+            tabindex="0"
+            @click="privateDownload.getDownloadHandler(file)($event)"
+          >
+            <span v-if="privateDownload.isDownloading.value" class="animate-spin">...</span>
+            <DownloadIcon v-else aria-hidden="true" />
+            付费下载
+          </a>
+
+          <!-- 外部文件在新标签页打开 -->
           <a
             v-else
             :href="file.url"
@@ -1312,6 +1333,7 @@ import { useBaseFetchFile } from "~/composables/fetch.js";
 import VersionSummary from "~/components/ui/VersionSummary.vue";
 import AutomaticAccordion from "~/components/ui/AutomaticAccordion.vue";
 import TranslationPromo from "~/components/ui/TranslationPromo.vue";
+import { usePrivateDownload, isPrivateUrl } from "~/composables/usePrivateDownload.ts";
 
 export default defineNuxtComponent({
   components: {
@@ -1773,6 +1795,9 @@ export default defineNuxtComponent({
       ogDescription: description,
     });
 
+    // 私有文件下载支持
+    const privateDownload = usePrivateDownload();
+
     return {
       auth,
       tags,
@@ -1795,6 +1820,10 @@ export default defineNuxtComponent({
       versionLinksLoading: ref(versionLinksLoading),
       translationVersions: ref(translationVersions),
       translationVersionsLoading: ref(translationVersionsLoading),
+
+      // 私有文件下载
+      isPrivateUrl,
+      privateDownload,
     };
   },
   data() {

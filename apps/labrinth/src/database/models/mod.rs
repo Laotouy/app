@@ -30,7 +30,10 @@ pub mod wiki_item;
 pub mod creator_application_item;
 pub mod issues;
 pub mod payment_merchant_item;
+pub mod payment_order_item;
+pub mod project_pricing_item;
 pub mod user_ban_item;
+pub mod user_purchase_item;
 pub mod wiki_cache_item;
 
 pub use collection_item::Collection;
@@ -46,7 +49,9 @@ pub use image_item::Image;
 pub use oauth_client_item::OAuthClient;
 pub use organization_item::Organization;
 pub use payment_merchant_item::{PaymentMerchant, PaymentMerchantBuilder};
+pub use payment_order_item::{OrderStatus, PaymentMethod, PaymentOrder};
 pub use project_item::Project;
+pub use project_pricing_item::ProjectPricing;
 pub use team_item::Team;
 pub use team_item::TeamMember;
 pub use thread_item::{Thread, ThreadMessage};
@@ -55,6 +60,7 @@ pub use user_ban_item::{
     BanType, UserBan, UserBanBuilder,
 };
 pub use user_item::User;
+pub use user_purchase_item::{PurchaseStatus, UserPurchase};
 pub use version_item::Version;
 pub use wiki_cache_item::WikiCache;
 pub use wiki_item::Wiki;

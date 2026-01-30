@@ -119,6 +119,19 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                     .route(
                         "translation_links",
                         web::get().to(get_translation_links),
+                    )
+                    // 定价路由
+                    .route(
+                        "pricing",
+                        web::get().to(super::project_pricing::get_pricing),
+                    )
+                    .route(
+                        "pricing",
+                        web::post().to(super::project_pricing::set_pricing),
+                    )
+                    .route(
+                        "pricing",
+                        web::patch().to(super::project_pricing::update_pricing),
                     ),
             ),
     );

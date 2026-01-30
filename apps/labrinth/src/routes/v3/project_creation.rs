@@ -1,3 +1,4 @@
+use super::project_pricing::{validate_price, validate_validity_days};
 use super::version_creation::{InitialVersionData, try_create_version_fields};
 use crate::auth::{
     AuthenticationError, check_resource_ban, get_user_from_headers,
@@ -6,9 +7,9 @@ use crate::database::models::loader_fields::{
     Loader, LoaderField, LoaderFieldEnumValue,
 };
 use crate::database::models::thread_item::ThreadBuilder;
-use crate::database::models::{self, User, image_item};
+use crate::database::models::{self, User, UserId as DBUserId, image_item};
 use crate::database::redis::RedisPool;
-use crate::file_hosting::{FileHost, FileHostingError};
+use crate::file_hosting::{FileHost, FileHostingError, S3PrivateHost};
 use crate::models::error::ApiError;
 use crate::models::ids::base62_impl::to_base62;
 use crate::models::ids::{ImageId, OrganizationId};
@@ -234,6 +235,14 @@ pub struct ProjectCreateData {
 
     /// 要创建项目的组织 id
     pub organization_id: Option<OrganizationId>,
+
+    /// 是否为付费资源（仅高级创作者可设置）
+    #[serde(default)]
+    pub is_paid: bool,
+    /// 付费资源价格（单位：元，整数 1-1000，仅当 is_paid=true 时有效）
+    pub price: Option<i32>,
+    /// 授权有效期天数（None 表示永久，仅当 is_paid=true 时有效）
+    pub validity_days: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Validate, Clone)]
@@ -274,6 +283,7 @@ pub async fn project_create(
     client: Data<PgPool>,
     redis: Data<RedisPool>,
     file_host: Data<Arc<dyn FileHost + Send + Sync>>,
+    private_file_host: Data<Option<Arc<S3PrivateHost>>>,
     session_queue: Data<AuthQueue>,
 ) -> Result<HttpResponse, CreateError> {
     let mut transaction = client.begin().await?;
@@ -284,6 +294,7 @@ pub async fn project_create(
         &mut payload,
         &mut transaction,
         &***file_host,
+        private_file_host.as_ref().as_ref().map(|h| h.as_ref()),
         &mut uploaded_files,
         &client,
         &redis,
@@ -341,6 +352,7 @@ async fn project_create_inner(
     payload: &mut Multipart,
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     file_host: &dyn FileHost,
+    private_file_host: Option<&S3PrivateHost>,
     uploaded_files: &mut Vec<UploadedFile>,
     pool: &PgPool,
     redis: &RedisPool,
@@ -414,6 +426,42 @@ async fn project_create_inner(
         create_data.validate().map_err(|err| {
             CreateError::InvalidInput(validation_errors_to_string(err, None))
         })?;
+
+        // 付费资源验证：只有高级创作者才能创建付费资源
+        if create_data.is_paid {
+            // 获取用户完整信息以检查 is_premium_creator
+            let db_user_id = DBUserId(current_user.id.0 as i64);
+            let db_user =
+                models::User::get_id(db_user_id, &mut **transaction, redis)
+                    .await?
+                    .ok_or_else(|| {
+                        CreateError::InvalidInput("用户不存在".to_string())
+                    })?;
+
+            if !db_user.is_premium_creator {
+                return Err(CreateError::InvalidInput(
+                    "只有高级创作者才能创建付费资源".to_string(),
+                ));
+            }
+
+            // 验证价格必须设置且在 1-1000 范围内
+            match create_data.price {
+                Some(price) => {
+                    validate_price(price).map_err(|e| {
+                        CreateError::InvalidInput(e.to_string())
+                    })?;
+                }
+                None => {
+                    return Err(CreateError::InvalidInput(
+                        "付费资源必须设置价格".to_string(),
+                    ));
+                }
+            }
+
+            // 验证有效期（如果设置）必须大于 0
+            validate_validity_days(create_data.validity_days)
+                .map_err(|e| CreateError::InvalidInput(e.to_string()))?;
+        }
 
         // Modrinth 上游提交 79c263301: 添加 .to_lowercase() 确保大小写不敏感
         let slug_project_id_option: Option<ProjectId> = serde_json::from_str(
@@ -616,6 +664,7 @@ async fn project_create_inner(
             super::version_creation::upload_file(
                 &mut field,
                 file_host,
+                private_file_host,
                 version_data.file_parts.len(),
                 uploaded_files,
                 &mut created_version.files,
@@ -633,6 +682,7 @@ async fn project_create_inner(
                 transaction,
                 redis,
                 current_user.username.clone(),
+                project_create_data.is_paid,
             )
             .await?;
 
@@ -836,6 +886,7 @@ async fn project_create_inner(
                 .collect(),
             color: icon_data.and_then(|x| x.2),
             monetization_status: MonetizationStatus::Monetized,
+            is_paid: project_create_data.is_paid,
         };
         let project_builder = project_builder_actual.clone();
 
@@ -843,6 +894,21 @@ async fn project_create_inner(
 
         let id = project_builder_actual.insert(&mut *transaction).await?;
         User::clear_project_cache(&[current_user.id.into()], redis).await?;
+
+        // 如果是付费资源，插入定价信息
+        if project_create_data.is_paid {
+            if let Some(price) = project_create_data.price {
+                // 将 i32 转换为 Decimal
+                let price_decimal = Decimal::from(price);
+                models::ProjectPricing::upsert(
+                    id,
+                    price_decimal,
+                    project_create_data.validity_days,
+                    &mut *transaction,
+                )
+                .await?;
+            }
+        }
 
         for image_id in project_create_data.uploaded_images {
             if let Some(db_image) = image_item::Image::get(
@@ -964,6 +1030,7 @@ async fn project_create_inner(
             translation_tracking: false,
             translation_tracker: None,
             translation_source: None,
+            is_paid: project_create_data.is_paid,
         };
 
         Ok(HttpResponse::Ok().json(response))

@@ -1,0 +1,452 @@
+//! 项目定价 API
+//!
+//! 提供付费资源的定价设置和查询功能。
+//! 只有高级创作者且项目 is_paid=true 时才能设置定价。
+//!
+//! 权限要求：
+//! - GET: 公开访问（定价信息是公开的，用户需要知道价格才能购买）
+//! - POST/PATCH: 需要 PROJECT_WRITE scope、项目成员权限 EDIT_DETAILS、且是高级创作者
+
+use super::ApiError;
+use crate::auth::get_user_from_headers;
+use crate::database::models::UserId as DBUserId;
+use crate::database::models::{self, ProjectPricing};
+use crate::database::redis::RedisPool;
+use crate::models::pats::Scopes;
+use crate::models::teams::ProjectPermissions;
+use crate::queue::session::AuthQueue;
+use actix_web::{HttpRequest, HttpResponse, web};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+
+/// 定价请求数据
+#[derive(Deserialize)]
+pub struct PricingRequest {
+    /// 价格（单位：元，整数 1-1000）
+    pub price: i32,
+    /// 授权有效期天数（None 表示永久）
+    pub validity_days: Option<i32>,
+}
+
+/// 定价响应数据
+#[derive(Serialize)]
+pub struct PricingResponse {
+    pub project_id: String,
+    pub price: i32,
+    pub validity_days: Option<i32>,
+    pub is_permanent: bool,
+}
+
+/// 获取项目定价信息
+///
+/// GET /v3/project/{id}/pricing
+pub async fn get_pricing(
+    _req: HttpRequest,
+    info: web::Path<String>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    _session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    let project_id_str = info.into_inner();
+
+    // 获取项目信息
+    let project = models::Project::get(&project_id_str, &**pool, &redis)
+        .await?
+        .ok_or_else(|| ApiError::InvalidInput("项目不存在".to_string()))?;
+
+    // 检查项目是否为付费资源
+    if !project.inner.is_paid {
+        return Err(ApiError::InvalidInput("该项目不是付费资源".to_string()));
+    }
+
+    // 获取定价信息
+    let pricing = ProjectPricing::get(project.inner.id, &**pool)
+        .await?
+        .ok_or_else(|| ApiError::InvalidInput("定价信息不存在".to_string()))?;
+
+    // 将 Decimal 安全转换为 i32
+    let price_i32 = decimal_to_i32(pricing.price)
+        .map_err(|_| ApiError::InvalidInput("价格数据异常".to_string()))?;
+
+    Ok(HttpResponse::Ok().json(PricingResponse {
+        project_id: project_id_str,
+        price: price_i32,
+        validity_days: pricing.validity_days,
+        is_permanent: pricing.validity_days.is_none(),
+    }))
+}
+
+/// 设置项目定价（首次设置）
+///
+/// POST /v3/project/{id}/pricing
+pub async fn set_pricing(
+    req: HttpRequest,
+    info: web::Path<String>,
+    body: web::Json<PricingRequest>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    // 验证用户身份
+    let current_user = get_user_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Some(&[Scopes::PROJECT_WRITE]),
+    )
+    .await?
+    .1;
+
+    let project_id_str = info.into_inner();
+
+    // 获取项目信息
+    let project = models::Project::get(&project_id_str, &**pool, &redis)
+        .await?
+        .ok_or_else(|| ApiError::InvalidInput("项目不存在".to_string()))?;
+
+    // 转换用户 ID 类型
+    let db_user_id = DBUserId(current_user.id.0 as i64);
+
+    // 验证项目权限（必须是项目成员且有编辑权限）
+    let team_member = models::TeamMember::get_from_user_id_project(
+        project.inner.id,
+        db_user_id,
+        false,
+        &**pool,
+    )
+    .await?;
+
+    let member = team_member.ok_or_else(|| {
+        ApiError::CustomAuthentication("您没有权限修改此项目".to_string())
+    })?;
+
+    // 检查成员是否已接受邀请且有 EDIT_DETAILS 权限
+    if !member.accepted {
+        return Err(ApiError::CustomAuthentication(
+            "您的成员邀请尚未接受".to_string(),
+        ));
+    }
+
+    if !member
+        .permissions
+        .contains(ProjectPermissions::EDIT_DETAILS)
+    {
+        return Err(ApiError::CustomAuthentication(
+            "您没有编辑此项目的权限".to_string(),
+        ));
+    }
+
+    // 验证用户是否为高级创作者
+    let db_user = models::User::get_id(db_user_id, &**pool, &redis)
+        .await?
+        .ok_or_else(|| ApiError::InvalidInput("用户不存在".to_string()))?;
+
+    if !db_user.is_premium_creator {
+        return Err(ApiError::CustomAuthentication(
+            "只有高级创作者才能设置定价".to_string(),
+        ));
+    }
+
+    // 检查项目是否为付费资源
+    if !project.inner.is_paid {
+        return Err(ApiError::InvalidInput(
+            "只有付费资源才能设置定价。请在创建项目时设置为付费资源。"
+                .to_string(),
+        ));
+    }
+
+    // 验证价格（整数 1-1000）
+    validate_price(body.price)
+        .map_err(|e| ApiError::InvalidInput(e.to_string()))?;
+
+    // 验证有效期
+    validate_validity_days(body.validity_days)
+        .map_err(|e| ApiError::InvalidInput(e.to_string()))?;
+
+    // 开启事务
+    let mut transaction = pool.begin().await?;
+
+    // 将 i32 转换为 Decimal
+    let price_decimal = Decimal::from(body.price);
+
+    // 设置定价
+    ProjectPricing::upsert(
+        project.inner.id,
+        price_decimal,
+        body.validity_days,
+        &mut transaction,
+    )
+    .await?;
+
+    transaction.commit().await?;
+
+    Ok(HttpResponse::Ok().json(PricingResponse {
+        project_id: project_id_str,
+        price: body.price,
+        validity_days: body.validity_days,
+        is_permanent: body.validity_days.is_none(),
+    }))
+}
+
+/// 更新项目定价
+///
+/// PATCH /v3/project/{id}/pricing
+pub async fn update_pricing(
+    req: HttpRequest,
+    info: web::Path<String>,
+    body: web::Json<PricingRequest>,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    // 更新定价与设置定价逻辑相同（使用 upsert）
+    set_pricing(req, info, body, pool, redis, session_queue).await
+}
+
+/// 验证价格是否在有效范围内 (1-1000)
+pub fn validate_price(price: i32) -> Result<(), &'static str> {
+    if price < 1 {
+        return Err("价格不能小于 1");
+    }
+    if price > 1000 {
+        return Err("价格不能大于 1000");
+    }
+    Ok(())
+}
+
+/// 验证授权有效期（1-3650 天，即最多 10 年）
+pub fn validate_validity_days(days: Option<i32>) -> Result<(), &'static str> {
+    if let Some(d) = days {
+        if d <= 0 {
+            return Err("授权有效期必须大于 0 天");
+        }
+        if d > 3650 {
+            return Err("授权有效期不能超过 3650 天（10年）");
+        }
+    }
+    Ok(())
+}
+
+/// 将 Decimal 安全转换为 i32
+pub fn decimal_to_i32(value: Decimal) -> Result<i32, &'static str> {
+    value.try_into().map_err(|_| "Decimal 转换 i32 失败")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_decimal::Decimal;
+
+    // ========== 价格验证测试 ==========
+
+    #[test]
+    fn test_validate_price_valid_min() {
+        assert!(validate_price(1).is_ok());
+    }
+
+    #[test]
+    fn test_validate_price_valid_max() {
+        assert!(validate_price(1000).is_ok());
+    }
+
+    #[test]
+    fn test_validate_price_valid_mid() {
+        assert!(validate_price(500).is_ok());
+    }
+
+    #[test]
+    fn test_validate_price_invalid_zero() {
+        assert!(validate_price(0).is_err());
+    }
+
+    #[test]
+    fn test_validate_price_invalid_negative() {
+        assert!(validate_price(-1).is_err());
+    }
+
+    #[test]
+    fn test_validate_price_invalid_too_high() {
+        assert!(validate_price(1001).is_err());
+    }
+
+    #[test]
+    fn test_validate_price_edge_case_large_negative() {
+        assert!(validate_price(i32::MIN).is_err());
+    }
+
+    #[test]
+    fn test_validate_price_edge_case_large_positive() {
+        assert!(validate_price(i32::MAX).is_err());
+    }
+
+    // ========== 有效期验证测试 ==========
+
+    #[test]
+    fn test_validate_validity_days_none_is_permanent() {
+        assert!(validate_validity_days(None).is_ok());
+    }
+
+    #[test]
+    fn test_validate_validity_days_valid_one() {
+        assert!(validate_validity_days(Some(1)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_validity_days_valid_large() {
+        assert!(validate_validity_days(Some(365)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_validity_days_valid_max() {
+        assert!(validate_validity_days(Some(3650)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_validity_days_invalid_zero() {
+        assert!(validate_validity_days(Some(0)).is_err());
+    }
+
+    #[test]
+    fn test_validate_validity_days_invalid_negative() {
+        assert!(validate_validity_days(Some(-1)).is_err());
+    }
+
+    #[test]
+    fn test_validate_validity_days_invalid_too_large() {
+        assert!(validate_validity_days(Some(3651)).is_err());
+    }
+
+    // ========== Decimal 转换测试 ==========
+
+    #[test]
+    fn test_decimal_to_i32_valid_integer() {
+        let decimal = Decimal::from(100);
+        assert_eq!(decimal_to_i32(decimal), Ok(100));
+    }
+
+    #[test]
+    fn test_decimal_to_i32_valid_one() {
+        let decimal = Decimal::from(1);
+        assert_eq!(decimal_to_i32(decimal), Ok(1));
+    }
+
+    #[test]
+    fn test_decimal_to_i32_valid_thousand() {
+        let decimal = Decimal::from(1000);
+        assert_eq!(decimal_to_i32(decimal), Ok(1000));
+    }
+
+    #[test]
+    fn test_decimal_to_i32_valid_zero() {
+        let decimal = Decimal::from(0);
+        assert_eq!(decimal_to_i32(decimal), Ok(0));
+    }
+
+    #[test]
+    fn test_decimal_to_i32_overflow() {
+        // 超出 i32 范围的 Decimal 应该返回错误
+        let decimal = Decimal::from(i64::MAX);
+        assert!(decimal_to_i32(decimal).is_err());
+    }
+
+    #[test]
+    fn test_decimal_to_i32_with_fraction() {
+        // rust_decimal 的 try_into 会截断小数部分
+        // Decimal::new(1050, 2) = 10.50, 截断后为 10
+        let decimal = Decimal::new(1050, 2); // 10.50
+        assert_eq!(decimal_to_i32(decimal), Ok(10));
+    }
+
+    // ========== PricingRequest 验证测试 ==========
+
+    #[test]
+    fn test_pricing_request_valid() {
+        let price = 100;
+        let validity_days = Some(30);
+
+        assert!(validate_price(price).is_ok());
+        assert!(validate_validity_days(validity_days).is_ok());
+    }
+
+    #[test]
+    fn test_pricing_request_permanent() {
+        let price = 50;
+        let validity_days = None;
+
+        assert!(validate_price(price).is_ok());
+        assert!(validate_validity_days(validity_days).is_ok());
+    }
+
+    #[test]
+    fn test_pricing_request_invalid_price() {
+        let price = 0;
+        let validity_days = Some(30);
+
+        assert!(validate_price(price).is_err());
+        assert!(validate_validity_days(validity_days).is_ok());
+    }
+
+    #[test]
+    fn test_pricing_request_invalid_validity() {
+        let price = 100;
+        let validity_days = Some(-5);
+
+        assert!(validate_price(price).is_ok());
+        assert!(validate_validity_days(validity_days).is_err());
+    }
+
+    // ========== PricingResponse 测试 ==========
+
+    #[test]
+    fn test_pricing_response_is_permanent_true() {
+        let response = PricingResponse {
+            project_id: "test-project".to_string(),
+            price: 100,
+            validity_days: None,
+            is_permanent: true,
+        };
+
+        assert!(response.is_permanent);
+        assert!(response.validity_days.is_none());
+    }
+
+    #[test]
+    fn test_pricing_response_is_permanent_false() {
+        let response = PricingResponse {
+            project_id: "test-project".to_string(),
+            price: 100,
+            validity_days: Some(30),
+            is_permanent: false,
+        };
+
+        assert!(!response.is_permanent);
+        assert_eq!(response.validity_days, Some(30));
+    }
+
+    // ========== 边界条件测试 ==========
+
+    #[test]
+    fn test_price_boundary_conditions() {
+        // 测试边界值
+        assert!(validate_price(0).is_err()); // 下边界外
+        assert!(validate_price(1).is_ok()); // 下边界
+        assert!(validate_price(2).is_ok()); // 下边界内
+        assert!(validate_price(999).is_ok()); // 上边界内
+        assert!(validate_price(1000).is_ok()); // 上边界
+        assert!(validate_price(1001).is_err()); // 上边界外
+    }
+
+    #[test]
+    fn test_validity_days_boundary_conditions() {
+        // 测试边界值
+        assert!(validate_validity_days(Some(-1)).is_err()); // 负数
+        assert!(validate_validity_days(Some(0)).is_err()); // 零
+        assert!(validate_validity_days(Some(1)).is_ok()); // 最小有效值
+        assert!(validate_validity_days(Some(3649)).is_ok()); // 上边界内
+        assert!(validate_validity_days(Some(3650)).is_ok()); // 上边界（10年）
+        assert!(validate_validity_days(Some(3651)).is_err()); // 上边界外
+        assert!(validate_validity_days(None).is_ok()); // 永久授权
+    }
+}

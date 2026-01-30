@@ -406,6 +406,7 @@ async fn process_tracked_project(
         gallery_items: vec![],
         color: None,
         monetization_status: MonetizationStatus::Monetized,
+        is_paid: false,
     };
 
     project_builder.insert(&mut transaction).await?;

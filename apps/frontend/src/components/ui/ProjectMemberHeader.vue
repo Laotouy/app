@@ -51,7 +51,6 @@
         </button>
       </div>
     </div>
-    {{ console.log(nags.filter((x) => x.condition && x.status === "required")) }}
     <div v-if="!collapsed" class="grid-display width-16">
       <div
         v-for="nag in nags.filter((x) => x.condition && !x.hide)"
