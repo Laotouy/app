@@ -131,7 +131,8 @@ import { XIcon, PlusIcon } from "@modrinth/assets";
 
 const router = useRouter();
 const app = useNuxtApp();
-const auth = await useAuth();
+// 直接获取已初始化的 auth 状态，避免 async 导致组件变成异步组件
+const auth = useState("auth");
 
 const props = defineProps({
   organizationId: {
