@@ -915,7 +915,10 @@ async fn notify_order_shipped(
     }
 
     // 生成签名
-    let sign_raw = format!("{}{}{}", order_no, sid, secret_key);
+    // 7yPay 签名算法：将所有参数值按 URL 参数顺序拼接 + key，然后 MD5
+    // URL 参数顺序：orderNo, sid, other
+    // 签名原文：orderNo值 + sid值 + other值 + key
+    let sign_raw = format!("{}{}{}{}", order_no, sid, "true", secret_key);
     let sign = format!("{:x}", md5::compute(&sign_raw));
 
     let request_url = format!(

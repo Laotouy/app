@@ -134,6 +134,15 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                     .route(
                         "pricing",
                         web::patch().to(super::project_pricing::update_pricing),
+                    )
+                    .route(
+                        "pricing/purchasers",
+                        web::get().to(super::project_pricing::get_purchasers),
+                    )
+                    .route(
+                        "pricing/purchasers/{user_id}",
+                        web::delete()
+                            .to(super::project_pricing::revoke_purchase),
                     ),
             ),
     );

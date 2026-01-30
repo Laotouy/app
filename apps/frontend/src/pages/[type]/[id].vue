@@ -92,6 +92,15 @@
           >
             <CurrencyIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem
+            v-if="project.is_paid"
+            :link="`/${project.project_type}/${
+              project.slug ? project.slug : project.id
+            }/settings/purchasers`"
+            label="购买用户"
+          >
+            <UsersIcon aria-hidden="true" />
+          </NavStackItem>
           <h3>视图</h3>
           <NavStackItem
             :link="`/${project.project_type}/${

@@ -252,6 +252,26 @@ impl UserPurchase {
         Ok(result.rows_affected())
     }
 
+    /// 删除用户的购买记录（撤销授权）
+    pub async fn revoke(
+        user_id: UserId,
+        project_id: ProjectId,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<bool, DatabaseError> {
+        let result = sqlx::query!(
+            "
+            DELETE FROM user_purchases
+            WHERE user_id = $1 AND project_id = $2
+            ",
+            user_id.0,
+            project_id.0,
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
     // ==================== 带 Redis 缓存的方法 ====================
 
     /// 获取用户已购买的项目 ID 集合（带缓存）

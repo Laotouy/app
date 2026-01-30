@@ -43,6 +43,9 @@ pub struct PurchaseSummary {
     pub project_id: String,
     pub project_title: Option<String>,
     pub project_slug: Option<String>,
+    pub project_description: Option<String>,
+    pub project_type: Option<String>,
+    pub icon_url: Option<String>,
     pub amount: Decimal,
     pub purchased_at: chrono::DateTime<Utc>,
     pub expires_at: Option<chrono::DateTime<Utc>>,
@@ -104,11 +107,33 @@ pub async fn list_user_purchases(
     let projects = Project::get_many_ids(&project_ids, &**pool, &redis).await?;
 
     // 构建项目 ID 到信息的映射
-    let project_map: std::collections::HashMap<i64, (String, Option<String>)> =
-        projects
-            .into_iter()
-            .map(|p| (p.inner.id.0, (p.inner.name, p.inner.slug)))
-            .collect();
+    struct ProjectInfo {
+        name: String,
+        slug: Option<String>,
+        description: String,
+        project_type: String,
+        icon_url: Option<String>,
+    }
+
+    let project_map: std::collections::HashMap<i64, ProjectInfo> = projects
+        .into_iter()
+        .map(|p| {
+            (
+                p.inner.id.0,
+                ProjectInfo {
+                    name: p.inner.name,
+                    slug: p.inner.slug,
+                    description: p.inner.description,
+                    project_type: p
+                        .project_types
+                        .first()
+                        .cloned()
+                        .unwrap_or_default(),
+                    icon_url: p.inner.icon_url,
+                },
+            )
+        })
+        .collect();
 
     let now = Utc::now();
 
@@ -122,8 +147,12 @@ pub async fn list_user_purchases(
 
             PurchaseSummary {
                 project_id: ProjectId::from(purchase.project_id).to_string(),
-                project_title: project_info.map(|(name, _)| name.clone()),
-                project_slug: project_info.and_then(|(_, slug)| slug.clone()),
+                project_title: project_info.map(|p| p.name.clone()),
+                project_slug: project_info.and_then(|p| p.slug.clone()),
+                project_description: project_info
+                    .map(|p| p.description.clone()),
+                project_type: project_info.map(|p| p.project_type.clone()),
+                icon_url: project_info.and_then(|p| p.icon_url.clone()),
                 amount: purchase.amount,
                 purchased_at: purchase.purchased_at,
                 expires_at: purchase.expires_at,
