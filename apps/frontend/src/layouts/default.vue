@@ -101,24 +101,26 @@
             <LanguagesIcon aria-hidden="true" />
             <span>汉化</span>
           </NuxtLink>
-
-          <!-- More dropdown -->
-          <div class="nav-more">
-            <button class="nav-link nav-more-trigger">
-              <span>更多</span>
-              <DropdownIcon aria-hidden="true" />
-            </button>
-            <div class="nav-more-dropdown">
-              <NuxtLink to="/datapacks" class="dropdown-link">
-                <BracesIcon aria-hidden="true" />
-                <span>数据包</span>
-              </NuxtLink>
-              <NuxtLink to="/plugins" class="dropdown-link">
-                <PlugIcon aria-hidden="true" />
-                <span>插件</span>
-              </NuxtLink>
-            </div>
-          </div>
+          <NuxtLink
+            to="/plugins"
+            class="nav-link"
+            :class="{
+              active: route.name === 'search-plugins' || route.path.startsWith('/plugin/'),
+            }"
+          >
+            <PlugIcon aria-hidden="true" />
+            <span>插件</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/datapacks"
+            class="nav-link"
+            :class="{
+              active: route.name === 'search-datapacks' || route.path.startsWith('/datapack/'),
+            }"
+          >
+            <BracesIcon aria-hidden="true" />
+            <span>数据包</span>
+          </NuxtLink>
 
           <!-- 论坛模块暂时隐藏
           <NuxtLink
@@ -423,7 +425,6 @@
           </div>
           <div class="footer-column">
             <h4 class="footer-column-title">社区</h4>
-            <NuxtLink to="/forums/chat" class="footer-link">论坛</NuxtLink>
             <NuxtLink to="/languages" class="footer-link">汉化</NuxtLink>
             <NuxtLink to="/softwares" class="footer-link">软件</NuxtLink>
             <NuxtLink to="/plugins" class="footer-link">插件</NuxtLink>

@@ -391,6 +391,63 @@
         </div>
         -->
 
+        <!-- 服务器插件推荐 -->
+        <div v-if="latestPlugins.length > 0" class="sidebar-card plugin-recommend-card">
+          <div class="sidebar-header plugin-header">
+            <h3 class="sidebar-title"><PlugIcon class="sidebar-icon" /> 服务器插件</h3>
+            <NuxtLink to="/plugins" class="sidebar-more">更多 →</NuxtLink>
+          </div>
+          <div class="mini-resource-list">
+            <NuxtLink
+              v-for="plugin in latestPlugins"
+              :key="plugin.project_id"
+              :to="getProjectLink(plugin)"
+              class="mini-resource-item"
+            >
+              <img
+                v-if="plugin.icon_url"
+                :src="plugin.icon_url"
+                :alt="plugin.title"
+                class="mini-resource-icon"
+              />
+              <span v-else class="mini-resource-icon-placeholder"><PlugIcon /></span>
+              <div class="mini-resource-info">
+                <div class="mini-resource-title">{{ plugin.title }}</div>
+                <div class="mini-resource-author">
+                  {{ plugin.author === "BBSMC" ? "社区搬运" : `by ${plugin.author}` }}
+                </div>
+                <div class="mini-resource-desc">{{ plugin.description }}</div>
+                <div class="mini-resource-tags">
+                  <span
+                    v-for="loader in (plugin.loaders || []).slice(0, 2)"
+                    :key="loader"
+                    class="mini-tag"
+                  >
+                    {{ formatLoader(loader) }}
+                  </span>
+                  <span v-if="plugin.versions?.[0]" class="mini-tag version-tag">
+                    {{ plugin.versions[0] }}
+                  </span>
+                </div>
+                <div class="mini-resource-stats">
+                  <span class="mini-stat-item">
+                    <DownloadIcon class="mini-stat-icon" />
+                    {{ formatNumber(plugin.downloads) }}
+                  </span>
+                  <span class="mini-stat-item">
+                    <HeartIcon class="mini-stat-icon" />
+                    {{ formatNumber(plugin.follows) }}
+                  </span>
+                  <span class="mini-stat-item update-time">
+                    <UpdatedIcon class="mini-stat-icon" />
+                    {{ formatDate(plugin.date_modified) }}
+                  </span>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+
         <!-- 友情链接 -->
         <div class="sidebar-card">
           <div class="sidebar-header">
@@ -447,6 +504,7 @@ const { data: pageData } = await useAsyncData("homepage-data", async () => {
     articlesResponse,
     translationsResponse,
     latestModpackTranslationsResponse,
+    latestPluginsResponse,
   ] = await Promise.all([
     useBaseFetch(`search?limit=6&index=relevance`),
     useBaseFetch(`forum`, { apiVersion: 3 }),
@@ -454,6 +512,7 @@ const { data: pageData } = await useAsyncData("homepage-data", async () => {
     useBaseFetch(`forum/article/lists`, { apiVersion: 3 }),
     useBaseFetch(`search?limit=5&index=updated&facets=[["project_type:language"]]`),
     useBaseFetch(`search?limit=6&index=relevance&facets=[["project_type:language"]]`),
+    useBaseFetch(`search?limit=5&index=updated&facets=[["project_type:plugin"]]`),
   ]);
 
   return {
@@ -463,6 +522,10 @@ const { data: pageData } = await useAsyncData("homepage-data", async () => {
     articles: (articlesResponse.forums ?? []).slice(0, 3),
     translations: translationsResponse.hits ?? [],
     latestModpackTranslations: latestModpackTranslationsResponse.hits ?? [],
+    latestPlugins: (latestPluginsResponse.hits ?? []).map(plugin => ({
+      ...plugin,
+      project_type: plugin.project_type || 'plugin' // 确保插件类型正确
+    })),
   };
 });
 
@@ -471,6 +534,7 @@ const hotProjects = computed(() => pageData.value?.hotProjects ?? []);
 // forums, notices, articles available from pageData if needed
 const translations = computed(() => pageData.value?.translations ?? []);
 const latestModpackTranslations = computed(() => pageData.value?.latestModpackTranslations ?? []);
+const latestPlugins = computed(() => pageData.value?.latestPlugins ?? []);
 
 const stats = ref({
   projects: 12580,
@@ -575,7 +639,20 @@ const getProjectLink = (project) => {
     software: "software",
     language: "language",
   };
-  const type = typeMap[project.project_type] || project.project_type;
+
+  // 获取项目类型,如果没有则使用 mod 作为默认值
+  let projectType = project.project_type;
+
+  // 如果 project_type 不存在,尝试从其他字段推断
+  if (!projectType && project.loaders) {
+    // 根据 loaders 判断类型
+    const loaders = Array.isArray(project.loaders) ? project.loaders : [];
+    if (loaders.some(l => ['bukkit', 'spigot', 'paper', 'purpur', 'folia'].includes(l.toLowerCase()))) {
+      projectType = 'plugin';
+    }
+  }
+
+  const type = typeMap[projectType] || projectType || 'mod';
   return `/${type}/${project.slug || project.project_id}`;
 };
 
@@ -1851,6 +1928,164 @@ onUnmounted(() => {
   .stat-icon {
     width: 12px;
     height: 12px;
+  }
+}
+
+// Mini Resource List (服务器插件推荐) - 丰富内容版样式
+.mini-resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.mini-resource-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  background: var(--bg-elevated, #12151a);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--accent-muted, rgba(241, 100, 54, 0.1));
+    border-color: var(--color-divider);
+    transform: translateX(4px);
+
+    .mini-resource-title {
+      color: var(--flame, #f16436);
+    }
+  }
+}
+
+.mini-resource-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-elevated, #12151a);
+  border: 1px solid var(--color-divider);
+}
+
+.mini-resource-icon-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--bg-elevated, #12151a);
+  border: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.mini-resource-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mini-resource-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  transition: color 0.3s ease;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.mini-resource-author {
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.mini-resource-desc {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 2px 0;
+}
+
+.mini-resource-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.mini-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: var(--accent-muted, rgba(241, 100, 54, 0.15));
+  border: 1px solid var(--flame, rgba(241, 100, 54, 0.3));
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--flame, #f16436);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.version-tag {
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.05));
+  border-color: var(--color-divider);
+  color: var(--color-secondary);
+}
+
+.mini-resource-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.mini-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+  font-weight: 500;
+
+  .mini-stat-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--flame, #f16436);
+    opacity: 0.8;
+  }
+
+  &.update-time {
+    color: var(--color-text-inactive);
+
+    .mini-stat-icon {
+      color: var(--color-secondary);
+    }
   }
 }
 

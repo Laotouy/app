@@ -606,6 +606,11 @@ projectType.value = tags.value.projectTypes.find(
   (x) => x.id === route.path.replaceAll(/^\/|s\/?$/g, ""), // Removes prefix `/` and suffixes `s` and `s/`
 );
 
+// 插件类型默认按更新时间排序
+if (projectType.value.id === "plugin" && !route.query.s) {
+  sortType.value = { display: "最近更新", name: "updated" };
+}
+
 const noLoad = ref(false);
 const {
   data: rawResults,

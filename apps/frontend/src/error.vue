@@ -81,9 +81,9 @@
               <span class="link-icon"><GlassesIcon /></span>
               <span>光影</span>
             </NuxtLink>
-            <NuxtLink to="/forums/chat" class="quick-link">
-              <span class="link-icon"><MessageIcon /></span>
-              <span>论坛</span>
+            <NuxtLink to="/languages" class="quick-link">
+              <span class="link-icon"><LanguagesIcon /></span>
+              <span>整合包汉化</span>
             </NuxtLink>
           </div>
         </div>
@@ -98,7 +98,7 @@ import {
   BoxIcon,
   PackageClosedIcon,
   GlassesIcon,
-  MessageIcon,
+  LanguagesIcon,
   HomeIcon,
   UndoIcon,
 } from "@modrinth/assets";
