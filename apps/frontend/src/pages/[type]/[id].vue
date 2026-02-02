@@ -1399,6 +1399,8 @@
               <QuarkIcon v-else-if="donation.id === 'quark'" aria-hidden="true" />
               <BaiduIcon v-else-if="donation.id === 'baidu'" aria-hidden="true" />
               <CurseforgeIcon v-else-if="donation.id === 'curseforge'" aria-hidden="true" />
+              <McmodIcon v-else-if="donation.id === 'mcmod'" aria-hidden="true" />
+              <Mc9yIcon v-else-if="donation.id === 'mc9y'" aria-hidden="true" />
               <KoFiIcon v-else-if="donation.id === 'ko-fi'" aria-hidden="true" />
               <PayPalIcon v-else-if="donation.id === 'paypal'" aria-hidden="true" />
               <OpenCollectiveIcon
@@ -1678,6 +1680,8 @@ import {
   QuarkIcon,
   BaiduIcon,
   CurseforgeIcon,
+  McmodIcon,
+  Mc9yIcon,
   ModrinthIcon2,
   AifadianIcon,
   QQPDIcon,
@@ -1958,6 +1962,10 @@ const webDisplayLabel = (x) => {
       return "夸克网盘";
     case "baidu":
       return "百度网盘";
+    case "mcmod":
+      return "MC百科";
+    case "mc9y":
+      return "九域资源社区";
     default:
       return x;
   }
