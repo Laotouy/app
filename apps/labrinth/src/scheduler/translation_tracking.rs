@@ -12,7 +12,7 @@ use crate::database::redis::RedisPool;
 use crate::models::projects::{MonetizationStatus, ProjectStatus};
 use crate::models::threads::ThreadType;
 use chrono::Utc;
-use log::{info, warn};
+use log::debug;
 use thiserror::Error;
 
 use super::Scheduler;
@@ -119,15 +119,15 @@ pub fn schedule_translation_tracking(
         let redis_ref = redis.clone();
 
         async move {
-            info!("开始执行汉化追踪任务");
+            debug!("开始执行汉化追踪任务");
 
             if let Err(e) =
                 run_translation_tracking(&pool_ref, &redis_ref).await
             {
-                warn!("汉化追踪任务执行失败：{}", e);
+                debug!("汉化追踪任务执行失败：{}", e);
             }
 
-            info!("完成汉化追踪任务");
+            debug!("完成汉化追踪任务");
         }
     });
 }
@@ -260,27 +260,27 @@ async fn run_translation_tracking(
     let projects = get_tracked_projects(pool).await?;
 
     if projects.is_empty() {
-        info!("没有启用汉化追踪的项目");
+        debug!("没有启用汉化追踪的项目");
         return Ok(());
     }
 
-    info!("找到 {} 个启用汉化追踪的项目", projects.len());
+    debug!("找到 {} 个启用汉化追踪的项目", projects.len());
 
     // 获取 bbsmc-cn 组织信息（用于创建汉化资源）
     let cn_org = get_cn_organization(pool).await?;
     let cn_org = match cn_org {
         Some(org) => org,
         None => {
-            warn!("未找到 {} 组织，跳过汉化资源创建", get_cn_org_slug());
+            debug!("未找到 {} 组织，跳过汉化资源创建", get_cn_org_slug());
             return Ok(());
         }
     };
 
-    info!("找到汉化组织: {} (id={})", cn_org.name, cn_org.id);
+    debug!("找到汉化组织: {} (id={})", cn_org.name, cn_org.id);
 
     // 遍历所有启用追踪的项目
     for project in &projects {
-        info!(
+        debug!(
             "处理项目: {} (id={}, slug={}, downloads={})",
             project.name,
             project.id,
@@ -291,12 +291,12 @@ async fn run_translation_tracking(
         if let Err(e) =
             process_tracked_project(pool, project, &cn_org, redis).await
         {
-            warn!("处理项目 {} ({}) 失败: {}", project.name, project.id, e);
+            debug!("处理项目 {} ({}) 失败: {}", project.name, project.id, e);
             // 继续处理下一个项目，不中断整个任务
         }
     }
 
-    info!("汉化追踪任务处理完成，共处理 {} 个项目", projects.len());
+    debug!("汉化追踪任务处理完成，共处理 {} 个项目", projects.len());
     Ok(())
 }
 
@@ -311,7 +311,7 @@ async fn process_tracked_project(
     redis: &RedisPool,
 ) -> Result<(), TranslationTrackingError> {
     let Some(original_slug) = &project.slug else {
-        warn!("项目 {} 没有 slug，跳过", project.name);
+        debug!("项目 {} 没有 slug，跳过", project.name);
         return Ok(());
     };
 
@@ -320,13 +320,13 @@ async fn process_tracked_project(
 
     // 检查汉化资源是否已存在
     if let Some(cn_project) = get_cn_project(pool, &cn_slug).await? {
-        info!("汉化资源 {} 已存在，检查同步", cn_slug);
+        debug!("汉化资源 {} 已存在，检查同步", cn_slug);
 
         let mut need_clear_cache = false;
 
         // 检查图标是否需要同步
         if cn_project.icon_url != project.icon_url {
-            info!(
+            debug!(
                 "同步汉化资源图标: {} -> {}",
                 cn_project.icon_url.as_deref().unwrap_or("无"),
                 project.icon_url.as_deref().unwrap_or("无")
@@ -338,13 +338,13 @@ async fn process_tracked_project(
             )
             .await?;
             need_clear_cache = true;
-            info!("汉化资源 {} 图标同步完成", cn_slug);
+            debug!("汉化资源 {} 图标同步完成", cn_slug);
         }
 
         // 检查描述是否需要同步
         let expected_description = generate_cn_description(original_slug);
         if cn_project.description != expected_description {
-            info!(
+            debug!(
                 "同步汉化资源描述: {} (长度 {} -> {})",
                 cn_slug,
                 cn_project.description.len(),
@@ -357,7 +357,7 @@ async fn process_tracked_project(
             )
             .await?;
             need_clear_cache = true;
-            info!("汉化资源 {} 描述同步完成", cn_slug);
+            debug!("汉化资源 {} 描述同步完成", cn_slug);
         }
 
         // 如果有任何更新，清除缓存
@@ -375,7 +375,7 @@ async fn process_tracked_project(
     }
 
     // 创建汉化资源
-    info!("开始创建汉化资源: {}", cn_slug);
+    debug!("开始创建汉化资源: {}", cn_slug);
 
     let mut transaction = pool.begin().await?;
 
@@ -467,7 +467,7 @@ async fn process_tracked_project(
     Project::clear_cache(project_id, Some(cn_slug.clone()), None, redis)
         .await?;
 
-    info!(
+    debug!(
         "成功创建汉化资源: {} (id={})，已更新原项目 translation_tracker={}",
         cn_slug, project_id.0, cn_slug
     );
