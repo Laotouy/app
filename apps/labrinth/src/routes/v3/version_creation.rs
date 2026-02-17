@@ -170,6 +170,7 @@ async fn version_create_inner(
     let mut version_builder = None;
     let mut selected_loaders = None;
     let mut project_is_paid = false;
+    let mut project_slug: Option<String> = None;
 
     let user = get_user_from_headers(
         &req,
@@ -243,6 +244,7 @@ async fn version_create_inner(
 
                 // 保存项目的付费状态，用于后续设置文件的 is_private
                 project_is_paid = project.inner.is_paid;
+                project_slug = project.inner.slug.clone();
 
                 // 检查创建此版本的用户是否是项目团队成员
                 // 项目版本正在添加。
@@ -717,10 +719,19 @@ async fn version_create_inner(
     .fetch_optional(pool)
     .await?;
 
-    if let Some(project_status) = project_status
+    if let Some(ref project_status) = project_status
         && project_status.status == ProjectStatus::Processing.as_str()
     {
         moderation_queue.projects.insert(project_id.into());
+    }
+
+    // 仅在项目已审核通过且可搜索时通知 Bing IndexNow
+    if let Some(ref ps) = project_status
+        && ProjectStatus::from_string(&ps.status).is_searchable()
+    {
+        if let (Some(slug), Some(project_type)) = (&project_slug, response.project_types.first()) {
+            crate::util::indexnow::notify_project(project_type, slug);
+        }
     }
 
     Ok(HttpResponse::Ok().json(response))

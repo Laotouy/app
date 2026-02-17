@@ -58,6 +58,9 @@ export default defineNuxtConfig({
         {
           src: "https://hm.baidu.com/hm.js?f5137aff8af02e0688d2485989441979",
         },
+        {
+          children: `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "vfqf1ute5s");`,
+        },
       ],
       link: [
         // The type is necessary because the linter can't always compare this very nested/complex type on itself

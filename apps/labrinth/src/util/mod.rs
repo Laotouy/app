@@ -9,6 +9,7 @@ pub mod env;
 pub mod ext;
 pub mod guards;
 pub mod img;
+pub mod indexnow;
 pub mod ip;
 pub mod phone;
 pub mod ratelimit;

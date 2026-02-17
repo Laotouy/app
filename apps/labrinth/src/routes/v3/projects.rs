@@ -578,6 +578,15 @@ pub async fn project_edit(
                     .await?;
                 }
 
+                // 项目审核通过变为可搜索时，通知 Bing IndexNow
+                if status.is_searchable()
+                    && !project_item.inner.status.is_searchable()
+                {
+                    if let (Some(slug), Some(project_type)) = (&project_item.inner.slug, project_item.project_types.first()) {
+                        crate::util::indexnow::notify_project(project_type, slug);
+                    }
+                }
+
                 if user.role.is_mod()
                     && let Ok(webhook_url) =
                         dotenvy::var("MODERATION_SLACK_WEBHOOK")
@@ -706,6 +715,11 @@ pub async fn project_edit(
                             .map(|x| (*x).into())
                             .collect::<Vec<_>>(),
                     );
+
+                    // 项目从可搜索变为不可搜索（隐藏/删除），通知 Bing IndexNow 以加速下架
+                    if let (Some(slug), Some(project_type)) = (&project_item.inner.slug, project_item.project_types.first()) {
+                        crate::util::indexnow::notify_project(project_type, slug);
+                    }
                 }
             }
 
@@ -1197,6 +1211,10 @@ pub async fn project_edit(
             .await?;
 
             transaction.commit().await?;
+            // 判断编辑后的最终状态是否可搜索
+            let final_status = new_project.status.as_ref().unwrap_or(&project_item.inner.status);
+            let indexnow_slug = project_item.inner.slug.clone();
+            let indexnow_project_type = project_item.project_types.first().cloned();
             db_models::Project::clear_cache(
                 project_item.inner.id,
                 project_item.inner.slug,
@@ -1209,6 +1227,17 @@ pub async fn project_edit(
             // 在事务提交和缓存清理后再删除搜索索引，确保任务完成后再返回响应
             if let Some(versions) = versions_to_remove {
                 remove_documents(&versions, &search_config).await?;
+            }
+
+            // 仅在项目可搜索状态下通知 Bing IndexNow（内容编辑）
+            // 排除已在状态变更中通知过的情况（searchable <-> non-searchable 转换）
+            let status_already_notified = new_project.status.as_ref().is_some_and(|s| {
+                s.is_searchable() != project_item.inner.status.is_searchable()
+            });
+            if final_status.is_searchable() && !status_already_notified {
+                if let (Some(slug), Some(project_type)) = (&indexnow_slug, &indexnow_project_type) {
+                    crate::util::indexnow::notify_project(project_type, slug);
+                }
             }
 
             Ok(HttpResponse::NoContent().body(""))
@@ -2468,6 +2497,13 @@ pub async fn project_delete(
             .await?;
 
     transaction.commit().await?;
+
+    // 如果被删除的项目之前是可搜索的，通知 Bing IndexNow 以加速下架
+    if project.inner.status.is_searchable() {
+        if let (Some(slug), Some(project_type)) = (&project.inner.slug, project.project_types.first()) {
+            crate::util::indexnow::notify_project(project_type, slug);
+        }
+    }
 
     remove_documents(
         &project
