@@ -582,8 +582,14 @@ pub async fn project_edit(
                 if status.is_searchable()
                     && !project_item.inner.status.is_searchable()
                 {
-                    if let (Some(slug), Some(project_type)) = (&project_item.inner.slug, project_item.project_types.first()) {
-                        crate::util::indexnow::notify_project(project_type, slug);
+                    if let (Some(slug), Some(project_type)) = (
+                        &project_item.inner.slug,
+                        project_item.project_types.first(),
+                    ) {
+                        crate::util::indexnow::notify_project(
+                            project_type,
+                            slug,
+                        );
                     }
                 }
 
@@ -717,8 +723,14 @@ pub async fn project_edit(
                     );
 
                     // 项目从可搜索变为不可搜索（隐藏/删除），通知 Bing IndexNow 以加速下架
-                    if let (Some(slug), Some(project_type)) = (&project_item.inner.slug, project_item.project_types.first()) {
-                        crate::util::indexnow::notify_project(project_type, slug);
+                    if let (Some(slug), Some(project_type)) = (
+                        &project_item.inner.slug,
+                        project_item.project_types.first(),
+                    ) {
+                        crate::util::indexnow::notify_project(
+                            project_type,
+                            slug,
+                        );
                     }
                 }
             }
@@ -1212,9 +1224,13 @@ pub async fn project_edit(
 
             transaction.commit().await?;
             // 判断编辑后的最终状态是否可搜索
-            let final_status = new_project.status.as_ref().unwrap_or(&project_item.inner.status);
+            let final_status = new_project
+                .status
+                .as_ref()
+                .unwrap_or(&project_item.inner.status);
             let indexnow_slug = project_item.inner.slug.clone();
-            let indexnow_project_type = project_item.project_types.first().cloned();
+            let indexnow_project_type =
+                project_item.project_types.first().cloned();
             db_models::Project::clear_cache(
                 project_item.inner.id,
                 project_item.inner.slug,
@@ -1231,11 +1247,15 @@ pub async fn project_edit(
 
             // 仅在项目可搜索状态下通知 Bing IndexNow（内容编辑）
             // 排除已在状态变更中通知过的情况（searchable <-> non-searchable 转换）
-            let status_already_notified = new_project.status.as_ref().is_some_and(|s| {
-                s.is_searchable() != project_item.inner.status.is_searchable()
-            });
+            let status_already_notified =
+                new_project.status.as_ref().is_some_and(|s| {
+                    s.is_searchable()
+                        != project_item.inner.status.is_searchable()
+                });
             if final_status.is_searchable() && !status_already_notified {
-                if let (Some(slug), Some(project_type)) = (&indexnow_slug, &indexnow_project_type) {
+                if let (Some(slug), Some(project_type)) =
+                    (&indexnow_slug, &indexnow_project_type)
+                {
                     crate::util::indexnow::notify_project(project_type, slug);
                 }
             }
@@ -2500,7 +2520,9 @@ pub async fn project_delete(
 
     // 如果被删除的项目之前是可搜索的，通知 Bing IndexNow 以加速下架
     if project.inner.status.is_searchable() {
-        if let (Some(slug), Some(project_type)) = (&project.inner.slug, project.project_types.first()) {
+        if let (Some(slug), Some(project_type)) =
+            (&project.inner.slug, project.project_types.first())
+        {
             crate::util::indexnow::notify_project(project_type, slug);
         }
     }

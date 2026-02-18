@@ -47,7 +47,11 @@ pub fn submit_urls(urls: Vec<String>) {
             .await
         {
             Ok(resp) => {
-                info!("IndexNow 提交成功: status={}, urls={}", resp.status(), urls_debug);
+                info!(
+                    "IndexNow 提交成功: status={}, urls={}",
+                    resp.status(),
+                    urls_debug
+                );
             }
             Err(e) => {
                 warn!("IndexNow 提交失败: {}, urls={}", e, urls_debug);
