@@ -170,10 +170,10 @@ export const affiliates: Record<string, Affiliate> = {
     projects: ["ZSSC3pSh"],
   },
   "unfinished-path": {
-    name: "未尽之路",
-    code: "未尽之路",
+    name: "墨言",
+    code: "墨言",
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-    projects: ["zT3k10EZ"],
+    projects: ["zT3k10EZ","i2V4lWdp"],
   },
   deceasedcraft: {
     name: "亡者世界",
@@ -187,6 +187,12 @@ export const affiliates: Record<string, Affiliate> = {
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
     projects: [], // 通过组织级别配置，不需要手动添加项目
     isOrganization: true,
+  },
+  bff: {
+    name: "逆转未来",
+    code: "逆转未来",
+    link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
+    projects: ["vxAmfb3Y"]
   },
 };
 
