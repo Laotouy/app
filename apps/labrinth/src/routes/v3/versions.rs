@@ -32,6 +32,7 @@ use crate::util::date::get_current_tenths_of_ms;
 use crate::util::img;
 use crate::util::validate::validation_errors_to_string;
 use actix_web::{HttpRequest, HttpResponse, web};
+use log::info;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -333,7 +334,9 @@ pub async fn version_download(
 
         let ip = crate::util::ip::convert_to_ip_v6(&ip)
             .unwrap_or_else(|_| Ipv4Addr::new(127, 0, 0, 1).to_ipv6_mapped());
+        info!("version_download: version_id={}, ip={}", version_id, ip);
         let id: ProjectId = version_item.inner.project_id.into();
+
 
         // if version_item.disks.is_empty() {
         //     return Err(ApiError::NotFound);
