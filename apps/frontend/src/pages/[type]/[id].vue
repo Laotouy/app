@@ -1530,7 +1530,7 @@
 
         <div
           v-if="
-            organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3', 'bbsmc-cn'].includes(organization.slug)
+            organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3'].includes(organization.slug)
           "
           class="card flex-card experimental-styles-within"
         >
@@ -1538,6 +1538,19 @@
           <p style="font-size: 0.875rem; color: var(--color-text); line-height: 1.6; margin: 0">
             对于可进行 JAR
             文件搬运的许可证，我们提供站内下载服务；其他资源会跳转到原帖下载。资源更新可能不及时，建议前往资源内提供的原帖链接下载最新版本。
+          </p>
+        </div>
+        <div
+          v-if="organization && organization.slug === 'bbsmc-cn'"
+          class="card flex-card experimental-styles-within"
+        >
+          <h2>BBSMC汉化组</h2>
+          <p style="font-size: 0.875rem; color: var(--color-text); line-height: 1.6; margin: 0">
+            BBSMC汉化组是一个专注于Minecraft整合包汉化的团队，我们借助AI翻译技术 +
+            1000万文本的MC专业词汇结合人工校对，力求在效率与质量之间找到最佳平衡。我们针对每个资源的版本进行针对性汉化，在下载的时候一定要针对特定的版本下载特定版本的汉化包，不要使用跨版本的汉化包。比如整合包的版本是
+            1.0.1 就不要使用针对 1.0.0
+            版本的汉化包，会导致很多问题无法正常游戏游玩。缺少版本需求请加入汉化组的QQ群
+            <span class="font-mono font-bold">1073724937</span> 提需求，我们会快速响应。
           </p>
         </div>
         <div class="card flex-card experimental-styles-within">

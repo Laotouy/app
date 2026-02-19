@@ -49,12 +49,13 @@
         <div class="w-9 max-sm:hidden"></div>
         <div class="text-sm font-bold text-contrast max-sm:hidden">标题</div>
         <div
-          v-if="project.project_type !== 'software'"
+          v-if="project.project_type !== 'software' && project.project_type !== 'language'"
           class="text-sm font-bold text-contrast max-sm:hidden sm:max-xl:collapse sm:max-xl:hidden"
         >
           游戏版本
         </div>
         <div
+          v-if="project.project_type !== 'language'"
           class="text-sm font-bold text-contrast max-sm:hidden sm:max-xl:collapse sm:max-xl:hidden"
         >
           平台
@@ -109,7 +110,7 @@
             </div>
             <div class="flex flex-col justify-center gap-2 sm:contents">
               <div class="flex flex-row flex-wrap items-center gap-1 xl:contents">
-                <div v-if="project.project_type !== 'software'" class="flex items-center">
+                <div v-if="project.project_type !== 'software' && project.project_type !== 'language'" class="flex items-center">
                   <div class="tag-list">
                     <div
                       v-for="gameVersion in formatVersionsForDisplay(version.game_versions)"
@@ -122,7 +123,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center">
+                <div v-if="project.project_type !== 'language'" class="flex items-center">
                   <div class="tag-list">
                     <div
                       v-for="platform in version.loaders"

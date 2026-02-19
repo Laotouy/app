@@ -692,9 +692,9 @@
             <UndoIcon aria-hidden="true" />
             重新提交
           </button>
-          <!-- 消息按钮（非编辑模式下显示，即使没有thread_id也显示） -->
+          <!-- 消息按钮（仅项目成员在非编辑模式下显示） -->
           <button
-            v-if="!isEditing"
+            v-if="!isEditing && currentMember"
             class="btn btn-secondary btn-small message-toggle"
             @click.stop="toggleThread(link)"
           >
@@ -703,9 +703,9 @@
           </button>
         </div>
 
-        <!-- Thread 消息区域 -->
+        <!-- Thread 消息区域（仅项目成员可见） -->
         <div
-          v-show="!isEditing && expandedThreads.includes(getLinkId(link))"
+          v-show="!isEditing && currentMember && expandedThreads.includes(getLinkId(link))"
           class="thread-section"
           @click.stop
         >
