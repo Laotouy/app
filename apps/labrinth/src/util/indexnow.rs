@@ -70,3 +70,46 @@ pub fn notify_project(project_type: &str, slug: &str) {
     let url = format!("{}/{}/{}", site_url, project_type, slug);
     submit_urls(vec![url]);
 }
+
+/// 提交项目主页及 changelog/versions/issues 子页面 URL 到 IndexNow。
+/// 用于项目审核通过等场景，确保所有子页面被搜索引擎收录。
+pub fn notify_project_with_subpages(project_type: &str, slug: &str) {
+    let site_url = match dotenvy::var("SITE_URL") {
+        Ok(u) => u,
+        _ => return,
+    };
+
+    let base = format!("{}/{}/{}", site_url, project_type, slug);
+    submit_urls(vec![
+        base.clone(),
+        format!("{}/changelog", base),
+        format!("{}/versions", base),
+        format!("{}/issues", base),
+    ]);
+}
+
+/// 提交版本页面 URL 到 IndexNow。
+pub fn notify_version(project_type: &str, slug: &str, version_number: &str) {
+    let site_url = match dotenvy::var("SITE_URL") {
+        Ok(u) => u,
+        _ => return,
+    };
+
+    let base = format!("{}/{}/{}", site_url, project_type, slug);
+    let encoded_version = urlencoding::encode(version_number);
+    submit_urls(vec![
+        base.clone(),
+        format!("{}/version/{}", base, encoded_version),
+    ]);
+}
+
+/// 提交 issue 详情页 URL 到 IndexNow。
+pub fn notify_issue(project_type: &str, slug: &str, issue_id: &str) {
+    let site_url = match dotenvy::var("SITE_URL") {
+        Ok(u) => u,
+        _ => return,
+    };
+
+    let url = format!("{}/{}/{}/issues/{}", site_url, project_type, slug, issue_id);
+    submit_urls(vec![url]);
+}

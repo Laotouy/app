@@ -234,6 +234,14 @@ pub async fn project_issue_create(
 
     let id: crate::models::v3::issues::IssuesId = issue_id.into();
 
+    // 通知 IndexNow 提交 issue 页面 URL
+    if let (Some(slug), Some(project_type)) = (
+        &project.inner.slug,
+        project.project_types.first(),
+    ) {
+        crate::util::indexnow::notify_issue(project_type, slug, &id.to_string());
+    }
+
     // 发送邮件通知
     let users = project.inner.get_all_users(&**pool, &redis).await?;
     let users = models::User::get_many_ids(&users, &**pool, &redis).await?;

@@ -578,7 +578,7 @@ pub async fn project_edit(
                     .await?;
                 }
 
-                // 项目审核通过变为可搜索时，通知 Bing IndexNow
+                // 项目审核通过变为可搜索时，通知 Bing IndexNow（含子页面）
                 if status.is_searchable()
                     && !project_item.inner.status.is_searchable()
                 {
@@ -586,7 +586,7 @@ pub async fn project_edit(
                         &project_item.inner.slug,
                         project_item.project_types.first(),
                     ) {
-                        crate::util::indexnow::notify_project(
+                        crate::util::indexnow::notify_project_with_subpages(
                             project_type,
                             slug,
                         );

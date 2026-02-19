@@ -732,7 +732,11 @@ async fn version_create_inner(
         if let (Some(slug), Some(project_type)) =
             (&project_slug, response.project_types.first())
         {
-            crate::util::indexnow::notify_project(project_type, slug);
+            crate::util::indexnow::notify_version(
+                project_type,
+                slug,
+                &response.version_number,
+            );
         }
     }
 
