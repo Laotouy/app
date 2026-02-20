@@ -1,5 +1,5 @@
 <template>
-  <div class="tutorial-page">
+  <div class="tutorial-page" :class="{ 'tutorial-dark': isDark }">
     <!-- Side nav -->
     <nav class="side-nav">
       <div
@@ -380,7 +380,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { isDarkTheme } from "~/plugins/theme/themes.ts";
+
+const { $theme } = useNuxtApp();
+const isDark = computed(() => isDarkTheme($theme?.active));
 
 useHead({
   title: "汉化补丁安装教程 - BBSMC",
@@ -389,6 +393,16 @@ useHead({
       name: "description",
       content:
         "BBSMC汉化补丁安装教程，适用于PCL2启动器，从下载汉化包到覆盖安装，包含版本隔离判断与文件冲突处理，全程图解说明。",
+    },
+  ],
+  link: [
+    {
+      rel: "preconnect",
+      href: "https://fonts.googleapis.com",
+    },
+    {
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&display=swap",
     },
   ],
 });
@@ -484,17 +498,23 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ── Theme-aware variables ── */
 .tutorial-page {
-  --t-ink: #1c1612;
-  --t-ink-2: #3d3630;
-  --t-ink-3: #6b5f55;
-  --t-ink-4: #9c8d82;
-  --t-paper: #faf6f0;
-  --t-paper-2: #f2ece2;
-  --t-paper-3: #e8dfd2;
-  --t-rule: #d8cfc4;
-  --t-orange: #d4520a;
-  --t-orange-l: #f06820;
+  /* Base tones — mapped from site theme for auto dark/light */
+  --t-ink: var(--color-text-dark);
+  --t-ink-2: var(--color-text);
+  --t-ink-3: var(--color-secondary);
+  --t-ink-4: var(--color-text-inactive);
+  --t-paper: var(--color-bg);
+  --t-raised: var(--color-raised-bg);
+  --t-rule: var(--color-divider-dark);
+  --t-orange: var(--flame);
+  --t-mono: var(--font-mono);
+
+  /* Light-mode custom intermediate tones */
+  --t-paper-2: #f0eeec;
+  --t-paper-3: #e6e3e0;
+  --t-shadow: #d8d4d0;
   --t-orange-bg: #fff3ec;
   --t-orange-bd: #f5c9aa;
   --t-green: #3a6b43;
@@ -503,17 +523,50 @@ onBeforeUnmount(() => {
   --t-amber: #a05c00;
   --t-amber-bg: #fff8ec;
   --t-amber-bd: #f5dba0;
-  --t-red: #b83030;
-  --t-mono: "JetBrains Mono", "Courier New", monospace;
+  --t-blue-bg: #f4f8ff;
+  --t-blue-bd: #b8d0ee;
+  --t-blue-accent: #4080c0;
+  --t-blue-tag-bg: #d8e8ff;
+  --t-blue-tag-color: #205098;
+  --t-blue-shadow: #c4d4f0;
+  --t-green-shadow: #b8d4bc;
+  --t-folder-color: #8a5c00;
+  --t-path-overlay: rgba(0, 0, 0, 0.04);
+  --t-dot-border: rgba(0, 0, 0, 0.12);
 
   background: var(--t-paper);
-  color: var(--t-ink);
-  font-family: "Noto Sans SC", sans-serif;
+  color: var(--t-ink-2);
+  font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.75;
   min-height: 100vh;
   margin: -16px;
   padding: 0;
+}
+
+/* ── Dark mode overrides ── */
+.tutorial-page.tutorial-dark {
+  --t-paper-2: #14171c;
+  --t-paper-3: #1e2229;
+  --t-shadow: #0a0c10;
+  --t-orange-bg: rgba(241, 100, 54, 0.1);
+  --t-orange-bd: rgba(241, 100, 54, 0.25);
+  --t-green: #4ade80;
+  --t-green-bg: rgba(27, 217, 106, 0.1);
+  --t-green-bd: rgba(27, 217, 106, 0.2);
+  --t-amber: #ffb347;
+  --t-amber-bg: rgba(255, 163, 71, 0.1);
+  --t-amber-bd: rgba(255, 163, 71, 0.2);
+  --t-blue-bg: rgba(79, 156, 255, 0.08);
+  --t-blue-bd: rgba(79, 156, 255, 0.2);
+  --t-blue-accent: #4f9cff;
+  --t-blue-tag-bg: rgba(79, 156, 255, 0.15);
+  --t-blue-tag-color: #7bb8ff;
+  --t-blue-shadow: rgba(79, 156, 255, 0.08);
+  --t-green-shadow: rgba(27, 217, 106, 0.08);
+  --t-folder-color: #d4a73a;
+  --t-path-overlay: rgba(255, 255, 255, 0.04);
+  --t-dot-border: rgba(255, 255, 255, 0.15);
 }
 
 .tutorial-page code,
@@ -554,7 +607,7 @@ onBeforeUnmount(() => {
 }
 
 .hero-title {
-  font-family: "Noto Serif SC", serif;
+  font-family: "Noto Serif SC", serif, var(--font-body);
   font-size: clamp(38px, 6vw, 68px);
   font-weight: 900;
   line-height: 1.06;
@@ -587,7 +640,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-radius: 5px;
   border: 1.5px solid var(--t-rule);
-  box-shadow: 3px 4px 0 var(--t-paper-3);
+  box-shadow: 3px 4px 0 var(--t-shadow);
 }
 
 .video-wrap iframe {
@@ -661,7 +714,7 @@ onBeforeUnmount(() => {
 }
 
 .step-n {
-  font-family: "Noto Serif SC", serif;
+  font-family: "Noto Serif SC", serif, var(--font-body);
   font-size: 52px;
   font-weight: 900;
   color: var(--t-orange);
@@ -680,7 +733,7 @@ onBeforeUnmount(() => {
 }
 
 .step-title {
-  font-family: "Noto Serif SC", serif;
+  font-family: "Noto Serif SC", serif, var(--font-body);
   font-size: 24px;
   font-weight: 700;
   color: var(--t-ink);
@@ -706,12 +759,12 @@ onBeforeUnmount(() => {
 
 /* SCREENSHOT CARD */
 .sc-card {
-  background: #fff;
+  background: var(--t-raised);
   border: 1.5px solid var(--t-rule);
   border-radius: 5px;
   overflow: hidden;
   margin-bottom: 20px;
-  box-shadow: 3px 4px 0 var(--t-paper-3);
+  box-shadow: 3px 4px 0 var(--t-shadow);
   transition:
     transform 0.18s,
     box-shadow 0.18s;
@@ -719,7 +772,7 @@ onBeforeUnmount(() => {
 
 .sc-card:hover {
   transform: translate(-1px, -2px);
-  box-shadow: 5px 6px 0 var(--t-paper-3);
+  box-shadow: 5px 6px 0 var(--t-shadow);
 }
 
 .sc-bar {
@@ -735,7 +788,7 @@ onBeforeUnmount(() => {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--t-dot-border);
   flex-shrink: 0;
 }
 .sc-dot.r {
@@ -806,19 +859,19 @@ onBeforeUnmount(() => {
   border: 1.5px solid var(--t-rule);
   border-radius: 5px;
   padding: 18px;
-  background: #fff;
-  box-shadow: 2px 3px 0 var(--t-paper-3);
+  background: var(--t-raised);
+  box-shadow: 2px 3px 0 var(--t-shadow);
 }
 
 .col-card.blue {
-  border-color: #b8d0ee;
-  background: #f4f8ff;
-  box-shadow: 2px 3px 0 #c4d4f0;
+  border-color: var(--t-blue-bd);
+  background: var(--t-blue-bg);
+  box-shadow: 2px 3px 0 var(--t-blue-shadow);
 }
 .col-card.teal {
   border-color: var(--t-green-bd);
   background: var(--t-green-bg);
-  box-shadow: 2px 3px 0 #b8d4bc;
+  box-shadow: 2px 3px 0 var(--t-green-shadow);
 }
 
 .col-tag {
@@ -833,8 +886,8 @@ onBeforeUnmount(() => {
 }
 
 .blue .col-tag {
-  background: #d8e8ff;
-  color: #205098;
+  background: var(--t-blue-tag-bg);
+  color: var(--t-blue-tag-color);
 }
 .teal .col-tag {
   background: var(--t-green-bd);
@@ -846,7 +899,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   margin-bottom: 6px;
   color: var(--t-ink);
-  font-family: "Noto Serif SC", serif;
+  font-family: "Noto Serif SC", serif, var(--font-body);
 }
 
 .col-card p {
@@ -858,7 +911,7 @@ onBeforeUnmount(() => {
 .path-chip {
   margin-top: 10px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--t-path-overlay);
   border: 1px solid var(--t-rule);
   border-radius: 3px;
   font-family: var(--t-mono);
@@ -870,7 +923,7 @@ onBeforeUnmount(() => {
 
 .path-chip small {
   display: block;
-  font-family: "Noto Sans SC", sans-serif;
+  font-family: var(--font-body);
   font-size: 10px;
   color: var(--t-ink-4);
   margin-bottom: 3px;
@@ -892,7 +945,7 @@ onBeforeUnmount(() => {
 }
 
 .ft-label {
-  font-family: "Noto Sans SC", sans-serif;
+  font-family: var(--font-body);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -913,7 +966,7 @@ onBeforeUnmount(() => {
 }
 
 .ft-row.folder {
-  color: #8a5c00;
+  color: var(--t-folder-color);
 }
 .ft-row.dim {
   color: var(--t-ink-4);
@@ -982,9 +1035,9 @@ onBeforeUnmount(() => {
 }
 
 .callout.note {
-  background: #f4f8ff;
-  border: 1px solid #b8d0ee;
-  border-left: 3px solid #4080c0;
+  background: var(--t-blue-bg);
+  border: 1px solid var(--t-blue-bd);
+  border-left: 3px solid var(--t-blue-accent);
   color: var(--t-ink-2);
 }
 .callout.warn {
@@ -1011,12 +1064,12 @@ onBeforeUnmount(() => {
 
 /* VERSION CHECK */
 .ver-check {
-  background: #fff;
+  background: var(--t-raised);
   border: 1.5px solid var(--t-rule);
   border-radius: 5px;
   overflow: hidden;
   margin-bottom: 20px;
-  box-shadow: 2px 3px 0 var(--t-paper-3);
+  box-shadow: 2px 3px 0 var(--t-shadow);
 }
 
 .vc-head {
@@ -1035,7 +1088,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 18px;
-  border-bottom: 1px solid var(--t-paper-2);
+  border-bottom: 1px solid var(--t-rule);
   font-size: 13.5px;
 }
 
@@ -1057,12 +1110,12 @@ onBeforeUnmount(() => {
 
 /* PROGRESS */
 .progress-card {
-  background: #fff;
+  background: var(--t-raised);
   border: 1.5px solid var(--t-rule);
   border-radius: 5px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 2px 3px 0 var(--t-paper-3);
+  box-shadow: 2px 3px 0 var(--t-shadow);
 }
 
 .pc-title {
@@ -1109,13 +1162,13 @@ onBeforeUnmount(() => {
 }
 
 .dialog-win {
-  background: #fff;
+  background: var(--t-raised);
   border: 1.5px solid var(--t-rule);
   border-radius: 5px;
   overflow: hidden;
   width: 370px;
   max-width: 100%;
-  box-shadow: 4px 6px 0 var(--t-paper-3);
+  box-shadow: 4px 6px 0 var(--t-shadow);
   animation: dialogIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1159,7 +1212,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--t-rule);
   margin-bottom: 8px;
   font-size: 13px;
-  background: #fff;
+  background: var(--t-raised);
   color: var(--t-ink);
 }
 
@@ -1206,7 +1259,7 @@ onBeforeUnmount(() => {
   animation: successIn 0.5s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .suc-title {
-  font-family: "Noto Serif SC", serif;
+  font-family: "Noto Serif SC", serif, var(--font-body);
   font-size: 36px;
   font-weight: 900;
   color: var(--t-green);
@@ -1224,7 +1277,7 @@ onBeforeUnmount(() => {
   border-radius: 5px;
   padding: 22px;
   min-width: 210px;
-  box-shadow: 3px 4px 0 var(--t-paper-3);
+  box-shadow: 3px 4px 0 var(--t-shadow);
   flex-shrink: 0;
 }
 
