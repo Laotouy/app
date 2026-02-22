@@ -22,6 +22,9 @@
           <NavStackItem link="/moderation/profile-reviews" label="资料审核">
             <UserIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem link="/moderation/image-reviews" label="图片审核">
+            <ImageIcon aria-hidden="true" />
+          </NavStackItem>
           <NavStackItem link="/moderation/translation-tracking" label="汉化监控">
             <CalendarClockIcon aria-hidden="true" />
           </NavStackItem>
@@ -52,6 +55,7 @@ import ShieldIcon from "~/assets/images/utils/shield.svg?component";
 import CalendarClockIcon from "~/assets/images/utils/calendar-clock.svg?component";
 import StarIcon from "~/assets/images/utils/star.svg?component";
 import UserIcon from "~/assets/images/utils/user.svg?component";
+import ImageIcon from "~/assets/images/utils/image.svg?component";
 
 const auth = await useAuth();
 

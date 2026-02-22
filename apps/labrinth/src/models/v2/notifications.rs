@@ -142,6 +142,13 @@ pub enum LegacyNotificationBody {
         status: String,
         review_notes: Option<String>,
     },
+    /// 图片内容审核结果
+    ImageReviewResult {
+        review_id: i64,
+        source_type: String,
+        status: String,
+        review_notes: Option<String>,
+    },
     Unknown,
 }
 
@@ -193,6 +200,9 @@ impl LegacyNotification {
             }
             NotificationBody::ProfileReviewResult { .. } => {
                 Some("profile_review_result".to_string())
+            }
+            NotificationBody::ImageReviewResult { .. } => {
+                Some("image_review_result".to_string())
             }
             NotificationBody::LegacyMarkdown {
                 notification_type, ..
@@ -367,6 +377,17 @@ impl LegacyNotification {
             } => LegacyNotificationBody::ProfileReviewResult {
                 review_id,
                 review_type,
+                status,
+                review_notes,
+            },
+            NotificationBody::ImageReviewResult {
+                review_id,
+                source_type,
+                status,
+                review_notes,
+            } => LegacyNotificationBody::ImageReviewResult {
+                review_id,
+                source_type,
                 status,
                 review_notes,
             },

@@ -683,15 +683,16 @@ pub async fn user_icon_edit(
         .await?;
 
         // 手动进行图片风控检测
-        let (passed, risk_labels) =
-            crate::util::risk::check_image_risk_with_labels(
-                &upload_result.url,
-                &format!("/user/{}", actual_user.username),
-                &actual_user.username,
-                "用户头像",
-                &redis,
-            )
-            .await?;
+        let risk_result = crate::util::risk::check_image_risk_with_labels(
+            &upload_result.url,
+            &format!("/user/{}", actual_user.username),
+            &actual_user.username,
+            "用户头像",
+            &redis,
+        )
+        .await?;
+        let passed = risk_result.passed;
+        let risk_labels = risk_result.labels;
 
         if passed {
             // 风控通过：先更新数据库，再删除旧头像

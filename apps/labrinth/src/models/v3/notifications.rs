@@ -139,6 +139,13 @@ pub enum NotificationBody {
         status: String,
         review_notes: Option<String>,
     },
+    /// 图片内容审核结果（仅拒绝时发送）
+    ImageReviewResult {
+        review_id: i64,
+        source_type: String,
+        status: String,
+        review_notes: Option<String>,
+    },
     Unknown,
 }
 
@@ -438,6 +445,35 @@ impl From<DBNotification> for Notification {
                             type_display, status_display, notes_text
                         ),
                         "/settings/profile".to_string(),
+                        vec![],
+                    )
+                }
+                NotificationBody::ImageReviewResult {
+                    source_type,
+                    status,
+                    review_notes,
+                    ..
+                } => {
+                    let type_display = match source_type.as_str() {
+                        "markdown" => "Markdown图片",
+                        "gallery" => "项目渲染图",
+                        _ => "图片",
+                    };
+                    let status_display = match status.as_str() {
+                        "rejected" => "已被删除",
+                        _ => "已处理",
+                    };
+                    let notes_text = match review_notes {
+                        Some(notes) => format!("。原因：{}", notes),
+                        None => String::new(),
+                    };
+                    (
+                        format!("{}审核结果", type_display),
+                        format!(
+                            "您上传的{}因违规{}{}",
+                            type_display, status_display, notes_text
+                        ),
+                        "#".to_string(),
                         vec![],
                     )
                 }

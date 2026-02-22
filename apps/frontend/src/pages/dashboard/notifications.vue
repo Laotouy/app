@@ -64,6 +64,9 @@
               case 'profile_review_result': {
                 return '资料审核结果';
               }
+              case 'image_review_result': {
+                return '图片审核';
+              }
               default: {
                 return x;
               }

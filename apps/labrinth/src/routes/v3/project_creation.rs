@@ -277,6 +277,16 @@ pub async fn undo_uploads(
     Ok(())
 }
 
+/// 用于收集非涉政但触发风控的渲染图信息（事务提交后创建审核记录）
+struct GalleryRiskCheckItem {
+    image_url: String,
+    raw_image_url: Option<String>,
+    risk_image_url: Option<String>,
+    uploader_id: i64,
+    project_id: i64,
+    labels: String,
+}
+
 pub async fn project_create(
     req: HttpRequest,
     mut payload: Multipart,
@@ -288,6 +298,7 @@ pub async fn project_create(
 ) -> Result<HttpResponse, CreateError> {
     let mut transaction = client.begin().await?;
     let mut uploaded_files = Vec::new();
+    let mut gallery_risk_items = Vec::new();
 
     let result = project_create_inner(
         req,
@@ -299,6 +310,7 @@ pub async fn project_create(
         &client,
         &redis,
         &session_queue,
+        &mut gallery_risk_items,
     )
     .await;
 
@@ -312,6 +324,22 @@ pub async fn project_create(
         }
     } else {
         transaction.commit().await?;
+
+        // 事务提交后，为非涉政的风控触发图片创建审核记录
+        for item in &gallery_risk_items {
+            super::image_reviews::create_review_record(
+                &item.image_url,
+                item.raw_image_url.as_deref(),
+                item.risk_image_url.as_deref(),
+                item.uploader_id,
+                &item.labels,
+                "gallery",
+                None,
+                Some(item.project_id),
+                &**client,
+            )
+            .await;
+        }
     }
 
     result
@@ -357,6 +385,7 @@ async fn project_create_inner(
     pool: &PgPool,
     redis: &RedisPool,
     session_queue: &AuthQueue,
+    gallery_risk_items: &mut Vec<GalleryRiskCheckItem>,
 ) -> Result<HttpResponse, CreateError> {
     // 上传到 CDN 的文件的 base URL
     let cdn_url = dotenvy::var("CDN_URL")?;
@@ -606,6 +635,7 @@ async fn project_create_inner(
                         )?;
 
                     let url = format!("data/{project_id}/images");
+                    // 跳过内置风控，事后异步检查
                     let upload_result = upload_image_optimized(
                         &url,
                         data.freeze(),
@@ -619,7 +649,7 @@ async fn project_create_inner(
                             username: current_user.username.clone(),
                         },
                         redis,
-                        false,
+                        true,
                     )
                     .await
                     .map_err(|e| {
@@ -630,6 +660,81 @@ async fn project_create_inner(
                         file_id: upload_result.raw_url_path.clone(),
                         file_name: upload_result.raw_url_path,
                     });
+
+                    // 同步风控检查
+                    let uploader_id =
+                        crate::database::models::UserId::from(
+                            current_user.id,
+                        )
+                        .0;
+                    let project_db_id =
+                        crate::database::models::ProjectId::from(
+                            project_id,
+                        )
+                        .0;
+                    let risk_result =
+                        crate::util::risk::check_image_risk_with_labels(
+                            &upload_result.url,
+                            &format!("/project/{}", project_id),
+                            &current_user.username,
+                            "项目渲染图",
+                            redis,
+                        )
+                        .await;
+                    // 涉政内容：创建审计记录并拒绝整个项目创建
+                    // （S3 文件会由 project_create 的 undo_uploads 清理）
+                    if let Ok(ref result) = risk_result {
+                        if !result.passed
+                            && crate::util::risk::contains_political_labels(
+                                &result.labels,
+                            )
+                        {
+                            log::error!(
+                                "[POLITICAL_IMAGE_DELETED] source=gallery, url={}, user={}, labels={}",
+                                &upload_result.url,
+                                &current_user.username,
+                                &result.labels
+                            );
+                            // 创建审计记录（使用风控缓存 URL）
+                            super::image_reviews::create_review_record(
+                                &upload_result.url,
+                                Some(&upload_result.raw_url),
+                                result.frame_url.as_deref(),
+                                uploader_id,
+                                &result.labels,
+                                "gallery",
+                                None,
+                                Some(project_db_id),
+                                pool,
+                            )
+                            .await;
+                            // 将审计记录标记为 auto_deleted
+                            let _ = sqlx::query!(
+                                "UPDATE image_content_reviews SET status = 'auto_deleted' WHERE image_url = $1 AND status = 'pending'",
+                                &upload_result.url,
+                            )
+                            .execute(pool)
+                            .await;
+                            return Err(CreateError::InvalidInput(
+                                "渲染图内容违规，已被拦截".to_string(),
+                            ));
+                        }
+                    }
+                    // 非涉政风控未通过：收集待审核信息
+                    if let Ok(ref result) = risk_result {
+                        if !result.passed {
+                            gallery_risk_items.push(GalleryRiskCheckItem {
+                                image_url: upload_result.url.clone(),
+                                raw_image_url: Some(
+                                    upload_result.raw_url.clone(),
+                                ),
+                                risk_image_url: result.frame_url.clone(),
+                                uploader_id,
+                                project_id: project_db_id,
+                                labels: result.labels.clone(),
+                            });
+                        }
+                    }
                     gallery_urls.push(crate::models::projects::GalleryItem {
                         url: upload_result.url,
                         raw_url: upload_result.raw_url,

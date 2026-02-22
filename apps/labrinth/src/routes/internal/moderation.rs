@@ -32,6 +32,19 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         "moderation/profile-reviews/{id}/reject",
         web::post().to(crate::routes::v3::profile_reviews::reject_review),
     );
+    // 图片内容审核路由
+    cfg.route(
+        "moderation/image-reviews",
+        web::get().to(crate::routes::v3::image_reviews::list_image_reviews),
+    );
+    cfg.route(
+        "moderation/image-reviews/{id}/approve",
+        web::post().to(crate::routes::v3::image_reviews::approve_image_review),
+    );
+    cfg.route(
+        "moderation/image-reviews/{id}/reject",
+        web::post().to(crate::routes::v3::image_reviews::reject_image_review),
+    );
 }
 
 #[derive(Deserialize)]

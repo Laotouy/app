@@ -2073,6 +2073,7 @@ pub async fn add_gallery_item(
     };
 
     let id: ProjectId = project_item.inner.id.into();
+    // 跳过内置风控，手动检查
     let upload_result = upload_image_optimized(
         &format!("data/{}/images", id),
         bytes.freeze(),
@@ -2086,7 +2087,7 @@ pub async fn add_gallery_item(
             username: user.username.clone(),
         },
         &redis,
-        false,
+        true,
     )
     .await?;
 
@@ -2100,6 +2101,44 @@ pub async fn add_gallery_item(
         ));
     }
 
+    // 同步风控检查（在保存到数据库之前）
+    let uploader_id = crate::database::models::UserId::from(user.id).0;
+    let project_db_id = project_item.inner.id.0;
+    let risk_result = crate::util::risk::check_image_risk_with_labels(
+        &upload_result.url,
+        &format!("/project/{}", id),
+        &user.username,
+        "项目渲染图",
+        &redis,
+    )
+    .await;
+
+    // 涉政内容：直接拦截，删除 S3，不保存到数据库
+    if let Ok(ref result) = risk_result {
+        if !result.passed
+            && crate::util::risk::contains_political_labels(&result.labels)
+        {
+            super::image_reviews::handle_political_image_delete(
+                &upload_result.url,
+                Some(&upload_result.raw_url),
+                result.frame_url.as_deref(),
+                &user.username,
+                uploader_id,
+                &result.labels,
+                "gallery",
+                None,
+                Some(project_db_id),
+                &**pool,
+                &***file_host,
+            )
+            .await;
+            return Err(ApiError::InvalidInput(
+                "图片内容违规，已被拦截".to_string(),
+            ));
+        }
+    }
+
+    // 非涉政或风控通过：保存到数据库
     let mut transaction = pool.begin().await?;
 
     if item.featured {
@@ -2117,8 +2156,8 @@ pub async fn add_gallery_item(
     }
 
     let gallery_item = vec![db_models::project_item::GalleryItem {
-        image_url: upload_result.url,
-        raw_image_url: upload_result.raw_url,
+        image_url: upload_result.url.clone(),
+        raw_image_url: upload_result.raw_url.clone(),
         featured: item.featured,
         name: item.name,
         description: item.description,
@@ -2140,6 +2179,24 @@ pub async fn add_gallery_item(
         &redis,
     )
     .await?;
+
+    // 非涉政风控未通过：创建审核记录
+    if let Ok(ref result) = risk_result {
+        if !result.passed {
+            super::image_reviews::create_review_record(
+                &upload_result.url,
+                Some(&upload_result.raw_url),
+                result.frame_url.as_deref(),
+                uploader_id,
+                &result.labels,
+                "gallery",
+                None,
+                Some(project_db_id),
+                &**pool,
+            )
+            .await;
+        }
+    }
 
     Ok(HttpResponse::NoContent().body(""))
 }

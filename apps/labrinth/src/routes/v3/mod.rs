@@ -24,6 +24,7 @@ pub mod version_file;
 pub mod versions;
 
 pub mod creator;
+pub mod image_reviews;
 pub mod issues;
 pub mod oauth_clients;
 pub mod payment_merchant;

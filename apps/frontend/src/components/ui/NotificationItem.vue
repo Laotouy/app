@@ -23,6 +23,13 @@
     >
       <ModerationIcon class="moderation-color" />
     </nuxt-link>
+    <div
+      v-else-if="type === 'image_review_result'"
+      class="notification__icon backed-svg"
+      :class="{ raised: raised }"
+    >
+      <ModerationIcon class="moderation-color" />
+    </div>
     <DoubleIcon v-else class="notification__icon">
       <template #primary>
         <nuxt-link v-if="project" :to="getProjectLink(project)" tabindex="-1">
@@ -241,6 +248,12 @@
         </nuxt-link>
         修改审核结果<template v-if="notification.body.review_notes"
           >：{{ notification.body.review_notes }}</template
+        >
+      </template>
+      <template v-else-if="type === 'image_review_result'">
+        您上传的{{ getImageSourceTypeName(notification.body.source_type) }}因违规已被删除<template
+          v-if="notification.body.review_notes"
+          >，原因：{{ notification.body.review_notes }}</template
         >
       </template>
       <nuxt-link v-else :to="notification.link" class="title-link">
@@ -526,6 +539,11 @@ const invitedBy = computed(() => props.notification.extra_data.invited_by);
 const getReviewTypeName = (reviewType) => {
   const types = { avatar: "头像", username: "用户名", bio: "简介" };
   return types[reviewType] || "资料";
+};
+
+const getImageSourceTypeName = (sourceType) => {
+  const types = { markdown: "Markdown图片", gallery: "项目渲染图" };
+  return types[sourceType] || "图片";
 };
 
 const threadLink = computed(() => {

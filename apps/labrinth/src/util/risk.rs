@@ -157,7 +157,7 @@ pub async fn check_image_risk(
         }
     }
     let risk = imasge_risk(url, username, pos).await?;
-    if risk.is_empty() {
+    if risk.labels.is_empty() {
         return Ok(true);
     }
 
@@ -192,7 +192,7 @@ pub async fn check_image_risk(
         conn.set("upload_limit", username, &json, Some(60)).await?;
     }
 
-    let risk_str = risk.join(",");
+    let risk_str = risk.labels.join(",");
     send_image_warning(&risk_str, url, &site_url, username, pos).await?;
     Ok(false)
 }
@@ -275,13 +275,21 @@ pub async fn check_text_risk_with_labels(
 }
 
 /// 图片风控检测，返回 (是否通过, 风控标签)
+/// 图片风控检查结果（含标签和 frame URL）
+pub struct ImageRiskCheckResult {
+    pub passed: bool,
+    pub labels: String,
+    /// 火山引擎缓存的图片副本 URL（用于审核记录，S3 删除后仍可查看）
+    pub frame_url: Option<String>,
+}
+
 pub async fn check_image_risk_with_labels(
     url: &str,
     pos_url: &str,
     username: &str,
     pos: &str,
     redis: &RedisPool,
-) -> Result<(bool, String), ApiError> {
+) -> Result<ImageRiskCheckResult, ApiError> {
     // 管理员用户跳过风险检查
     let admin_usernames = dotenvy::var("ADMIN_USERNAMES").unwrap_or_default();
     if admin_usernames
@@ -289,7 +297,11 @@ pub async fn check_image_risk_with_labels(
         .map(|s| s.trim().to_lowercase())
         .any(|admin| admin == username.to_lowercase())
     {
-        return Ok((true, String::new()));
+        return Ok(ImageRiskCheckResult {
+            passed: true,
+            labels: String::new(),
+            frame_url: None,
+        });
     }
 
     let site_url = dotenvy::var("SITE_URL")?;
@@ -315,8 +327,12 @@ pub async fn check_image_risk_with_labels(
     }
 
     let risk = imasge_risk(url, username, pos).await?;
-    if risk.is_empty() {
-        return Ok((true, String::new()));
+    if risk.labels.is_empty() {
+        return Ok(ImageRiskCheckResult {
+            passed: true,
+            labels: String::new(),
+            frame_url: None,
+        });
     }
 
     if upload_limit.is_some() {
@@ -346,9 +362,13 @@ pub async fn check_image_risk_with_labels(
         conn.set("upload_limit", username, &json, Some(60)).await?;
     }
 
-    let risk_str = risk.join(",");
+    let risk_str = risk.labels.join(",");
     send_image_warning(&risk_str, url, &site_url, username, pos).await?;
-    Ok((false, risk_str))
+    Ok(ImageRiskCheckResult {
+        passed: false,
+        labels: risk_str,
+        frame_url: risk.frame_url,
+    })
 }
 
 async fn send_msg(
@@ -549,11 +569,17 @@ async fn text_risk(
     }
 }
 
+/// 图片风控检查结果
+pub struct ImageRiskDetail {
+    pub labels: Vec<String>,
+    pub frame_url: Option<String>,
+}
+
 async fn imasge_risk(
     url: &str,
     username: &str,
     pos: &str,
-) -> Result<Vec<String>, ApiError> {
+) -> Result<ImageRiskDetail, ApiError> {
     let ak = dotenvy::var("HUOSHAN_AK")?;
     let sk = dotenvy::var("HUOSHAN_SK")?;
     let now: DateTime<Utc> = Utc::now();
@@ -595,12 +621,16 @@ async fn imasge_risk(
             .unwrap()
             .to_string();
         if decision.contains("PASS") {
-            return Ok(vec![]);
+            return Ok(ImageRiskDetail {
+                labels: vec![],
+                frame_url: None,
+            });
         }
         let json_str = serde_json::to_string_pretty(&result).unwrap();
         let json_str = json_str.replace("\\", "");
         println!("{}", json_str);
         let mut vec = vec![];
+        let mut frame_url: Option<String> = None;
         let result_json = result
             .get("Result")
             .unwrap()
@@ -620,6 +650,17 @@ async fn imasge_risk(
                 .unwrap()
                 .to_string()
                 .replace("\"", "");
+
+            // 提取第一个 frame URL（火山引擎缓存的图片副本）
+            if frame_url.is_none()
+                && let Some(frames) = item_json.get("Frames")
+                && let Some(frames_arr) = frames.as_array()
+                && let Some(first_frame) = frames_arr.first()
+                && let Some(url) = first_frame.get("url")
+                && let Some(url_str) = url.as_str()
+            {
+                frame_url = Some(url_str.to_string());
+            }
 
             // 优先匹配 SubLabel，匹配不到则尝试 Label（父标签）
             let matched =
@@ -643,10 +684,16 @@ async fn imasge_risk(
             vec.push(format!("未知风控标签[{}]", final_label));
         }
 
-        Ok(vec)
+        Ok(ImageRiskDetail {
+            labels: vec,
+            frame_url,
+        })
     } else {
         log::error!("图片风控 API 返回错误: {:?}", result);
-        Ok(vec!["风控API异常".to_string()])
+        Ok(ImageRiskDetail {
+            labels: vec!["风控API异常".to_string()],
+            frame_url: None,
+        })
     }
 }
 
@@ -830,6 +877,12 @@ fn get_label_image(code: &str) -> Option<(String, String)> {
         }
     }
     None
+}
+
+/// 检查风控标签字符串是否包含涉政内容
+/// 基于火山引擎图片风控的标签码 302（政治敏感1）和 303（政治敏感2）
+pub fn contains_political_labels(labels: &str) -> bool {
+    labels.contains("302[") || labels.contains("303[")
 }
 
 fn norm_query(params: &HashMap<String, String>) -> String {
