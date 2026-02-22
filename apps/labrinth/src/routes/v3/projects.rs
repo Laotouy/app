@@ -1222,6 +1222,12 @@ pub async fn project_edit(
             .await?;
 
             transaction.commit().await?;
+
+            // 项目状态变更时清除待处理计数缓存
+            if new_project.status.is_some() {
+                crate::routes::internal::moderation::clear_pending_counts_cache(&redis).await;
+            }
+
             // 判断编辑后的最终状态是否可搜索
             let final_status = new_project
                 .status
@@ -2114,28 +2120,27 @@ pub async fn add_gallery_item(
     .await;
 
     // 涉政内容：直接拦截，删除 S3，不保存到数据库
-    if let Ok(ref result) = risk_result {
-        if !result.passed
-            && crate::util::risk::contains_political_labels(&result.labels)
-        {
-            super::image_reviews::handle_political_image_delete(
-                &upload_result.url,
-                Some(&upload_result.raw_url),
-                result.frame_url.as_deref(),
-                &user.username,
-                uploader_id,
-                &result.labels,
-                "gallery",
-                None,
-                Some(project_db_id),
-                &**pool,
-                &***file_host,
-            )
-            .await;
-            return Err(ApiError::InvalidInput(
-                "图片内容违规，已被拦截".to_string(),
-            ));
-        }
+    if let Ok(ref result) = risk_result
+        && !result.passed
+        && crate::util::risk::contains_political_labels(&result.labels)
+    {
+        super::image_reviews::handle_political_image_delete(
+            &upload_result.url,
+            Some(&upload_result.raw_url),
+            result.frame_url.as_deref(),
+            &user.username,
+            uploader_id,
+            &result.labels,
+            "gallery",
+            None,
+            Some(project_db_id),
+            &pool,
+            &***file_host,
+        )
+        .await;
+        return Err(ApiError::InvalidInput(
+            "图片内容违规，已被拦截".to_string(),
+        ));
     }
 
     // 非涉政或风控通过：保存到数据库
@@ -2181,21 +2186,22 @@ pub async fn add_gallery_item(
     .await?;
 
     // 非涉政风控未通过：创建审核记录
-    if let Ok(ref result) = risk_result {
-        if !result.passed {
-            super::image_reviews::create_review_record(
-                &upload_result.url,
-                Some(&upload_result.raw_url),
-                result.frame_url.as_deref(),
-                uploader_id,
-                &result.labels,
-                "gallery",
-                None,
-                Some(project_db_id),
-                &**pool,
-            )
-            .await;
-        }
+    if let Ok(ref result) = risk_result
+        && !result.passed
+    {
+        super::image_reviews::create_review_record(
+            &upload_result.url,
+            Some(&upload_result.raw_url),
+            result.frame_url.as_deref(),
+            uploader_id,
+            &result.labels,
+            "gallery",
+            None,
+            Some(project_db_id),
+            &pool,
+            &redis,
+        )
+        .await;
     }
 
     Ok(HttpResponse::NoContent().body(""))

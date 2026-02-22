@@ -230,6 +230,9 @@ pub async fn approve_application(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     // 清除用户缓存（包括用户名缓存）
     crate::database::models::User::clear_caches(
         &[(application.user_id, username)],
@@ -301,6 +304,9 @@ pub async fn reject_application(
     .await?;
 
     transaction.commit().await?;
+
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "success": true,

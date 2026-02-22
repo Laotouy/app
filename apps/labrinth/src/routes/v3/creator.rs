@@ -221,6 +221,9 @@ pub async fn apply_creator(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     // 获取新创建的申请
     let application = CreatorApplication::get_by_id(application_id, &**pool)
         .await?

@@ -325,6 +325,9 @@ pub async fn project_create(
     } else {
         transaction.commit().await?;
 
+        crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+            .await;
+
         // 事务提交后，为非涉政的风控触发图片创建审核记录
         for item in &gallery_risk_items {
             super::image_reviews::create_review_record(
@@ -336,7 +339,8 @@ pub async fn project_create(
                 "gallery",
                 None,
                 Some(item.project_id),
-                &**client,
+                &client,
+                &redis,
             )
             .await;
         }
@@ -683,57 +687,57 @@ async fn project_create_inner(
                         .await;
                     // 涉政内容：创建审计记录并拒绝整个项目创建
                     // （S3 文件会由 project_create 的 undo_uploads 清理）
-                    if let Ok(ref result) = risk_result {
-                        if !result.passed
-                            && crate::util::risk::contains_political_labels(
-                                &result.labels,
-                            )
-                        {
-                            log::error!(
-                                "[POLITICAL_IMAGE_DELETED] source=gallery, url={}, user={}, labels={}",
-                                &upload_result.url,
-                                &current_user.username,
-                                &result.labels
-                            );
-                            // 创建审计记录（使用风控缓存 URL）
-                            super::image_reviews::create_review_record(
-                                &upload_result.url,
-                                Some(&upload_result.raw_url),
-                                result.frame_url.as_deref(),
-                                uploader_id,
-                                &result.labels,
-                                "gallery",
-                                None,
-                                Some(project_db_id),
-                                pool,
-                            )
-                            .await;
-                            // 将审计记录标记为 auto_deleted
-                            let _ = sqlx::query!(
-                                "UPDATE image_content_reviews SET status = 'auto_deleted' WHERE image_url = $1 AND status = 'pending'",
-                                &upload_result.url,
-                            )
-                            .execute(pool)
-                            .await;
-                            return Err(CreateError::InvalidInput(
-                                "渲染图内容违规，已被拦截".to_string(),
-                            ));
-                        }
+                    if let Ok(ref result) = risk_result
+                        && !result.passed
+                        && crate::util::risk::contains_political_labels(
+                            &result.labels,
+                        )
+                    {
+                        log::error!(
+                            "[POLITICAL_IMAGE_DELETED] source=gallery, url={}, user={}, labels={}",
+                            &upload_result.url,
+                            &current_user.username,
+                            &result.labels
+                        );
+                        // 创建审计记录（使用风控缓存 URL）
+                        super::image_reviews::create_review_record(
+                            &upload_result.url,
+                            Some(&upload_result.raw_url),
+                            result.frame_url.as_deref(),
+                            uploader_id,
+                            &result.labels,
+                            "gallery",
+                            None,
+                            Some(project_db_id),
+                            pool,
+                            redis,
+                        )
+                        .await;
+                        // 将审计记录标记为 auto_deleted
+                        let _ = sqlx::query!(
+                            "UPDATE image_content_reviews SET status = 'auto_deleted' WHERE image_url = $1 AND status = 'pending'",
+                            &upload_result.url,
+                        )
+                        .execute(pool)
+                        .await;
+                        return Err(CreateError::InvalidInput(
+                            "渲染图内容违规，已被拦截".to_string(),
+                        ));
                     }
                     // 非涉政风控未通过：收集待审核信息
-                    if let Ok(ref result) = risk_result {
-                        if !result.passed {
-                            gallery_risk_items.push(GalleryRiskCheckItem {
-                                image_url: upload_result.url.clone(),
-                                raw_image_url: Some(
-                                    upload_result.raw_url.clone(),
-                                ),
-                                risk_image_url: result.frame_url.clone(),
-                                uploader_id,
-                                project_id: project_db_id,
-                                labels: result.labels.clone(),
-                            });
-                        }
+                    if let Ok(ref result) = risk_result
+                        && !result.passed
+                    {
+                        gallery_risk_items.push(GalleryRiskCheckItem {
+                            image_url: upload_result.url.clone(),
+                            raw_image_url: Some(
+                                upload_result.raw_url.clone(),
+                            ),
+                            risk_image_url: result.frame_url.clone(),
+                            uploader_id,
+                            project_id: project_db_id,
+                            labels: result.labels.clone(),
+                        });
                     }
                     gallery_urls.push(crate::models::projects::GalleryItem {
                         url: upload_result.url,

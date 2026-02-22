@@ -597,6 +597,7 @@ pub async fn user_edit(
                 .await?;
 
             if !pending_fields.is_empty() {
+                crate::routes::internal::moderation::clear_pending_counts_cache(&redis).await;
                 Ok(HttpResponse::Ok().json(serde_json::json!({
                     "pending_review": true,
                     "fields": pending_fields,
@@ -787,6 +788,11 @@ pub async fn user_icon_edit(
                 .await?;
 
             transaction.commit().await?;
+
+            crate::routes::internal::moderation::clear_pending_counts_cache(
+                &redis,
+            )
+            .await;
 
             // 清除用户缓存
             User::clear_caches(

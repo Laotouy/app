@@ -296,28 +296,27 @@ pub async fn images_add(
     .await;
 
     // 涉政内容：直接拦截，删除 S3，不保存到数据库
-    if let Ok(ref result) = risk_result {
-        if !result.passed
-            && crate::util::risk::contains_political_labels(&result.labels)
-        {
-            super::image_reviews::handle_political_image_delete(
-                &upload_result.url,
-                Some(&upload_result.raw_url),
-                result.frame_url.as_deref(),
-                &user.username,
-                uploader_id,
-                &result.labels,
-                "markdown",
-                None, // source_id: 涉政不保存到 uploaded_images
-                None,
-                &**pool,
-                &***file_host,
-            )
-            .await;
-            return Err(ApiError::InvalidInput(
-                "图片内容违规，已被拦截".to_string(),
-            ));
-        }
+    if let Ok(ref result) = risk_result
+        && !result.passed
+        && crate::util::risk::contains_political_labels(&result.labels)
+    {
+        super::image_reviews::handle_political_image_delete(
+            &upload_result.url,
+            Some(&upload_result.raw_url),
+            result.frame_url.as_deref(),
+            &user.username,
+            uploader_id,
+            &result.labels,
+            "markdown",
+            None, // source_id: 涉政不保存到 uploaded_images
+            None,
+            &pool,
+            &***file_host,
+        )
+        .await;
+        return Err(ApiError::InvalidInput(
+            "图片内容违规，已被拦截".to_string(),
+        ));
     }
 
     // 非涉政或风控通过：保存到数据库
@@ -384,21 +383,22 @@ pub async fn images_add(
     transaction.commit().await?;
 
     // 非涉政风控未通过：创建审核记录（图片已保存，等待管理员审核）
-    if let Ok(ref result) = risk_result {
-        if !result.passed {
-            super::image_reviews::create_review_record(
-                &upload_result.url,
-                Some(&upload_result.raw_url),
-                result.frame_url.as_deref(),
-                uploader_id,
-                &result.labels,
-                "markdown",
-                Some(db_image.id.0),
-                None,
-                &**pool,
-            )
-            .await;
-        }
+    if let Ok(ref result) = risk_result
+        && !result.passed
+    {
+        super::image_reviews::create_review_record(
+            &upload_result.url,
+            Some(&upload_result.raw_url),
+            result.frame_url.as_deref(),
+            uploader_id,
+            &result.labels,
+            "markdown",
+            Some(db_image.id.0),
+            None,
+            &pool,
+            &redis,
+        )
+        .await;
     }
 
     Ok(HttpResponse::Ok().json(image))

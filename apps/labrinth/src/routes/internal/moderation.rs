@@ -16,6 +16,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.route("moderation/project/{id}", web::get().to(get_project_meta));
     cfg.route("moderation/project", web::post().to(set_project_meta));
     cfg.route(
+        "moderation/pending-counts",
+        web::get().to(get_pending_counts),
+    );
+    cfg.route(
         "moderation/translation-tracking-status",
         web::get().to(get_translation_tracking_status),
     );
@@ -511,4 +515,99 @@ pub async fn get_translation_tracking_status(
         total,
         queried_at: now,
     }))
+}
+
+// ==================== 待处理数量统计 ====================
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct ModerationPendingCounts {
+    pub projects: i64,
+    pub reports: i64,
+    pub appeals: i64,
+    pub profile_reviews: i64,
+    pub image_reviews: i64,
+    pub creator_applications: i64,
+}
+
+pub(crate) const PENDING_COUNTS_NAMESPACE: &str = "moderation_pending_counts";
+const PENDING_COUNTS_CACHE_KEY: &str = "all";
+const PENDING_COUNTS_TTL: i64 = 180; // 3 分钟
+
+/// 获取各审核类别的待处理数量
+///
+/// GET /_internal/moderation/pending-counts
+pub async fn get_pending_counts(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    redis: web::Data<RedisPool>,
+    session_queue: web::Data<AuthQueue>,
+) -> Result<HttpResponse, ApiError> {
+    check_is_moderator_from_headers(
+        &req,
+        &**pool,
+        &redis,
+        &session_queue,
+        Some(&[Scopes::PROJECT_READ]),
+    )
+    .await?;
+
+    // 查 Redis 缓存
+    let mut redis_conn = redis.connect().await?;
+    if let Some(cached) = redis_conn
+        .get_deserialized_from_json::<ModerationPendingCounts>(
+            PENDING_COUNTS_NAMESPACE,
+            PENDING_COUNTS_CACHE_KEY,
+        )
+        .await?
+    {
+        return Ok(HttpResponse::Ok().json(cached));
+    }
+
+    let counts = sqlx::query!(
+        r#"
+        SELECT
+            (SELECT COUNT(*) FROM mods WHERE status = 'processing') as "projects!",
+            (SELECT COUNT(*) FROM reports WHERE closed = FALSE) as "reports!",
+            (SELECT COUNT(*) FROM user_ban_appeals WHERE status = 'pending') as "appeals!",
+            (SELECT COUNT(*) FROM user_profile_reviews WHERE status = 'pending') as "profile_reviews!",
+            (SELECT COUNT(*) FROM image_content_reviews WHERE status = 'pending') as "image_reviews!",
+            (SELECT COUNT(*) FROM creator_applications WHERE status = 'pending') as "creator_applications!"
+        "#,
+    )
+    .fetch_one(&**pool)
+    .await?;
+
+    let result = ModerationPendingCounts {
+        projects: counts.projects,
+        reports: counts.reports,
+        appeals: counts.appeals,
+        profile_reviews: counts.profile_reviews,
+        image_reviews: counts.image_reviews,
+        creator_applications: counts.creator_applications,
+    };
+
+    redis_conn
+        .set_serialized_to_json(
+            PENDING_COUNTS_NAMESPACE,
+            PENDING_COUNTS_CACHE_KEY,
+            &result,
+            Some(PENDING_COUNTS_TTL),
+        )
+        .await?;
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+/// 清除待处理数量缓存（尽力而为，失败仅记录日志）
+pub async fn clear_pending_counts_cache(redis: &RedisPool) {
+    if let Err(e) = async {
+        let mut redis_conn = redis.connect().await?;
+        redis_conn
+            .delete(PENDING_COUNTS_NAMESPACE, PENDING_COUNTS_CACHE_KEY)
+            .await
+    }
+    .await
+    {
+        log::warn!("清除待处理计数缓存失败: {}", e);
+    }
 }

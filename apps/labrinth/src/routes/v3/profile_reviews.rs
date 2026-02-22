@@ -72,6 +72,9 @@ pub async fn cancel_review(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     // 清除用户缓存
     User::clear_caches(&[(target_user.id, Some(target_user.username))], &redis)
         .await?;
@@ -428,6 +431,9 @@ pub async fn approve_review(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     // 清除用户缓存（旧用户名 + 新用户名如果是用户名变更）
     User::clear_caches(
         &[(target_user.id, Some(target_user.username.clone()))],
@@ -550,6 +556,9 @@ pub async fn reject_review(
         .await?;
 
     transaction.commit().await?;
+
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
 
     // 清除用户缓存
     User::clear_caches(

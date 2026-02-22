@@ -221,6 +221,9 @@ pub async fn report_create(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     Ok(HttpResponse::Ok().json(Report {
         id: id.into(),
         report_type: new_report.report_type.clone(),
@@ -491,6 +494,9 @@ pub async fn report_edit(
 
         transaction.commit().await?;
 
+        crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+            .await;
+
         Ok(HttpResponse::NoContent().body(""))
     } else {
         Err(ApiError::NotFound)
@@ -532,6 +538,9 @@ pub async fn report_delete(
     )
     .await?;
     transaction.commit().await?;
+
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
 
     if result.is_some() {
         Ok(HttpResponse::NoContent().body(""))

@@ -201,6 +201,9 @@ pub async fn approve_image_review(
 
     transaction.commit().await?;
 
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
+
     Ok(HttpResponse::NoContent().body(""))
 }
 
@@ -304,6 +307,9 @@ pub async fn reject_image_review(
         .await?;
 
     transaction.commit().await?;
+
+    crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
+        .await;
 
     // 清除项目缓存（gallery 类型，尽力而为，事务已提交）
     if review.source_type == "gallery"
@@ -450,6 +456,7 @@ pub async fn create_review_record(
     source_id: Option<i64>,
     project_id: Option<i64>,
     pool: &PgPool,
+    redis: &crate::database::redis::RedisPool,
 ) {
     let review_id = random_base62(8) as i64;
     if let Err(e) = sqlx::query!(
@@ -470,6 +477,8 @@ pub async fn create_review_record(
     .await
     {
         log::error!("创建图片审核记录失败: {}", e);
+    } else {
+        crate::routes::internal::moderation::clear_pending_counts_cache(redis).await;
     }
 }
 
