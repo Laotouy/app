@@ -211,7 +211,10 @@ async function createAccount() {
         }),
         type: "error",
       });
-      captcha.value?.reset();
+      captcha.value?.resetCaptcha();
+      token.value = "";
+      stopLoading();
+      return;
     }
 
     const res = await useBaseFetch("auth/create", {
@@ -240,7 +243,8 @@ async function createAccount() {
       text: err.data ? err.data.description : err,
       type: "error",
     });
-    captcha.value?.reset();
+    captcha.value?.resetCaptcha();
+    token.value = "";
   }
   stopLoading();
 }

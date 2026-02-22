@@ -1184,6 +1184,7 @@ pub async fn organization_icon_edit(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 

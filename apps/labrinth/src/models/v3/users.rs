@@ -37,6 +37,15 @@ impl Default for Badges {
     }
 }
 
+/// 用户资料审核摘要（仅展示给用户本人，不含敏感的风控标签）
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProfileReviewSummary {
+    pub id: i64,
+    pub review_type: String,
+    pub new_value: String,
+    pub created_at: DateTime<Utc>,
+}
+
 /// 用户封禁摘要（用于 User model）
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UserBanSummary {
@@ -90,6 +99,10 @@ pub struct User {
     /// 用户当前的活跃封禁列表（None 表示未查询）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_bans: Option<Vec<UserBanSummary>>,
+
+    /// 用户待审核的资料修改（仅本人和管理员可见）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending_profile_reviews: Option<Vec<ProfileReviewSummary>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -136,6 +149,23 @@ impl From<DBUser> for User {
             )
         };
 
+        let pending_profile_reviews = if data.pending_profile_reviews.is_empty()
+        {
+            None
+        } else {
+            Some(
+                data.pending_profile_reviews
+                    .into_iter()
+                    .map(|r| ProfileReviewSummary {
+                        id: r.id,
+                        review_type: r.review_type,
+                        new_value: r.new_value,
+                        created_at: r.created_at,
+                    })
+                    .collect(),
+            )
+        };
+
         Self {
             id: data.id.into(),
             username: data.username,
@@ -158,6 +188,7 @@ impl From<DBUser> for User {
             is_premium_creator: data.is_premium_creator,
             creator_verified_at: data.creator_verified_at,
             active_bans,
+            pending_profile_reviews,
         }
     }
 }
@@ -221,6 +252,24 @@ impl User {
             )
         };
 
+        let pending_profile_reviews =
+            if db_user.pending_profile_reviews.is_empty() {
+                None
+            } else {
+                Some(
+                    db_user
+                        .pending_profile_reviews
+                        .into_iter()
+                        .map(|r| ProfileReviewSummary {
+                            id: r.id,
+                            review_type: r.review_type,
+                            new_value: r.new_value,
+                            created_at: r.created_at,
+                        })
+                        .collect(),
+                )
+            };
+
         Self {
             id: UserId::from(db_user.id),
             username: db_user.username,
@@ -248,6 +297,7 @@ impl User {
             is_premium_creator: db_user.is_premium_creator,
             creator_verified_at: db_user.creator_verified_at,
             active_bans,
+            pending_profile_reviews,
         }
     }
 }

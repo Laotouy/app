@@ -728,16 +728,14 @@ async fn version_create_inner(
     // 仅在项目已审核通过且可搜索时通知 Bing IndexNow
     if let Some(ref ps) = project_status
         && ProjectStatus::from_string(&ps.status).is_searchable()
-    {
-        if let (Some(slug), Some(project_type)) =
+        && let (Some(slug), Some(project_type)) =
             (&project_slug, response.project_types.first())
-        {
-            crate::util::indexnow::notify_version(
-                project_type,
-                slug,
-                &response.version_number,
-            );
-        }
+    {
+        crate::util::indexnow::notify_version(
+            project_type,
+            slug,
+            &response.version_number,
+        );
     }
 
     Ok(HttpResponse::Ok().json(response))

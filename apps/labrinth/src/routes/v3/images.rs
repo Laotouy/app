@@ -279,6 +279,7 @@ pub async fn images_add(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 

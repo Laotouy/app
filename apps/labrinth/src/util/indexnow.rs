@@ -110,6 +110,7 @@ pub fn notify_issue(project_type: &str, slug: &str, issue_id: &str) {
         _ => return,
     };
 
-    let url = format!("{}/{}/{}/issues/{}", site_url, project_type, slug, issue_id);
+    let url =
+        format!("{}/{}/{}/issues/{}", site_url, project_type, slug, issue_id);
     submit_urls(vec![url]);
 }

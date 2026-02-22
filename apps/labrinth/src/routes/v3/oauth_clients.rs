@@ -406,6 +406,7 @@ pub async fn oauth_client_icon_edit(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 

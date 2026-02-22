@@ -153,6 +153,7 @@ impl TempUser {
                             username: self.username.clone(),
                         },
                         redis,
+                        false,
                     )
                     .await;
 
@@ -167,6 +168,29 @@ impl TempUser {
             } else {
                 (None, None)
             };
+
+        // OAuth 注册用户名风控检测：不通过则用随机用户名替代
+        if let Some(ref uname) = username {
+            let risk_passed = crate::util::risk::check_text_risk(
+                uname,
+                uname,
+                &format!("/auth/{:?}", provider),
+                "OAuth注册用户名",
+                redis,
+            )
+            .await
+            .unwrap_or(true);
+            if !risk_passed {
+                log::warn!(
+                    "OAuth 注册用户名风控未通过，使用随机用户名替代: {}",
+                    uname
+                );
+                username = Some(format!(
+                    "user_{}",
+                    crate::models::ids::random_base62(6)
+                ));
+            }
+        }
 
         if let Some(username) = username {
             crate::database::models::User {
@@ -247,6 +271,7 @@ impl TempUser {
                 is_premium_creator: false,
                 creator_verified_at: None,
                 active_bans: vec![],
+                pending_profile_reviews: vec![],
             }
             .insert(transaction)
             .await?;
@@ -1519,6 +1544,21 @@ pub async fn create_account_with_password(
         return Err(ApiError::InvalidInput("用户名已被使用".to_string()));
     }
 
+    // 用户名风控检测
+    let risk_passed = crate::util::risk::check_text_risk(
+        &new_account.username,
+        &new_account.username,
+        "/auth/create",
+        "注册用户名",
+        &redis,
+    )
+    .await?;
+    if !risk_passed {
+        return Err(ApiError::InvalidInput(
+            "用户名包含违规内容，请更换用户名".to_string(),
+        ));
+    }
+
     let mut transaction = pool.begin().await?;
     let user_id =
         crate::database::models::generate_user_id(&mut transaction).await?;
@@ -1583,6 +1623,7 @@ pub async fn create_account_with_password(
         is_premium_creator: false,
         creator_verified_at: None,
         active_bans: vec![],
+        pending_profile_reviews: vec![],
     }
     .insert(&mut transaction)
     .await?;

@@ -19,6 +19,19 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         "moderation/translation-tracking-status",
         web::get().to(get_translation_tracking_status),
     );
+    // 用户资料审核路由
+    cfg.route(
+        "moderation/profile-reviews",
+        web::get().to(crate::routes::v3::profile_reviews::list_reviews),
+    );
+    cfg.route(
+        "moderation/profile-reviews/{id}/approve",
+        web::post().to(crate::routes::v3::profile_reviews::approve_review),
+    );
+    cfg.route(
+        "moderation/profile-reviews/{id}/reject",
+        web::post().to(crate::routes::v3::profile_reviews::reject_review),
+    );
 }
 
 #[derive(Deserialize)]

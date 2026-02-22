@@ -27,6 +27,7 @@ pub mod creator;
 pub mod issues;
 pub mod oauth_clients;
 pub mod payment_merchant;
+pub mod profile_reviews;
 pub mod project_order;
 pub mod project_pricing;
 pub mod user_purchase;

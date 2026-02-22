@@ -522,9 +522,9 @@ const { data: pageData } = await useAsyncData("homepage-data", async () => {
     articles: (articlesResponse.forums ?? []).slice(0, 3),
     translations: translationsResponse.hits ?? [],
     latestModpackTranslations: latestModpackTranslationsResponse.hits ?? [],
-    latestPlugins: (latestPluginsResponse.hits ?? []).map(plugin => ({
+    latestPlugins: (latestPluginsResponse.hits ?? []).map((plugin) => ({
       ...plugin,
-      project_type: plugin.project_type || 'plugin' // 确保插件类型正确
+      project_type: plugin.project_type || "plugin", // 确保插件类型正确
     })),
   };
 });
@@ -647,12 +647,16 @@ const getProjectLink = (project) => {
   if (!projectType && project.loaders) {
     // 根据 loaders 判断类型
     const loaders = Array.isArray(project.loaders) ? project.loaders : [];
-    if (loaders.some(l => ['bukkit', 'spigot', 'paper', 'purpur', 'folia'].includes(l.toLowerCase()))) {
-      projectType = 'plugin';
+    if (
+      loaders.some((l) =>
+        ["bukkit", "spigot", "paper", "purpur", "folia"].includes(l.toLowerCase()),
+      )
+    ) {
+      projectType = "plugin";
     }
   }
 
-  const type = typeMap[projectType] || projectType || 'mod';
+  const type = typeMap[projectType] || projectType || "mod";
   return `/${type}/${project.slug || project.project_id}`;
 };
 

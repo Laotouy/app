@@ -127,6 +127,18 @@ pub enum NotificationBody {
         application_id: i64,
         reason: Option<String>,
     },
+    /// 用户资料修改已提交审核
+    ProfileReviewPending {
+        review_id: i64,
+        review_type: String,
+    },
+    /// 用户资料修改审核结果
+    ProfileReviewResult {
+        review_id: i64,
+        review_type: String,
+        status: String,
+        review_notes: Option<String>,
+    },
     Unknown,
 }
 
@@ -379,6 +391,56 @@ impl From<DBNotification> for Notification {
                     "/settings/creator".to_string(),
                     vec![],
                 ),
+                NotificationBody::ProfileReviewPending {
+                    review_type, ..
+                } => {
+                    let type_display = match review_type.as_str() {
+                        "avatar" => "头像",
+                        "username" => "用户名",
+                        "bio" => "简介",
+                        _ => "资料",
+                    };
+                    (
+                        "资料修改已提交审核".to_string(),
+                        format!(
+                            "您的{}修改已提交管理员审核，请耐心等待。",
+                            type_display
+                        ),
+                        "/settings/profile".to_string(),
+                        vec![],
+                    )
+                }
+                NotificationBody::ProfileReviewResult {
+                    review_type,
+                    status,
+                    review_notes,
+                    ..
+                } => {
+                    let type_display = match review_type.as_str() {
+                        "avatar" => "头像",
+                        "username" => "用户名",
+                        "bio" => "简介",
+                        _ => "资料",
+                    };
+                    let status_display = match status.as_str() {
+                        "approved" => "已通过",
+                        "rejected" => "已拒绝",
+                        _ => "已处理",
+                    };
+                    let notes_text = match review_notes {
+                        Some(notes) => format!("。审核备注：{}", notes),
+                        None => String::new(),
+                    };
+                    (
+                        format!("{}修改审核结果", type_display),
+                        format!(
+                            "您的{}修改审核结果：{}{}",
+                            type_display, status_display, notes_text
+                        ),
+                        "/settings/profile".to_string(),
+                        vec![],
+                    )
+                }
                 NotificationBody::Unknown => {
                     ("".to_string(), "".to_string(), "#".to_string(), vec![])
                 }

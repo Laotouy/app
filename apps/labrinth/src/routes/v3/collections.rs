@@ -465,6 +465,7 @@ pub async fn collection_icon_edit(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 

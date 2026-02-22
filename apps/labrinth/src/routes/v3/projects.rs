@@ -581,16 +581,15 @@ pub async fn project_edit(
                 // 项目审核通过变为可搜索时，通知 Bing IndexNow（含子页面）
                 if status.is_searchable()
                     && !project_item.inner.status.is_searchable()
-                {
-                    if let (Some(slug), Some(project_type)) = (
+                    && let (Some(slug), Some(project_type)) = (
                         &project_item.inner.slug,
                         project_item.project_types.first(),
-                    ) {
-                        crate::util::indexnow::notify_project_with_subpages(
-                            project_type,
-                            slug,
-                        );
-                    }
+                    )
+                {
+                    crate::util::indexnow::notify_project_with_subpages(
+                        project_type,
+                        slug,
+                    );
                 }
 
                 if user.role.is_mod()
@@ -1252,12 +1251,12 @@ pub async fn project_edit(
                     s.is_searchable()
                         != project_item.inner.status.is_searchable()
                 });
-            if final_status.is_searchable() && !status_already_notified {
-                if let (Some(slug), Some(project_type)) =
+            if final_status.is_searchable()
+                && !status_already_notified
+                && let (Some(slug), Some(project_type)) =
                     (&indexnow_slug, &indexnow_project_type)
-                {
-                    crate::util::indexnow::notify_project(project_type, slug);
-                }
+            {
+                crate::util::indexnow::notify_project(project_type, slug);
             }
 
             Ok(HttpResponse::NoContent().body(""))
@@ -1851,6 +1850,7 @@ pub async fn project_icon_edit(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 
@@ -2086,6 +2086,7 @@ pub async fn add_gallery_item(
             username: user.username.clone(),
         },
         &redis,
+        false,
     )
     .await?;
 
@@ -2519,12 +2520,11 @@ pub async fn project_delete(
     transaction.commit().await?;
 
     // 如果被删除的项目之前是可搜索的，通知 Bing IndexNow 以加速下架
-    if project.inner.status.is_searchable() {
-        if let (Some(slug), Some(project_type)) =
+    if project.inner.status.is_searchable()
+        && let (Some(slug), Some(project_type)) =
             (&project.inner.slug, project.project_types.first())
-        {
-            crate::util::indexnow::notify_project(project_type, slug);
-        }
+    {
+        crate::util::indexnow::notify_project(project_type, slug);
     }
 
     remove_documents(

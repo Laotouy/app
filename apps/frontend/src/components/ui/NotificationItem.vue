@@ -15,6 +15,14 @@
     >
       <NotificationIcon />
     </nuxt-link>
+    <nuxt-link
+      v-else-if="type === 'profile_review_pending' || type === 'profile_review_result'"
+      to="/settings/profile"
+      class="notification__icon backed-svg"
+      :class="{ raised: raised }"
+    >
+      <ModerationIcon class="moderation-color" />
+    </nuxt-link>
     <DoubleIcon v-else class="notification__icon">
       <template #primary>
         <nuxt-link v-if="project" :to="getProjectLink(project)" tabindex="-1">
@@ -219,6 +227,20 @@
         <nuxt-link to="/settings/creator" class="title-link">您的高级创作者申请</nuxt-link>
         未通过<template v-if="notification.body.reason"
           >，原因：{{ notification.body.reason }}</template
+        >
+      </template>
+      <template v-else-if="type === 'profile_review_pending'">
+        <nuxt-link to="/settings/profile" class="title-link">
+          {{ getReviewTypeName(notification.body.review_type) }}
+        </nuxt-link>
+        修改已提交审核
+      </template>
+      <template v-else-if="type === 'profile_review_result'">
+        <nuxt-link to="/settings/profile" class="title-link">
+          {{ getReviewTypeName(notification.body.review_type) }}
+        </nuxt-link>
+        修改审核结果<template v-if="notification.body.review_notes"
+          >：{{ notification.body.review_notes }}</template
         >
       </template>
       <nuxt-link v-else :to="notification.link" class="title-link">
@@ -500,6 +522,11 @@ const version = computed(() => props.notification.extra_data.version);
 const user = computed(() => props.notification.extra_data.user);
 const organization = computed(() => props.notification.extra_data.organization);
 const invitedBy = computed(() => props.notification.extra_data.invited_by);
+
+const getReviewTypeName = (reviewType) => {
+  const types = { avatar: "头像", username: "用户名", bio: "简介" };
+  return types[reviewType] || "资料";
+};
 
 const threadLink = computed(() => {
   if (report.value) {

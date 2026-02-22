@@ -55,7 +55,9 @@
       </div>
       <span class="label">
         <span class="label__title">其他链接</span>
-        <span class="label__description"> 添加 爱发电 QQ频道 哔哩哔哩 KOOK MC百科 九域资源社区等网址 </span>
+        <span class="label__description">
+          添加 爱发电 QQ频道 哔哩哔哩 KOOK MC百科 九域资源社区等网址
+        </span>
       </span>
 
       <div

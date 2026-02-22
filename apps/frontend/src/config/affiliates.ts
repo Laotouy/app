@@ -173,7 +173,7 @@ export const affiliates: Record<string, Affiliate> = {
     name: "墨言",
     code: "墨言",
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-    projects: ["zT3k10EZ","i2V4lWdp"],
+    projects: ["zT3k10EZ", "i2V4lWdp"],
   },
   deceasedcraft: {
     name: "亡者世界",
@@ -192,7 +192,7 @@ export const affiliates: Record<string, Affiliate> = {
     name: "逆转未来",
     code: "逆转未来",
     link: "https://item.taobao.com/item.htm?ft=t&id=861597382773",
-    projects: ["vxAmfb3Y"]
+    projects: ["vxAmfb3Y"],
   },
 };
 

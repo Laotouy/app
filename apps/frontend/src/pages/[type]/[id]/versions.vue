@@ -110,7 +110,10 @@
             </div>
             <div class="flex flex-col justify-center gap-2 sm:contents">
               <div class="flex flex-row flex-wrap items-center gap-1 xl:contents">
-                <div v-if="project.project_type !== 'software' && project.project_type !== 'language'" class="flex items-center">
+                <div
+                  v-if="project.project_type !== 'software' && project.project_type !== 'language'"
+                  class="flex items-center"
+                >
                   <div class="tag-list">
                     <div
                       v-for="gameVersion in formatVersionsForDisplay(version.game_versions)"

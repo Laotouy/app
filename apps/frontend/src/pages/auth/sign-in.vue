@@ -218,7 +218,8 @@ async function beginPasswordSignIn() {
       text: err.data ? err.data.description : err,
       type: "error",
     });
-    captcha.value?.reset();
+    captcha.value?.resetCaptcha();
+    token.value = "";
   }
   stopLoading();
 }
@@ -243,7 +244,8 @@ async function begin2FASignIn() {
       text: err.data ? err.data.description : err,
       type: "error",
     });
-    captcha.value?.reset();
+    captcha.value?.resetCaptcha();
+    token.value = "";
   }
   stopLoading();
 }

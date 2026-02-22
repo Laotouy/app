@@ -619,6 +619,7 @@ async fn project_create_inner(
                             username: current_user.username.clone(),
                         },
                         redis,
+                        false,
                     )
                     .await
                     .map_err(|e| {
@@ -1152,6 +1153,7 @@ async fn process_icon_upload(
             username,
         },
         redis,
+        false,
     )
     .await
     .map_err(|e| CreateError::InvalidIconFormat(e.to_string()))?;

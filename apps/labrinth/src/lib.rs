@@ -389,6 +389,7 @@ pub fn app_setup(
                                                     is_premium_creator: false,
                                                     creator_verified_at: None,
                                                     active_bans: vec![],
+                                                    pending_profile_reviews: vec![],
                                                 };
 
                                                 let (team_member, organization_team_member) = match crate::database::models::TeamMember::get_for_project_permissions(&inner, item.user_id, &pool_ref_clone2).await {

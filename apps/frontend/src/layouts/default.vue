@@ -501,7 +501,6 @@ import {
   HomeIcon,
   PlugIcon,
   PlusIcon,
-  DropdownIcon,
   LogOutIcon,
   ChartIcon,
   BoxIcon,

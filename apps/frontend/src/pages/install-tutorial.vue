@@ -19,17 +19,16 @@
       <div class="hero-eyebrow">汉化补丁覆盖安装</div>
       <h1 class="hero-title">补丁安装<br /><em>全流程</em>教程</h1>
       <p class="hero-lead">
-        适用于 PCL2
-        启动器。从下载汉化包到覆盖安装，包含版本隔离判断与文件冲突处理，全程图解说明。
+        适用于 PCL2 启动器。从下载汉化包到覆盖安装，包含版本隔离判断与文件冲突处理，全程图解说明。
       </p>
       <div class="warning-strip">
         <div class="ws-icon">&#9888;</div>
         <div>
           <div class="ws-title">版本必须完全对应</div>
           <div class="ws-body">
-            整合包是 <code>1.9.1</code> 就必须下载 <code>1.9.1</code> 的汉化包，<strong
-              >跨版本使用会导致游戏异常</strong
-            >。缺少对应版本请加 QQ 群 <strong>1073724937</strong> 提需求。
+            整合包是 <code>1.9.1</code> 就必须下载
+            <code>1.9.1</code> 的汉化包，<strong>跨版本使用会导致游戏异常</strong>。缺少对应版本请加
+            QQ 群 <strong>1073724937</strong> 提需求。
           </div>
         </div>
       </div>
@@ -98,9 +97,8 @@
         </div>
         <div class="step-body">
           <p class="step-desc">
-            打开 PCL2，选中目标整合包，点击主界面下方的<strong>「版本设置」</strong
-            >，进入设置页面后找到「快捷方式」区域，点击<strong>「版本文件夹」</strong
-            >，文件管理器将自动定位到正确的整合包目录。
+            打开
+            PCL2，选中目标整合包，点击主界面下方的<strong>「版本设置」</strong>，进入设置页面后找到「快捷方式」区域，点击<strong>「版本文件夹」</strong>，文件管理器将自动定位到正确的整合包目录。
           </p>
 
           <div class="sc-card">
@@ -112,9 +110,7 @@
             </div>
             <div class="sc-img">
               <img src="/tutorial/pcl2-main.png" alt="PCL2 版本设置按钮" loading="lazy" />
-              <div class="sc-label dn" style="bottom: 32%; right: 15%">
-                &#9312; 点「版本设置」
-              </div>
+              <div class="sc-label dn" style="bottom: 32%; right: 15%">&#9312; 点「版本设置」</div>
             </div>
           </div>
 
@@ -127,18 +123,14 @@
             </div>
             <div class="sc-img">
               <img src="/tutorial/pcl2-settings.png" alt="版本文件夹按钮" loading="lazy" />
-              <div class="sc-label dn" style="bottom: 32%; left: 10%">
-                &#9313; 点「版本文件夹」
-              </div>
+              <div class="sc-label dn" style="bottom: 32%; left: 10%">&#9313; 点「版本文件夹」</div>
             </div>
           </div>
 
           <div class="callout ok">
             <div class="ci">&#10004;</div>
             <div>
-              点击「版本文件夹」后文件管理器直接打开整合包根目录。<strong
-                >无论是否开启版本隔离，此方法均适用</strong
-              >，不需要手动寻找路径。
+              点击「版本文件夹」后文件管理器直接打开整合包根目录。<strong>无论是否开启版本隔离，此方法均适用</strong>，不需要手动寻找路径。
             </div>
           </div>
         </div>
@@ -185,11 +177,7 @@
               <div class="sc-dot g"></div>
               <span class="sc-bar-title">文件管理器 — 整合包根目录（正确示例）</span>
             </div>
-            <img
-              src="/tutorial/directory-structure.png"
-              alt="整合包目录结构"
-              loading="lazy"
-            />
+            <img src="/tutorial/directory-structure.png" alt="整合包目录结构" loading="lazy" />
           </div>
 
           <ul class="checklist">
@@ -225,8 +213,7 @@
         <div class="step-body">
           <p class="step-desc">
             用 Bandizip、7-Zip
-            或系统自带解压工具打开汉化压缩包，把压缩包内的<strong>所有文件夹和文件</strong
-            >直接拖拽（或解压）到上一步打开的整合包目录中。
+            或系统自带解压工具打开汉化压缩包，把压缩包内的<strong>所有文件夹和文件</strong>直接拖拽（或解压）到上一步打开的整合包目录中。
           </p>
 
           <div class="sc-card">
@@ -261,9 +248,9 @@
           <div class="callout warn">
             <div class="ci">&#9888;</div>
             <div>
-              直接将 <strong>mods、config、kubejs 等文件夹</strong>拖到目标目录，<strong
-                >不要</strong
-              >在目标目录里新建一个文件夹再往里放——多一层目录汉化就不会生效。
+              直接将
+              <strong>mods、config、kubejs 等文件夹</strong
+              >拖到目标目录，<strong>不要</strong>在目标目录里新建一个文件夹再往里放——多一层目录汉化就不会生效。
             </div>
           </div>
 
@@ -302,9 +289,7 @@
         </div>
         <div class="step-body">
           <p class="step-desc">
-            复制过程中若弹出「替换或跳过文件」提示，<strong
-              >必须选择「替换目标中的文件」</strong
-            >。选「跳过」会保留旧文件，汉化包将完全无法生效。
+            复制过程中若弹出「替换或跳过文件」提示，<strong>必须选择「替换目标中的文件」</strong>。选「跳过」会保留旧文件，汉化包将完全无法生效。
           </p>
 
           <div class="dialog-outer">
@@ -323,9 +308,7 @@
                   <strong>替换目标中的文件(R)</strong>
                   <div class="d-badge">选这个</div>
                 </div>
-                <div class="d-opt dim">
-                  <span class="d-opt-icon">&#9193;</span>跳过这些文件(S)
-                </div>
+                <div class="d-opt dim"><span class="d-opt-icon">&#9193;</span>跳过这些文件(S)</div>
                 <div class="d-opt dim">
                   <span class="d-opt-icon">&#9881;</span>让我决定每个文件(L)
                 </div>

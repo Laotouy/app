@@ -130,6 +130,18 @@ pub enum LegacyNotificationBody {
         application_id: i64,
         reason: Option<String>,
     },
+    /// 用户资料修改已提交审核
+    ProfileReviewPending {
+        review_id: i64,
+        review_type: String,
+    },
+    /// 用户资料修改审核结果
+    ProfileReviewResult {
+        review_id: i64,
+        review_type: String,
+        status: String,
+        review_notes: Option<String>,
+    },
     Unknown,
 }
 
@@ -175,6 +187,12 @@ impl LegacyNotification {
             }
             NotificationBody::CreatorApplicationRejected { .. } => {
                 Some("creator_application_rejected".to_string())
+            }
+            NotificationBody::ProfileReviewPending { .. } => {
+                Some("profile_review_pending".to_string())
+            }
+            NotificationBody::ProfileReviewResult { .. } => {
+                Some("profile_review_result".to_string())
             }
             NotificationBody::LegacyMarkdown {
                 notification_type, ..
@@ -333,6 +351,24 @@ impl LegacyNotification {
             } => LegacyNotificationBody::CreatorApplicationRejected {
                 application_id,
                 reason,
+            },
+            NotificationBody::ProfileReviewPending {
+                review_id,
+                review_type,
+            } => LegacyNotificationBody::ProfileReviewPending {
+                review_id,
+                review_type,
+            },
+            NotificationBody::ProfileReviewResult {
+                review_id,
+                review_type,
+                status,
+                review_notes,
+            } => LegacyNotificationBody::ProfileReviewResult {
+                review_id,
+                review_type,
+                status,
+                review_notes,
             },
             NotificationBody::Unknown => LegacyNotificationBody::Unknown,
         };

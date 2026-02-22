@@ -1529,9 +1529,7 @@
         </div>
 
         <div
-          v-if="
-            organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3'].includes(organization.slug)
-          "
+          v-if="organization && ['bbsmc', 'bbsmc-2', 'bbsmc-3'].includes(organization.slug)"
           class="card flex-card experimental-styles-within"
         >
           <h2>搬运资源声明</h2>

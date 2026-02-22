@@ -58,6 +58,12 @@
               case 'creator_application_rejected': {
                 return '创作者申请拒绝';
               }
+              case 'profile_review_pending': {
+                return '资料审核中';
+              }
+              case 'profile_review_result': {
+                return '资料审核结果';
+              }
               default: {
                 return x;
               }
