@@ -450,12 +450,35 @@ pub async fn approve_review(
     }
 
     // 事务提交成功后再删除旧的 S3 头像（尽力而为）
-    if review.review_type == "avatar"
-        && let Err(e) =
-            delete_old_images(old_avatar_url, old_raw_avatar_url, &***file_host)
-                .await
-    {
-        log::warn!("审核通过后删除旧头像失败 (review_id={}): {}", review_id, e);
+    // 仅当新旧头像不同时才删除旧图片，避免误删当前正在使用的头像
+    if review.review_type == "avatar" {
+        let new_avatar: Option<serde_json::Value> =
+            serde_json::from_str(&review.new_value).ok();
+        let new_url = new_avatar
+            .as_ref()
+            .and_then(|v| v.get("avatar_url"))
+            .and_then(|v| v.as_str());
+
+        let same_avatar = match (&old_avatar_url, new_url) {
+            (Some(old), Some(new)) => old == new,
+            (None, None) => true,
+            _ => false,
+        };
+
+        if !same_avatar
+            && let Err(e) = delete_old_images(
+                old_avatar_url,
+                old_raw_avatar_url,
+                &***file_host,
+            )
+            .await
+        {
+            log::warn!(
+                "审核通过后删除旧头像失败 (review_id={}): {}",
+                review_id,
+                e
+            );
+        }
     }
 
     // 发送飞书通知
@@ -568,12 +591,8 @@ pub async fn reject_review(
     .await?;
 
     // 事务提交后再删除 S3 新图片（尽力而为，不阻塞审核流程）
+    // 仅当新旧头像不同时才删除，避免误删当前正在使用的头像
     if review.review_type == "avatar" {
-        log::info!(
-            "拒绝头像审核，准备删除 S3 图片 (review_id={}, new_value={})",
-            review_id,
-            &review.new_value
-        );
         if let Ok(avatar_json) =
             serde_json::from_str::<serde_json::Value>(&review.new_value)
         {
@@ -585,24 +604,23 @@ pub async fn reject_review(
                 .get("raw_avatar_url")
                 .and_then(|v| v.as_str())
                 .map(String::from);
-            log::info!(
-                "解析 avatar JSON 成功: avatar_url={:?}, raw_avatar_url={:?}",
-                avatar_url,
-                raw_avatar_url
-            );
-            if let Err(e) =
-                delete_old_images(avatar_url, raw_avatar_url, &***file_host)
-                    .await
+
+            // 如果新头像和用户当前头像相同，跳过删除
+            let same_avatar = match (&target_user.avatar_url, &avatar_url) {
+                (Some(current), Some(new)) => current == new,
+                (None, None) => true,
+                _ => false,
+            };
+
+            if !same_avatar
+                && let Err(e) =
+                    delete_old_images(avatar_url, raw_avatar_url, &***file_host)
+                        .await
             {
                 log::warn!(
                     "拒绝审核时删除 S3 图片失败 (review_id={}): {}",
                     review_id,
                     e
-                );
-            } else {
-                log::info!(
-                    "拒绝审核时删除 S3 图片成功 (review_id={})",
-                    review_id
                 );
             }
         } else {
