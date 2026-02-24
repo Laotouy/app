@@ -56,6 +56,7 @@ pub struct User {
     pub google_id: Option<String>,
     pub steam_id: Option<i64>,
     pub microsoft_id: Option<String>,
+    pub bilibili_id: Option<String>,
     pub password: Option<String>,
 
     pub paypal_id: Option<String>,
@@ -104,6 +105,7 @@ impl User {
                 id, username, email,
                 avatar_url, raw_avatar_url, bio, created,
                 github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
+                bilibili_id,
                 email_verified, password, paypal_id, paypal_country, paypal_email,
                 venmo_handle, stripe_customer_id
             )
@@ -111,7 +113,7 @@ impl User {
                 $1, $2, $3, $4, $5,
                 $6, $7,
                 $8, $9, $10, $11, $12, $13,
-                $14, $15, $16, $17, $18, $19, $20
+                $14, $15, $16, $17, $18, $19, $20, $21
             )
             ",
             self.id as UserId,
@@ -127,6 +129,7 @@ impl User {
             self.google_id,
             self.steam_id,
             self.microsoft_id,
+            self.bilibili_id,
             self.email_verified,
             self.password,
             self.paypal_id,
@@ -222,6 +225,7 @@ impl User {
                             avatar_url, raw_avatar_url, username, bio,
                             created, role, badges,
                             github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
+                            bilibili_id,
                             email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,
                             venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,
                             is_premium_creator, creator_verified_at
@@ -241,6 +245,7 @@ impl User {
                             google_id: u.google_id,
                             steam_id: u.steam_id,
                             microsoft_id: u.microsoft_id,
+                            bilibili_id: u.bilibili_id,
                             email: u.email,
                             email_verified: u.email_verified,
                             avatar_url: u.avatar_url,

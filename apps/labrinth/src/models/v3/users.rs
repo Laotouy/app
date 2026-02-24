@@ -218,6 +218,9 @@ impl User {
         if db_user.paypal_id.is_some() {
             auth_providers.push(AuthProvider::PayPal)
         }
+        if db_user.bilibili_id.is_some() {
+            auth_providers.push(AuthProvider::Bilibili)
+        }
 
         // 转换封禁信息
         let active_bans = if db_user.active_bans.is_empty() {

@@ -241,6 +241,11 @@ impl TempUser {
                 } else {
                     None
                 },
+                bilibili_id: if provider == AuthProvider::Bilibili {
+                    Some(self.id.clone())
+                } else {
+                    None
+                },
                 password: None,
                 paypal_id: if provider == AuthProvider::PayPal {
                     Some(self.id)
@@ -313,7 +318,7 @@ impl AuthProvider {
                 let client_id = dotenvy::var("MICROSOFT_CLIENT_ID")?;
 
                 format!(
-                    "https://login.live.com/oauth20_authorize.srf?client_id={}&response_type=code&scope=user.read&state={}&prompt=select_account&redirect_uri={}",
+                    "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id={}&response_type=code&scope=user.read&state={}&prompt=select_account&redirect_uri={}",
                     client_id, state, redirect_uri
                 )
             }
@@ -366,6 +371,17 @@ impl AuthProvider {
                     urlencoding::encode(
                         "openid email address https://uri.paypal.com/services/paypalattributes"
                     ),
+                )
+            }
+            AuthProvider::Bilibili => {
+                let client_id = dotenvy::var("BILIBILI_CLIENT_ID")?;
+                let raw_gourl =
+                    format!("{}/v2/auth/callback", dotenvy::var("SELF_ADDR")?);
+                let gourl = urlencoding::encode(&raw_gourl);
+
+                format!(
+                    "https://account.bilibili.com/pc/account-pc/auth/oauth?client_id={}&gourl={}&state={}",
+                    client_id, gourl, state,
                 )
             }
         })
@@ -446,7 +462,7 @@ impl AuthProvider {
                 map.insert("redirect_uri", &redirect_uri);
 
                 let token: AccessToken = reqwest::Client::new()
-                    .post("https://login.live.com/oauth20_token.srf")
+                    .post("https://login.microsoftonline.com/common/oauth2/v2.0/token")
                     .header(reqwest::header::ACCEPT, "application/json")
                     .form(&map)
                     .send()
@@ -592,6 +608,52 @@ impl AuthProvider {
                     .await?;
 
                 token.access_token
+            }
+            AuthProvider::Bilibili => {
+                let code = query
+                    .get("code")
+                    .ok_or_else(|| AuthenticationError::InvalidCredentials)?;
+                let client_id = dotenvy::var("BILIBILI_CLIENT_ID")?;
+                let client_secret = dotenvy::var("BILIBILI_CLIENT_SECRET")?;
+
+                let url = format!(
+                    "https://api.bilibili.com/x/account-oauth2/v1/token?client_id={}&client_secret={}&grant_type=authorization_code&code={}",
+                    client_id, client_secret, code
+                );
+
+                let raw_resp = reqwest::Client::new()
+                    .post(&url)
+                    .header(reqwest::header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .send()
+                    .await?
+                    .text()
+                    .await?;
+
+                log::info!("Bilibili token response: {}", raw_resp);
+
+                #[derive(Deserialize)]
+                struct BiliTokenData {
+                    pub access_token: String,
+                }
+                #[derive(Deserialize)]
+                struct BiliTokenResp {
+                    pub code: i64,
+                    pub data: Option<BiliTokenData>,
+                }
+
+                let resp: BiliTokenResp = serde_json::from_str(&raw_resp)?;
+
+                if resp.code != 0 {
+                    log::warn!(
+                        "Bilibili token exchange failed with code: {}",
+                        resp.code
+                    );
+                    return Err(AuthenticationError::InvalidCredentials);
+                }
+
+                resp.data
+                    .ok_or(AuthenticationError::InvalidCredentials)?
+                    .access_token
             }
         };
 
@@ -864,6 +926,97 @@ impl AuthProvider {
                     country: Some(paypal_user.address.country),
                 }
             }
+            AuthProvider::Bilibili => {
+                use hmac::{Hmac, Mac};
+                use sha2::Sha256;
+
+                let client_id = dotenvy::var("BILIBILI_CLIENT_ID")?;
+                let client_secret = dotenvy::var("BILIBILI_CLIENT_SECRET")?;
+
+                let ts = Utc::now().timestamp().to_string();
+                let nonce = Utc::now().timestamp_nanos_opt()
+                    .unwrap_or_else(|| Utc::now().timestamp_millis())
+                    .to_string();
+
+                // GET 请求 body 为空，content-md5 = md5("")
+                let content_md5 =
+                    format!("{:x}", md5::compute(b""));
+
+                let headers_map = std::collections::BTreeMap::from([
+                    ("x-bili-accesskeyid", client_id.as_str()),
+                    ("x-bili-content-md5", content_md5.as_str()),
+                    ("x-bili-signature-method", "HMAC-SHA256"),
+                    ("x-bili-signature-nonce", nonce.as_str()),
+                    ("x-bili-signature-version", "2.0"),
+                    ("x-bili-timestamp", ts.as_str()),
+                ]);
+
+                let string_to_sign = headers_map
+                    .iter()
+                    .map(|(k, v)| format!("{}:{}", k, v))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                let mut mac =
+                    Hmac::<Sha256>::new_from_slice(client_secret.as_bytes())
+                        .map_err(|_| AuthenticationError::InvalidCredentials)?;
+                mac.update(string_to_sign.as_bytes());
+                let signature = hex::encode(mac.finalize().into_bytes());
+
+                let raw_resp = reqwest::Client::new()
+                    .get("https://member.bilibili.com/arcopen/fn/user/account/info")
+                    .header(reqwest::header::ACCEPT, "application/json")
+                    .header(reqwest::header::CONTENT_TYPE, "application/json")
+                    .header("access-token", token)
+                    .header("x-bili-accesskeyid", &client_id)
+                    .header("x-bili-content-md5", &content_md5)
+                    .header("x-bili-signature-method", "HMAC-SHA256")
+                    .header("x-bili-signature-nonce", &nonce)
+                    .header("x-bili-signature-version", "2.0")
+                    .header("x-bili-timestamp", &ts)
+                    .header(AUTHORIZATION, &signature)
+                    .send()
+                    .await?
+                    .text()
+                    .await?;
+
+                log::info!("Bilibili user info response: {}", raw_resp);
+
+                #[derive(Deserialize, Debug)]
+                struct BiliUserData {
+                    pub name: String,
+                    pub face: String,
+                    pub openid: String,
+                }
+                #[derive(Deserialize, Debug)]
+                struct BiliUserResp {
+                    pub code: i64,
+                    pub data: Option<BiliUserData>,
+                }
+
+                let bili_user: BiliUserResp = serde_json::from_str(&raw_resp)?;
+
+                if bili_user.code != 0 {
+                    log::warn!(
+                        "Bilibili user info failed with code: {}",
+                        bili_user.code
+                    );
+                    return Err(AuthenticationError::InvalidCredentials);
+                }
+
+                let user_data = bili_user
+                    .data
+                    .ok_or(AuthenticationError::InvalidCredentials)?;
+
+                TempUser {
+                    id: user_data.openid,
+                    username: user_data.name,
+                    email: None,
+                    avatar_url: Some(user_data.face),
+                    bio: None,
+                    country: None,
+                }
+            }
         };
 
         Ok(res)
@@ -945,6 +1098,16 @@ impl AuthProvider {
             AuthProvider::PayPal => {
                 let value = sqlx::query!(
                     "SELECT id FROM users WHERE paypal_id = $1",
+                    id
+                )
+                .fetch_optional(executor)
+                .await?;
+
+                value.map(|x| crate::database::models::UserId(x.id))
+            }
+            AuthProvider::Bilibili => {
+                let value = sqlx::query!(
+                    "SELECT id FROM users WHERE bilibili_id = $1",
                     id
                 )
                 .fetch_optional(executor)
@@ -1066,6 +1229,19 @@ impl AuthProvider {
                     .await?;
                 }
             }
+            AuthProvider::Bilibili => {
+                sqlx::query!(
+                    "
+                    UPDATE users
+                    SET bilibili_id = $2
+                    WHERE (id = $1)
+                    ",
+                    user_id as crate::database::models::UserId,
+                    id,
+                )
+                .execute(&mut **transaction)
+                .await?;
+            }
         }
 
         Ok(())
@@ -1080,6 +1256,7 @@ impl AuthProvider {
             AuthProvider::Google => "Google",
             AuthProvider::Steam => "Steam",
             AuthProvider::PayPal => "PayPal",
+            AuthProvider::Bilibili => "Bilibili",
         }
     }
 }
@@ -1601,6 +1778,7 @@ pub async fn create_account_with_password(
         google_id: None,
         steam_id: None,
         microsoft_id: None,
+        bilibili_id: None,
         password: Some(password_hash),
         paypal_id: None,
         paypal_country: None,

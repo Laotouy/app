@@ -132,4 +132,5 @@ pub enum AuthProvider {
     Google,
     Steam,
     PayPal,
+    Bilibili,
 }
