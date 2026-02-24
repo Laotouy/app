@@ -304,12 +304,12 @@
         </template>
       </div>
     </Modal>
-    <Modal ref="manageProvidersModal" header="Authentication providers">
+    <Modal ref="manageProvidersModal" header="第三方登录管理">
       <div class="universal-modal">
         <div class="table">
           <div class="table-head table-row">
-            <div class="table-text table-cell">Provider</div>
-            <div class="table-text table-cell">Actions</div>
+            <div class="table-text table-cell">登录方式</div>
+            <div class="table-text table-cell">操作</div>
           </div>
           <div v-for="provider in authProviders" :key="provider.id" class="table-row">
             <div class="table-text table-cell">
@@ -321,14 +321,14 @@
                 class="btn"
                 @click="removeAuthProvider(provider.id)"
               >
-                <TrashIcon /> Remove
+                <TrashIcon /> 解绑
               </button>
               <a
                 v-else
                 class="btn"
                 :href="`${getAuthUrl(provider.id, '/settings/account')}&token=${auth.token}`"
               >
-                <ExternalIcon /> Add
+                <ExternalIcon /> 绑定
               </a>
             </div>
           </div>
@@ -337,7 +337,7 @@
         <div class="input-group push-right">
           <button class="iconified-button" @click="$refs.manageProvidersModal.hide()">
             <XIcon />
-            Close
+            关闭
           </button>
         </div>
       </div>
@@ -436,20 +436,19 @@
       <!--          </button>-->
       <!--        </div>-->
       <!--      </div>-->
-      <!--      <div class="adjacent-input">-->
-      <!--        <label for="theme-selector">-->
-      <!--          <span class="label__title">Manage authentication providers</span>-->
-      <!--          <span class="label__description">-->
-      <!--            Add or remove sign-on methods from your account, including GitHub, GitLab, Microsoft,-->
-      <!--            Discord, Steam, and Google.-->
-      <!--          </span>-->
-      <!--        </label>-->
-      <!--        <div>-->
-      <!--          <button class="iconified-button" @click="$refs.manageProvidersModal.show()">-->
-      <!--            <SettingsIcon /> Manage providers-->
-      <!--          </button>-->
-      <!--        </div>-->
-      <!--      </div>-->
+      <div class="adjacent-input">
+        <label>
+          <span class="label__title">管理第三方登录</span>
+          <span class="label__description">
+            添加或移除您账户的第三方登录方式，包括 GitHub、Microsoft、 哔哩哔哩 和 Google。
+          </span>
+        </label>
+        <div>
+          <button class="iconified-button" @click="$refs.manageProvidersModal.show()">
+            <ExternalIcon /> 管理登录方式
+          </button>
+        </div>
+      </div>
     </section>
 
     <!--    <section id="data-export" class="universal-card">-->
@@ -631,11 +630,8 @@ import QrcodeVue from "qrcode.vue";
 import { NewModal, ButtonStyled } from "@modrinth/ui";
 import GitHubIcon from "assets/icons/auth/sso-github.svg";
 import MicrosoftIcon from "assets/icons/auth/sso-microsoft.svg";
-import GoogleIcon from "assets/icons/auth/sso-google.svg";
-import SteamIcon from "assets/icons/auth/sso-steam.svg";
-import DiscordIcon from "assets/icons/auth/sso-discord.svg";
+import BilibiliIcon from "assets/icons/auth/sso-bilibili.svg";
 import KeyIcon from "assets/icons/auth/key.svg";
-import GitLabIcon from "assets/icons/auth/sso-gitlab.svg";
 import ModalConfirm from "~/components/ui/ModalConfirm.vue";
 import Modal from "~/components/ui/Modal.vue";
 import TACaptcha from "@/components/ui/TACaptcha.vue";
@@ -929,29 +925,19 @@ const authProviders = [
     icon: GitHubIcon,
   },
   {
-    id: "gitlab",
-    display: "GitLab",
-    icon: GitLabIcon,
-  },
-  {
-    id: "steam",
-    display: "Steam",
-    icon: SteamIcon,
-  },
-  {
-    id: "discord",
-    display: "Discord",
-    icon: DiscordIcon,
-  },
-  {
     id: "microsoft",
     display: "Microsoft",
     icon: MicrosoftIcon,
   },
+  // {
+  //   id: "google",
+  //   display: "Google",
+  //   icon: GoogleIcon,
+  // },
   {
-    id: "google",
-    display: "Google",
-    icon: GoogleIcon,
+    id: "bilibili",
+    display: "哔哩哔哩",
+    icon: BilibiliIcon,
   },
 ];
 

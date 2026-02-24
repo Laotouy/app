@@ -24,36 +24,7 @@
       </button>
     </template>
     <template v-else>
-      <!--      <h1>第三方登录</h1>-->
-
-      <!--      <section class="third-party">-->
-      <!--        <a class="btn" :href="getAuthUrl('discord', redirectTarget)">-->
-      <!--          <SSODiscordIcon />-->
-      <!--          <span>Discord</span>-->
-      <!--        </a>-->
-      <!--        <a class="btn" :href="getAuthUrl('github', redirectTarget)">-->
-      <!--          <SSOGitHubIcon />-->
-      <!--          <span>GitHub</span>-->
-      <!--        </a>-->
-      <!--        <a class="btn" :href="getAuthUrl('microsoft', redirectTarget)">-->
-      <!--          <SSOMicrosoftIcon />-->
-      <!--          <span>Microsoft</span>-->
-      <!--        </a>-->
-      <!--        <a class="btn" :href="getAuthUrl('google', redirectTarget)">-->
-      <!--          <SSOGoogleIcon />-->
-      <!--          <span>Google</span>-->
-      <!--        </a>-->
-      <!--        <a class="btn" :href="getAuthUrl('steam', redirectTarget)">-->
-      <!--          <SSOSteamIcon />-->
-      <!--          <span>Steam</span>-->
-      <!--        </a>-->
-      <!--        <a class="btn" :href="getAuthUrl('gitlab', redirectTarget)">-->
-      <!--          <SSOGitLabIcon />-->
-      <!--          <span>GitLab</span>-->
-      <!--        </a>-->
-      <!--      </section>-->
-
-      <h1>登 录</h1>
+      <h1>登录到 BBSMC</h1>
 
       <section class="auth-form">
         <div class="iconified-input">
@@ -65,7 +36,7 @@
             type="text"
             autocomplete="username"
             class="auth-form__input"
-            placeholder="请输入邮箱或用户名"
+            placeholder="邮箱或用户名"
           />
         </div>
 
@@ -85,7 +56,7 @@
         <TACaptcha ref="captcha" v-model="token" />
 
         <button
-          class="btn btn-primary continue-btn centered-btn"
+          class="btn btn-primary continue-btn full-width-btn"
           :disabled="!token"
           @click="beginPasswordSignIn()"
         >
@@ -94,34 +65,48 @@
         </button>
 
         <div class="auth-form__additional-options">
-          <IntlFormatted :message-id="messages.additionalOptionsLabel">
-            <template #forgot-password-link="{ children }">
-              <NuxtLink class="text-link" to="/auth/reset-password">
-                <component :is="() => children" />
-              </NuxtLink>
-            </template>
-            <template #create-account-link="{ children }">
-              <NuxtLink class="text-link" :to="signUpLink">
-                <component :is="() => children" />
-              </NuxtLink>
-            </template>
-          </IntlFormatted>
+          <NuxtLink class="text-link" to="/auth/reset-password">忘记密码?</NuxtLink>
+          <span class="separator-dot">·</span>
+          <NuxtLink class="text-link" :to="signUpLink">创建账号</NuxtLink>
         </div>
-
-        <p class="legal-notice">
-          登录即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink
-            to="/legal/privacy"
-            >隐私政策</NuxtLink
-          >
-        </p>
       </section>
+
+      <div class="auth-divider">
+        <span>或通过以下方式登录</span>
+      </div>
+
+      <section class="third-party">
+        <a class="btn sso-btn" :href="getAuthUrl('github', redirectTarget)">
+          <SSOGitHubIcon />
+          <span>GitHub</span>
+        </a>
+        <a class="btn sso-btn" :href="getAuthUrl('microsoft', redirectTarget)">
+          <SSOMicrosoftIcon />
+          <span>Microsoft</span>
+        </a>
+        <a class="btn sso-btn" :href="getAuthUrl('bilibili', redirectTarget)">
+          <SSOBilibiliIcon />
+          <span>哔哩哔哩</span>
+        </a>
+      </section>
+
+      <p class="legal-notice">
+        登录即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink
+          to="/legal/privacy"
+          >隐私政策</NuxtLink
+        >
+      </p>
     </template>
   </div>
 </template>
 
 <script setup>
 import { RightArrowIcon, KeyIcon, MailIcon } from "@modrinth/assets";
+import SSOGitHubIcon from "assets/icons/auth/sso-github.svg";
+import SSOMicrosoftIcon from "assets/icons/auth/sso-microsoft.svg";
+import SSOBilibiliIcon from "assets/icons/auth/sso-bilibili.svg";
 import TACaptcha from "@/components/ui/TACaptcha.vue";
+import { getAuthUrl } from "@/composables/auth.js";
 
 const captcha = ref();
 const token = ref("");
@@ -189,6 +174,8 @@ const email = ref("");
 const password = ref("");
 
 const flow = ref(route.query.flow);
+
+const redirectTarget = route.query.redirect || "/dashboard";
 
 const signUpLink = computed(
   () => `/auth/sign-up${route.query.redirect ? `?redirect=${route.query.redirect}` : ""}`,

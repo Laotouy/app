@@ -1,35 +1,6 @@
 <template>
   <div>
-    <!--    <h1>{{ formatMessage(messages.signUpWithTitle) }}</h1>-->
-
-    <!--    <section class="third-party">-->
-    <!--      <a class="btn discord-btn" :href="getAuthUrl('discord', redirectTarget)">-->
-    <!--        <SSODiscordIcon />-->
-    <!--        <span>Discord</span>-->
-    <!--      </a>-->
-    <!--      <a class="btn" :href="getAuthUrl('github', redirectTarget)">-->
-    <!--        <SSOGitHubIcon />-->
-    <!--        <span>GitHub</span>-->
-    <!--      </a>-->
-    <!--      <a class="btn" :href="getAuthUrl('microsoft', redirectTarget)">-->
-    <!--        <SSOMicrosoftIcon />-->
-    <!--        <span>Microsoft</span>-->
-    <!--      </a>-->
-    <!--      <a class="btn" :href="getAuthUrl('google', redirectTarget)">-->
-    <!--        <SSOGoogleIcon />-->
-    <!--        <span>Google</span>-->
-    <!--      </a>-->
-    <!--      <a class="btn" :href="getAuthUrl('steam', redirectTarget)">-->
-    <!--        <SSOSteamIcon />-->
-    <!--        <span>Steam</span>-->
-    <!--      </a>-->
-    <!--      <a class="btn" :href="getAuthUrl('gitlab', redirectTarget)">-->
-    <!--        <SSOGitLabIcon />-->
-    <!--        <span>GitLab</span>-->
-    <!--      </a>-->
-    <!--    </section>-->
-
-    <h1>注册</h1>
+    <h1>注册到 BBSMC</h1>
 
     <section class="auth-form">
       <div class="iconified-input">
@@ -72,7 +43,9 @@
       </div>
 
       <div class="iconified-input">
-        <label for="confirm-password" hidden>{{ formatMessage(messages.passwordLabel) }}</label>
+        <label for="confirm-password" hidden>{{
+          formatMessage(messages.confirmPasswordLabel)
+        }}</label>
         <KeyIcon />
         <input
           id="confirm-password"
@@ -94,7 +67,7 @@
       <TACaptcha ref="captcha" v-model="token" />
 
       <button
-        class="btn btn-primary continue-btn centered-btn"
+        class="btn btn-primary continue-btn full-width-btn"
         :disabled="!token"
         @click="createAccount"
       >
@@ -103,26 +76,46 @@
       </button>
 
       <div class="auth-form__additional-options">
-        {{ formatMessage(messages.alreadyHaveAccountLabel) }}
-        <NuxtLink class="text-link" :to="signInLink">
-          {{ formatMessage(commonMessages.signInButton) }}
-        </NuxtLink>
+        已有账号?
+        <NuxtLink class="text-link" :to="signInLink">立即登录</NuxtLink>
       </div>
-
-      <p class="legal-notice">
-        注册即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink
-          to="/legal/privacy"
-          >隐私政策</NuxtLink
-        >
-      </p>
     </section>
+
+    <div class="auth-divider">
+      <span>或通过以下方式注册</span>
+    </div>
+
+    <section class="third-party">
+      <a class="btn sso-btn" :href="getAuthUrl('github', redirectTarget)">
+        <SSOGitHubIcon />
+        <span>GitHub</span>
+      </a>
+      <a class="btn sso-btn" :href="getAuthUrl('microsoft', redirectTarget)">
+        <SSOMicrosoftIcon />
+        <span>Microsoft</span>
+      </a>
+      <a class="btn sso-btn" :href="getAuthUrl('bilibili', redirectTarget)">
+        <SSOBilibiliIcon />
+        <span>哔哩哔哩</span>
+      </a>
+    </section>
+
+    <p class="legal-notice">
+      注册即表示您同意<NuxtLink to="/legal/terms">用户协议</NuxtLink>和<NuxtLink to="/legal/privacy"
+        >隐私政策</NuxtLink
+      >
+    </p>
   </div>
 </template>
 
 <script setup>
 import { RightArrowIcon, UserIcon, KeyIcon, MailIcon } from "@modrinth/assets";
 import { Checkbox } from "@modrinth/ui";
+import SSOGitHubIcon from "assets/icons/auth/sso-github.svg";
+import SSOMicrosoftIcon from "assets/icons/auth/sso-microsoft.svg";
+import SSOBilibiliIcon from "assets/icons/auth/sso-bilibili.svg";
 import TACaptcha from "@/components/ui/TACaptcha.vue";
+import { getAuthUrl } from "@/composables/auth.js";
 
 const { formatMessage } = useVIntl();
 
@@ -193,6 +186,8 @@ const password = ref("");
 const confirmPassword = ref("");
 const token = ref("");
 const subscribe = ref(true);
+
+const redirectTarget = route.query.redirect || "/dashboard";
 
 const signInLink = computed(
   () => `/auth/sign-in${route.query.redirect ? `?redirect=${route.query.redirect}` : ""}`,
