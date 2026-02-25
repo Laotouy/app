@@ -274,6 +274,26 @@ pub async fn reject_image_review(
                 .await?;
             }
         }
+        "avatar" => {
+            // 拒绝头像审核：清空用户头像
+            sqlx::query!(
+                "UPDATE users SET avatar_url = NULL, raw_avatar_url = NULL
+                 WHERE id = $1 AND avatar_url = $2",
+                review.uploader_id,
+                &review.image_url,
+            )
+            .execute(&mut *transaction)
+            .await?;
+            // 清除用户缓存
+            if let Err(e) = db_models::User::clear_caches(
+                &[(db_models::ids::UserId(review.uploader_id), None)],
+                &redis,
+            )
+            .await
+            {
+                log::warn!("拒绝头像审核后清除用户缓存失败: {}", e);
+            }
+        }
         _ => {}
     }
 

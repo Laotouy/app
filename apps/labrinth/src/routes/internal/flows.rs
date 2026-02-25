@@ -120,54 +120,116 @@ impl TempUser {
             }
         }
 
-        let (avatar_url, raw_avatar_url) =
-            if let Some(avatar_url) = self.avatar_url {
-                let res = reqwest::get(&avatar_url).await?;
-                let headers = res.headers().clone();
+        let (avatar_url, raw_avatar_url) = if let Some(avatar_url) =
+            self.avatar_url
+        {
+            let res = reqwest::get(&avatar_url).await?;
+            let headers = res.headers().clone();
 
-                let img_data = if let Some(content_type) = headers
-                    .get(reqwest::header::CONTENT_TYPE)
-                    .and_then(|ct| ct.to_str().ok())
-                {
-                    get_image_ext(content_type)
-                } else {
-                    avatar_url.rsplit('.').next()
-                };
+            let img_data = if let Some(content_type) = headers
+                .get(reqwest::header::CONTENT_TYPE)
+                .and_then(|ct| ct.to_str().ok())
+            {
+                get_image_ext(content_type)
+            } else {
+                avatar_url.rsplit('.').next()
+            };
 
-                if let Some(ext) = img_data {
-                    let bytes = res.bytes().await?;
+            if let Some(ext) = img_data {
+                let bytes = res.bytes().await?;
 
-                    let upload_result = upload_image_optimized(
-                        &format!(
-                            "user/{}",
-                            crate::models::users::UserId::from(user_id)
-                        ),
-                        bytes,
-                        ext,
-                        Some(96),
-                        Some(1.0),
-                        &**file_host,
-                        crate::util::img::UploadImagePos {
-                            pos: "注册用户".to_string(),
-                            url: format!("/user/{}", &self.username),
-                            username: self.username.clone(),
-                        },
-                        redis,
-                        false,
-                    )
-                    .await;
+                let upload_result = upload_image_optimized(
+                    &format!(
+                        "user/{}",
+                        crate::models::users::UserId::from(user_id)
+                    ),
+                    bytes,
+                    ext,
+                    Some(96),
+                    Some(1.0),
+                    &**file_host,
+                    crate::util::img::UploadImagePos {
+                        pos: "注册头像".to_string(),
+                        url: format!("/user/{}", &self.username),
+                        username: self.username.clone(),
+                    },
+                    redis,
+                    true, // 跳过内置风控，下面手动检查
+                )
+                .await;
 
-                    if let Ok(upload_result) = upload_result {
-                        (Some(upload_result.url), Some(upload_result.raw_url))
-                    } else {
-                        (None, None)
+                if let Ok(upload_result) = upload_result {
+                    // 手动风控检查，区分涉政（删除）和非涉政 REVIEW（进审核）
+                    let risk_result =
+                        crate::util::risk::check_image_risk_with_labels(
+                            &upload_result.url,
+                            &format!("/user/{}", &self.username),
+                            &self.username,
+                            "注册头像",
+                            redis,
+                        )
+                        .await;
+
+                    match risk_result {
+                        Ok(result) if !result.passed => {
+                            let uploader_id = user_id.0;
+                            if crate::util::risk::contains_political_labels(
+                                &result.labels,
+                            ) {
+                                // 涉政内容：删除图片 + 创建 auto_deleted 审计记录
+                                crate::routes::v3::image_reviews::handle_political_image_delete(
+                                        &upload_result.url,
+                                        Some(&upload_result.raw_url),
+                                        result.frame_url.as_deref(),
+                                        &self.username,
+                                        uploader_id,
+                                        &result.labels,
+                                        "avatar",
+                                        None,
+                                        None,
+                                        client,
+                                        &**file_host,
+                                    )
+                                    .await;
+                                (None, None)
+                            } else {
+                                // 非涉政 REVIEW：保留图片 + 创建 pending 审核记录
+                                crate::routes::v3::image_reviews::create_review_record(
+                                        &upload_result.url,
+                                        Some(&upload_result.raw_url),
+                                        result.frame_url.as_deref(),
+                                        uploader_id,
+                                        &result.labels,
+                                        "avatar",
+                                        None,
+                                        None,
+                                        client,
+                                        redis,
+                                    )
+                                    .await;
+                                (
+                                    Some(upload_result.url),
+                                    Some(upload_result.raw_url),
+                                )
+                            }
+                        }
+                        _ => {
+                            // 通过或风控 API 异常：正常使用头像
+                            (
+                                Some(upload_result.url),
+                                Some(upload_result.raw_url),
+                            )
+                        }
                     }
                 } else {
                     (None, None)
                 }
             } else {
                 (None, None)
-            };
+            }
+        } else {
+            (None, None)
+        };
 
         // OAuth 注册用户名风控检测：不通过则用随机用户名替代
         if let Some(ref uname) = username {
@@ -623,7 +685,10 @@ impl AuthProvider {
 
                 let raw_resp = reqwest::Client::new()
                     .post(&url)
-                    .header(reqwest::header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .header(
+                        reqwest::header::CONTENT_TYPE,
+                        "application/x-www-form-urlencoded",
+                    )
                     .send()
                     .await?
                     .text()
@@ -934,13 +999,13 @@ impl AuthProvider {
                 let client_secret = dotenvy::var("BILIBILI_CLIENT_SECRET")?;
 
                 let ts = Utc::now().timestamp().to_string();
-                let nonce = Utc::now().timestamp_nanos_opt()
+                let nonce = Utc::now()
+                    .timestamp_nanos_opt()
                     .unwrap_or_else(|| Utc::now().timestamp_millis())
                     .to_string();
 
                 // GET 请求 body 为空，content-md5 = md5("")
-                let content_md5 =
-                    format!("{:x}", md5::compute(b""));
+                let content_md5 = format!("{:x}", md5::compute(b""));
 
                 let headers_map = std::collections::BTreeMap::from([
                     ("x-bili-accesskeyid", client_id.as_str()),
