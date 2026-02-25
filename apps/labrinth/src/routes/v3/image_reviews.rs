@@ -275,8 +275,8 @@ pub async fn reject_image_review(
             }
         }
         "avatar" => {
-            // 拒绝头像审核：清空用户头像
-            sqlx::query!(
+            // 拒绝头像审核：清空用户头像（仅当头像未被更换时）
+            let result = sqlx::query!(
                 "UPDATE users SET avatar_url = NULL, raw_avatar_url = NULL
                  WHERE id = $1 AND avatar_url = $2",
                 review.uploader_id,
@@ -284,6 +284,13 @@ pub async fn reject_image_review(
             )
             .execute(&mut *transaction)
             .await?;
+            if result.rows_affected() == 0 {
+                log::info!(
+                    "拒绝头像审核但用户已更换头像，跳过清空 (user_id={}, review_image={})",
+                    review.uploader_id,
+                    &review.image_url
+                );
+            }
             // 清除用户缓存
             if let Err(e) = db_models::User::clear_caches(
                 &[(db_models::ids::UserId(review.uploader_id), None)],
@@ -518,6 +525,7 @@ async fn send_feishu_image_review_notification(
     let type_display = match source_type {
         "markdown" => "Markdown图片",
         "gallery" => "项目渲染图",
+        "avatar" => "用户头像",
         _ => "图片",
     };
     let status_display = match status {

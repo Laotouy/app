@@ -120,6 +120,9 @@ impl TempUser {
             }
         }
 
+        // 延迟创建头像审核记录（等用户 INSERT 后才能满足外键约束）
+        let mut avatar_risk_info: Option<AvatarRiskInfo> = None;
+
         let (avatar_url, raw_avatar_url) = if let Some(avatar_url) =
             self.avatar_url
         {
@@ -172,41 +175,33 @@ impl TempUser {
 
                     match risk_result {
                         Ok(result) if !result.passed => {
-                            let uploader_id = user_id.0;
-                            if crate::util::risk::contains_political_labels(
-                                &result.labels,
-                            ) {
-                                // 涉政内容：删除图片 + 创建 auto_deleted 审计记录
-                                crate::routes::v3::image_reviews::handle_political_image_delete(
-                                        &upload_result.url,
-                                        Some(&upload_result.raw_url),
-                                        result.frame_url.as_deref(),
-                                        &self.username,
-                                        uploader_id,
-                                        &result.labels,
-                                        "avatar",
-                                        None,
-                                        None,
-                                        client,
+                            let is_political =
+                                crate::util::risk::contains_political_labels(
+                                    &result.labels,
+                                );
+                            avatar_risk_info = Some(AvatarRiskInfo {
+                                image_url: upload_result.url.clone(),
+                                raw_image_url: upload_result.raw_url.clone(),
+                                frame_url: result.frame_url,
+                                labels: result.labels,
+                                is_political,
+                            });
+                            if is_political {
+                                // 涉政：立即删除 S3 图片，头像置空
+                                // 审计记录延迟到用户 INSERT 后在事务内创建
+                                if let Err(e) =
+                                    crate::util::img::delete_old_images(
+                                        Some(upload_result.url),
+                                        Some(upload_result.raw_url),
                                         &**file_host,
                                     )
-                                    .await;
+                                    .await
+                                {
+                                    log::warn!("涉政头像删除S3文件失败: {}", e);
+                                }
                                 (None, None)
                             } else {
-                                // 非涉政 REVIEW：保留图片 + 创建 pending 审核记录
-                                crate::routes::v3::image_reviews::create_review_record(
-                                        &upload_result.url,
-                                        Some(&upload_result.raw_url),
-                                        result.frame_url.as_deref(),
-                                        uploader_id,
-                                        &result.labels,
-                                        "avatar",
-                                        None,
-                                        None,
-                                        client,
-                                        redis,
-                                    )
-                                    .await;
+                                // 非涉政 REVIEW：保留图片，审核记录延迟到用户 INSERT 后在事务内创建
                                 (
                                     Some(upload_result.url),
                                     Some(upload_result.raw_url),
@@ -343,11 +338,50 @@ impl TempUser {
             .insert(transaction)
             .await?;
 
+            // 用户已插入（同一事务），在事务内创建头像审核记录（满足外键约束）
+            if let Some(risk_info) = avatar_risk_info {
+                let review_id = crate::models::ids::random_base62(8) as i64;
+                let status = if risk_info.is_political {
+                    "auto_deleted"
+                } else {
+                    "pending"
+                };
+                if let Err(e) = sqlx::query!(
+                    "INSERT INTO image_content_reviews
+                     (id, image_url, raw_image_url, risk_image_url, uploader_id, source_type, source_id, project_id, risk_labels, status)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                    review_id,
+                    &risk_info.image_url,
+                    Some(&risk_info.raw_image_url) as Option<&String>,
+                    risk_info.frame_url.as_deref(),
+                    user_id.0,
+                    "avatar",
+                    None::<i64>,
+                    None::<i64>,
+                    &risk_info.labels,
+                    status,
+                )
+                .execute(&mut **transaction)
+                .await
+                {
+                    log::error!("创建头像审核记录失败: {}", e);
+                }
+            }
+
             Ok(user_id)
         } else {
             Err(AuthenticationError::InvalidCredentials)
         }
     }
+}
+
+/// OAuth 注册时头像风控检查的延迟信息
+struct AvatarRiskInfo {
+    image_url: String,
+    raw_image_url: String,
+    frame_url: Option<String>,
+    labels: String,
+    is_political: bool,
 }
 
 impl AuthProvider {

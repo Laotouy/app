@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO image_content_reviews\n                     (id, image_url, raw_image_url, risk_image_url, uploader_id, source_type, source_id, project_id, risk_labels, status)\n                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Varchar",
+        "Int8",
+        "Int8",
+        "Text",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5b17dcc9c8b1c917056fe3bc77bfb2371621e2d06f598914c3b1def31c46a671"
+}
