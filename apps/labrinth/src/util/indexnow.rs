@@ -88,6 +88,32 @@ pub fn notify_project_with_subpages(project_type: &str, slug: &str) {
     ]);
 }
 
+/// 提交项目主页、子页面及所有版本页面 URL 到 IndexNow。
+/// 用于项目审核通过等场景，确保项目及其所有版本都被搜索引擎收录。
+pub fn notify_project_with_versions(
+    project_type: &str,
+    slug: &str,
+    version_numbers: &[String],
+) {
+    let site_url = match dotenvy::var("SITE_URL") {
+        Ok(u) => u,
+        _ => return,
+    };
+
+    let base = format!("{}/{}/{}", site_url, project_type, slug);
+    let mut urls = vec![
+        base.clone(),
+        format!("{}/changelog", base),
+        format!("{}/versions", base),
+        format!("{}/issues", base),
+    ];
+    for version_number in version_numbers {
+        let encoded = urlencoding::encode(version_number);
+        urls.push(format!("{}/version/{}", base, encoded));
+    }
+    submit_urls(urls);
+}
+
 /// 提交版本页面 URL 到 IndexNow。
 pub fn notify_version(project_type: &str, slug: &str, version_number: &str) {
     let site_url = match dotenvy::var("SITE_URL") {

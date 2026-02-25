@@ -578,7 +578,7 @@ pub async fn project_edit(
                     .await?;
                 }
 
-                // 项目审核通过变为可搜索时，通知 Bing IndexNow（含子页面）
+                // 项目审核通过变为可搜索时，通知 Bing IndexNow（含子页面+所有版本）
                 if status.is_searchable()
                     && !project_item.inner.status.is_searchable()
                     && let (Some(slug), Some(project_type)) = (
@@ -586,9 +586,18 @@ pub async fn project_edit(
                         project_item.project_types.first(),
                     )
                 {
-                    crate::util::indexnow::notify_project_with_subpages(
+                    let version_numbers: Vec<String> = sqlx::query_scalar!(
+                        "SELECT version_number FROM versions WHERE mod_id = $1",
+                        id as db_ids::ProjectId,
+                    )
+                    .fetch_all(&**pool)
+                    .await
+                    .unwrap_or_default();
+
+                    crate::util::indexnow::notify_project_with_versions(
                         project_type,
                         slug,
+                        &version_numbers,
                     );
                 }
 
