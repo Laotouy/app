@@ -490,9 +490,27 @@ const projectType = ref({ id: "mod", display: "mod", actual: "mod" });
 const ogTitle = computed(
   () => `搜索 ${projectType.value.display} ${query.value ? " | " + query.value : ""}`,
 );
+const projectTypeDescriptions = {
+  mod: "浏览和下载 Minecraft 模组，涵盖 Fabric、Forge、NeoForge、Quilt 等主流加载器，为你的游戏增添新内容、机制和玩法。",
+  project:
+    "探索 BBSMC 上的各类 Minecraft 资源，包括模组、插件、光影包、资源包等，一站式满足你的所有需求。",
+  plugin:
+    "查找适用于 Bukkit、Spigot、Paper 等服务端的 Minecraft 插件，轻松管理和扩展你的多人服务器功能。",
+  datapack:
+    "下载 Minecraft 原版数据包，无需安装模组即可修改游戏规则、合成配方、战利品表和世界生成。",
+  shader:
+    "发现精美的 Minecraft 光影包，通过实时光影、水面反射和动态天气效果，让你的游戏画面焕然一新。",
+  resourcepack: "浏览 Minecraft 资源包，更换游戏纹理、模型、音效和界面，打造独一无二的视觉风格。",
+  modpack:
+    "下载精心整合的 Minecraft 模组包/整合包，开箱即用的模组组合，体验科技、魔法、冒险等各类主题玩法。",
+  software:
+    "获取 Minecraft 相关软件和工具，包括启动器、服务端、地图编辑器等实用资源，提升你的游戏体验。",
+  language: "下载 Minecraft 汉化资源和语言包，为你喜爱的模组和资源包提供中文翻译支持。",
+};
 const description = computed(
   () =>
-    `快速在BBSMC上搜索 ${projectType.value.display} 的准确结果. 我们的过滤器可帮助您快速找到最佳的 Minecraft ${projectType.value.display}`,
+    projectTypeDescriptions[projectType.value.id] ||
+    `在 BBSMC 上搜索和下载 Minecraft ${projectType.value.display}，丰富的筛选条件帮助你快速找到所需资源。`,
 );
 
 useSeoMeta({
