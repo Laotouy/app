@@ -1248,7 +1248,10 @@
           @purchase-success="() => router.go(0)"
         />
 
-        <div class="card flex-card experimental-styles-within">
+        <div
+          v-if="project.project_type !== 'language'"
+          class="card flex-card experimental-styles-within"
+        >
           <h2>{{ formatMessage(compatibilityMessages.title) }}</h2>
           <section>
             <h3>{{ formatMessage(compatibilityMessages.minecraftJava) }}</h3>
