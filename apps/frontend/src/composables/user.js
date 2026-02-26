@@ -213,4 +213,5 @@ export const logout = async () => {
   auth.value = { user: null, token: "", headers: {} };
   authCookie.value = null;
   stopLoading();
+  await navigateTo("/");
 };
