@@ -374,13 +374,14 @@ const formatDate = (date) => nuxtApp.$dayjs(date).format("YYYY-MM-DD");
 const route = useNativeRoute();
 const router = useNativeRouter();
 
-const title = `${props.project.title} - 版本列表`;
-const description = `浏览 ${props.project.title} 的所有版本`;
+const title = `${props.project.title} 版本列表 - 我的世界资源下载 | BBSMC`;
+const description = `浏览 ${props.project.title} 的所有版本和更新日志。下载适合您游戏版本的最新资源，支持多个 Minecraft 版本和加载器。在 BBSMC 获取完整的版本历史和更新记录。`;
 useSeoMeta({
   title,
   description,
   ogTitle: title,
   ogDescription: description,
+  ogImage: props.project.icon_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
 });
 
 const currentPage = ref(route.query.page ?? 1);

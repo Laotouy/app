@@ -1775,24 +1775,25 @@ export default defineNuxtComponent({
     oldFileTypes = version.files.map((x) => fileTypes.find((y) => y.value === x.file_type));
 
     const title = computed(
-      () => `${isCreating ? "Create Version" : version.name} - ${props.project.title}`,
-    );
-    const description = computed(
       () =>
-        `Download ${props.project.title} ${
-          version.version_number
-        } on BBSMC. Supports ${data.$formatVersion(version.game_versions)} ${version.loaders
-          .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
-          .join(" & ")}. Published on ${data
-          .$dayjs(version.date_published)
-          .format("YYYY-MM-DD")}. ${version.downloads} downloads.`,
+        `${isCreating ? "创建版本" : version.name} - ${props.project.title} | BBSMC 我的世界资源下载`,
     );
+    const description = computed(() => {
+      const gameVersionStr = data.$formatVersion(version.game_versions);
+      const loaderStr = version.loaders.length
+        ? version.loaders.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(" & ")
+        : "";
+      const supportStr = [gameVersionStr, loaderStr].filter(Boolean).join(" ");
+      return `下载 ${props.project.title} ${version.version_number}。${supportStr ? `支持 ${supportStr}。` : ""}发布于 ${data.$dayjs(version.date_published).format("YYYY-MM-DD")}，已有 ${version.downloads} 次下载。在 BBSMC 获取最新版本。`;
+    });
 
     useSeoMeta({
       title,
       description,
       ogTitle: title,
       ogDescription: description,
+      ogImage: () => props.project.icon_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
+      robots: isCreating ? "noindex, nofollow" : undefined,
     });
 
     // 私有文件下载支持

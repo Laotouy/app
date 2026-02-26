@@ -273,6 +273,7 @@ if (!auth.value?.user || auth.value.user.role !== "admin") {
 
 useHead({
   title: "高级创作者申请管理 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 // 常量
@@ -365,7 +366,7 @@ const changePage = (page) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
   // useAsyncData 会自动响应 currentPage 变化
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 // 切换对话线程显示

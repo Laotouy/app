@@ -1,11 +1,11 @@
 <template>
   <Combobox
     v-model="projectId"
-    placeholder="Select project"
+    placeholder="选择项目"
     :options="options"
     :searchable="true"
-    search-placeholder="Search by name, slug, or paste ID..."
-    :no-options-message="searchLoading ? 'Loading...' : 'No results found'"
+    search-placeholder="按名称、slug 或粘贴 ID 搜索..."
+    :no-options-message="searchLoading ? '加载中...' : '未找到结果'"
     @search-input="(query) => handleSearch(query)"
   />
 </template>
@@ -53,7 +53,7 @@ const search = async (query: string) => {
     }));
   } catch (error: any) {
     addNotification({
-      title: "An error occurred",
+      title: "发生错误",
       text: error.data ? error.data.description : error,
       type: "error",
     });

@@ -140,6 +140,7 @@ onMounted(async () => {
 
 useHead({
   title: "已购买资源 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 </script>
 

@@ -328,7 +328,10 @@ import paymentServiceQr from "~/assets/images/payment-service-qr.png";
 const auth = await useAuth();
 const nuxtApp = useNuxtApp();
 
-useHead({ title: "高级创作者 - BBSMC" });
+useHead({
+  title: "高级创作者 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
+});
 
 // SSR 数据获取 - 使用 useAsyncData 避免数据滞后
 const { data: application, refresh: refreshApplication } = await useAsyncData(

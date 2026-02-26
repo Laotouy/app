@@ -131,6 +131,10 @@ import UpdatedIcon from "~/assets/images/utils/updated.svg?component";
 const nuxtApp = useNuxtApp();
 const auth = await useAuth();
 
+useHead({
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
+});
+
 const props = defineProps({
   project: {
     type: Object,

@@ -132,53 +132,54 @@ const { formatMessage } = useVIntl();
 const messages = defineMessages({
   title: {
     id: "auth.sign-up.title",
-    defaultMessage: "Sign Up",
+    defaultMessage: "注册",
   },
   signUpWithTitle: {
     id: "auth.sign-up.title.sign-up-with",
-    defaultMessage: "Sign up with",
+    defaultMessage: "通过以下方式注册",
   },
   createAccountTitle: {
     id: "auth.sign-up.title.create-account",
-    defaultMessage: "Or create an account yourself",
+    defaultMessage: "或自行创建账号",
   },
   emailLabel: {
     id: "auth.sign-up.email.label",
-    defaultMessage: "Email",
+    defaultMessage: "邮箱",
   },
   usernameLabel: {
     id: "auth.sign-up.label.username",
-    defaultMessage: "Username",
+    defaultMessage: "用户名",
   },
   passwordLabel: {
     id: "auth.sign-up.password.label",
-    defaultMessage: "Password",
+    defaultMessage: "密码",
   },
   confirmPasswordLabel: {
     id: "auth.sign-up.confirm-password.label",
-    defaultMessage: "Confirm password",
+    defaultMessage: "确认密码",
   },
   subscribeLabel: {
     id: "auth.sign-up.subscribe.label",
-    defaultMessage: "Subscribe to updates about BBSMC",
+    defaultMessage: "订阅 BBSMC 更新通知",
   },
   legalDisclaimer: {
     id: "auth.sign-up.legal-dislaimer",
     defaultMessage:
-      "By creating an account, you agree to BBSMC <terms-link>Terms</terms-link> and <privacy-policy-link>Privacy Policy</privacy-policy-link>.",
+      "注册即表示您同意 BBSMC 的<terms-link>用户协议</terms-link>和<privacy-policy-link>隐私政策</privacy-policy-link>。",
   },
   createAccountButton: {
     id: "auth.sign-up.action.create-account",
-    defaultMessage: "Create account",
+    defaultMessage: "创建账号",
   },
   alreadyHaveAccountLabel: {
     id: "auth.sign-up.sign-in-option.title",
-    defaultMessage: "Already have an account?",
+    defaultMessage: "已有账号？",
   },
 });
 
 useHead({
   title: () => `${formatMessage(messages.title)} - BBSMC`,
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 const auth = await useAuth();
@@ -212,7 +213,7 @@ async function createAccount() {
         title: formatMessage(commonMessages.errorNotificationTitle),
         text: formatMessage({
           id: "auth.sign-up.notification.password-mismatch.text",
-          defaultMessage: "Passwords do not match!",
+          defaultMessage: "两次输入的密码不一致！",
         }),
         type: "error",
       });

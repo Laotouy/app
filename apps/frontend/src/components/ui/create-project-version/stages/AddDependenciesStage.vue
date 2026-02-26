@@ -1,34 +1,34 @@
 <template>
   <div class="flex w-full max-w-full flex-col gap-6">
     <div class="flex flex-col gap-4">
-      <span class="font-semibold text-contrast">Add dependency</span>
+      <span class="font-semibold text-contrast">添加依赖</span>
       <div class="border-surface-5 flex flex-col gap-3 rounded-2xl border border-solid p-4">
         <div class="grid gap-2.5">
-          <span class="font-semibold text-contrast">Project <span class="text-red">*</span></span>
+          <span class="font-semibold text-contrast">项目 <span class="text-red">*</span></span>
           <ModSelect v-model="newDependencyProjectId" />
         </div>
 
         <template v-if="newDependencyProjectId">
           <div class="grid gap-2.5">
-            <span class="font-semibold text-contrast"> Version </span>
+            <span class="font-semibold text-contrast"> 版本 </span>
             <Combobox
               v-model="newDependencyVersionId"
-              placeholder="Select version"
-              :options="[{ label: 'Any version', value: null }, ...newDependencyVersions]"
+              placeholder="选择版本"
+              :options="[{ label: '任意版本', value: null }, ...newDependencyVersions]"
               :searchable="true"
             />
           </div>
 
           <div class="grid gap-2.5">
-            <span class="font-semibold text-contrast"> Dependency relation </span>
+            <span class="font-semibold text-contrast"> 依赖关系 </span>
             <Combobox
               v-model="newDependencyType"
-              placeholder="Select dependency type"
+              placeholder="选择依赖类型"
               :options="[
-                { label: 'Required', value: 'required' },
-                { label: 'Optional', value: 'optional' },
-                { label: 'Incompatible', value: 'incompatible' },
-                { label: 'Embedded', value: 'embedded' },
+                { label: '必需', value: 'required' },
+                { label: '可选', value: 'optional' },
+                { label: '不兼容', value: 'incompatible' },
+                { label: '内嵌', value: 'embedded' },
               ]"
             />
           </div>
@@ -48,7 +48,7 @@
                   )
               "
             >
-              Add Dependency
+              添加依赖
             </button>
           </ButtonStyled>
         </template>
@@ -61,7 +61,7 @@
     />
 
     <div v-if="addedDependencies.length" class="flex flex-col gap-4">
-      <span class="font-semibold text-contrast">Added dependencies</span>
+      <span class="font-semibold text-contrast">已添加的依赖</span>
       <div class="5 flex flex-col gap-2">
         <template v-for="(dependency, index) in addedDependencies">
           <AddedDependencyRow
@@ -75,7 +75,7 @@
             @remove="() => removeDependency(index)"
           />
         </template>
-        <span v-if="!addedDependencies.length"> No dependencies added. </span>
+        <span v-if="!addedDependencies.length"> 尚未添加依赖。 </span>
       </div>
     </div>
   </div>
@@ -103,7 +103,7 @@ const { labrinth } = injectModrinthClient();
 
 const errorNotification = (err: any) => {
   addNotification({
-    title: "An error occurred",
+    title: "发生错误",
     text: err.data ? err.data.description : err,
     type: "error",
   });
@@ -256,8 +256,8 @@ const addDependency = (dependency: Labrinth.Versions.v3.Dependency) => {
     )
   ) {
     addNotification({
-      title: "Dependency already added",
-      text: "You cannot add the same dependency twice.",
+      title: "依赖已存在",
+      text: "不能重复添加相同的依赖。",
       type: "error",
     });
     return;

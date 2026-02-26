@@ -175,6 +175,7 @@ const app = useNuxtApp();
 // 页面标题
 useHead({
   title: "汉化追踪监控 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 // 响应式状态

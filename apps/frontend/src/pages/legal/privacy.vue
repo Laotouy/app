@@ -435,7 +435,11 @@
 </template>
 
 <script setup>
-useHead({ title: "隐私保护声明 - BBSMC资源社区" });
+useSeoMeta({
+  title: "隐私保护声明 - BBSMC 我的世界资源社区 | 用户隐私与数据保护政策",
+  description:
+    "了解 BBSMC 我的世界资源社区如何收集、使用和保护您的个人信息。阅读完整的隐私保护声明，了解您的数据权利和平台的安全保障措施。",
+});
 </script>
 
 <style lang="scss" scoped>

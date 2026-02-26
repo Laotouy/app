@@ -532,7 +532,11 @@
 </template>
 
 <script setup>
-useHead({ title: "用户服务协议 - BBSMC资源社区" });
+useSeoMeta({
+  title: "用户服务协议 - BBSMC 我的世界资源社区 | 服务条款与使用条件",
+  description:
+    "阅读 BBSMC 我的世界资源社区的用户服务协议，了解注册使用、内容发布、交易支付等服务条款和双方权利义务。",
+});
 </script>
 
 <style lang="scss" scoped>

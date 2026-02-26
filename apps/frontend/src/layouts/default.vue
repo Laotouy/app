@@ -183,9 +183,7 @@
             <template #profile> <UserIcon aria-hidden="true" /> 个人资料 </template>
             <template #notifications> <BellIcon aria-hidden="true" /> 通知 </template>
             <template #saved> <BookmarkIcon aria-hidden="true" /> 收藏夹 </template>
-            <template #plus>
-              <ArrowBigUpDashIcon aria-hidden="true" /> Upgrade to Modrinth+
-            </template>
+            <template #plus> <ArrowBigUpDashIcon aria-hidden="true" /> 升级到 BBSMC+ </template>
             <template #settings> <SettingsIcon aria-hidden="true" /> 设置 </template>
             <template #flags> <ReportIcon aria-hidden="true" /> 标签 </template>
             <template #projects> <BoxIcon aria-hidden="true" /> 我的资源 </template>
@@ -279,7 +277,7 @@
             </NuxtLink>
             <NuxtLink v-if="flags.developerMode" class="iconified-button" to="/flags">
               <ReportIcon aria-hidden="true" />
-              Feature flags
+              功能标签
             </NuxtLink>
           </template>
           <NuxtLink class="iconified-button" to="/settings">
@@ -557,52 +555,52 @@ const link = config.public.siteUrl + route.path.replace(/\/+$/, "");
 const verifyEmailBannerMessages = defineMessages({
   title: {
     id: "layout.banner.verify-email.title",
-    defaultMessage: "For security purposes, please verify your email address on Modrinth.",
+    defaultMessage: "为确保安全，请验证您的邮箱地址。",
   },
   action: {
     id: "layout.banner.verify-email.action",
-    defaultMessage: "Re-send verification email",
+    defaultMessage: "重新发送验证邮件",
   },
 });
 
 const addEmailBannerMessages = defineMessages({
   title: {
     id: "layout.banner.add-email.title",
-    defaultMessage: "For security purposes, please enter your email on Modrinth.",
+    defaultMessage: "为确保安全，请绑定您的邮箱地址。",
   },
   action: {
     id: "layout.banner.add-email.button",
-    defaultMessage: "Visit account settings",
+    defaultMessage: "前往账户设置",
   },
 });
 
 const navMenuMessages = defineMessages({
   home: {
     id: "layout.nav.home",
-    defaultMessage: "Home",
+    defaultMessage: "首页",
   },
   search: {
     id: "layout.nav.search",
-    defaultMessage: "Search",
+    defaultMessage: "搜索",
   },
 });
 
 const messages = defineMessages({
   toggleMenu: {
     id: "layout.menu-toggle.action",
-    defaultMessage: "Toggle menu",
+    defaultMessage: "切换菜单",
   },
   yourAvatarAlt: {
     id: "layout.avatar.alt",
-    defaultMessage: "Your avatar",
+    defaultMessage: "您的头像",
   },
   getModrinthApp: {
     id: "layout.action.get-modrinth-app",
-    defaultMessage: "Get Modrinth App",
+    defaultMessage: "获取 BBSMC 客户端",
   },
   changeTheme: {
     id: "layout.action.change-theme",
-    defaultMessage: "Change theme",
+    defaultMessage: "切换主题",
   },
 });
 defineMessages({
@@ -612,7 +610,7 @@ defineMessages({
   },
   companyTitle: {
     id: "layout.footer.company.title",
-    defaultMessage: "Company",
+    defaultMessage: "关于",
   },
   terms: {
     id: "layout.footer.company.terms",
@@ -628,31 +626,31 @@ defineMessages({
   },
   careers: {
     id: "layout.footer.company.careers",
-    defaultMessage: "Careers",
+    defaultMessage: "招聘",
   },
   resourcesTitle: {
     id: "layout.footer.resources.title",
-    defaultMessage: "Resources",
+    defaultMessage: "资源",
   },
   support: {
     id: "layout.footer.resources.support",
-    defaultMessage: "Support",
+    defaultMessage: "支持",
   },
   blog: {
     id: "layout.footer.resources.blog",
-    defaultMessage: "Blog",
+    defaultMessage: "博客",
   },
   docs: {
     id: "layout.footer.resources.docs",
-    defaultMessage: "Docs",
+    defaultMessage: "文档",
   },
   status: {
     id: "layout.footer.resources.status",
-    defaultMessage: "Status",
+    defaultMessage: "状态",
   },
   interactTitle: {
     id: "layout.footer.interact.title",
-    defaultMessage: "Interact",
+    defaultMessage: "互动",
   },
   legalDisclaimer: {
     id: "layout.footer.legal-disclaimer",
@@ -694,8 +692,8 @@ useSeoMeta({
   ogUrl: link,
 
   // Twitter
-  twitterCard: "summary",
-  twitterSite: "@modrinth",
+  twitterCard: "summary_large_image",
+  twitterSite: "@bbsmc_net",
 });
 
 const isMobileMenuOpen = ref(false);

@@ -90,14 +90,14 @@ const selectedType = ref<Labrinth.Versions.v3.FileType | "primary">(initialFileT
 const primaryFileInput = ref<HTMLInputElement>();
 
 const versionTypes = [
-  !editingVersion && { class: "text-sm", value: "primary", label: "Primary" },
-  { class: "text-sm", value: "unknown", label: "Other" },
-  { class: "text-sm", value: "required-resource-pack", label: "Required RP" },
-  { class: "text-sm", value: "optional-resource-pack", label: "Optional RP" },
-  { class: "text-sm", value: "sources-jar", label: "Sources JAR" },
-  { class: "text-sm", value: "dev-jar", label: "Dev JAR" },
+  !editingVersion && { class: "text-sm", value: "primary", label: "主文件" },
+  { class: "text-sm", value: "unknown", label: "其他" },
+  { class: "text-sm", value: "required-resource-pack", label: "必需资源包" },
+  { class: "text-sm", value: "optional-resource-pack", label: "可选资源包" },
+  { class: "text-sm", value: "sources-jar", label: "源码 JAR" },
+  { class: "text-sm", value: "dev-jar", label: "开发 JAR" },
   { class: "text-sm", value: "javadoc-jar", label: "Javadoc JAR" },
-  { class: "text-sm", value: "signature", label: "Signature" },
+  { class: "text-sm", value: "signature", label: "签名文件" },
 ].filter(Boolean) as DropdownOption<Labrinth.Versions.v3.FileType | "primary">[];
 
 function emitFileTypeChange() {

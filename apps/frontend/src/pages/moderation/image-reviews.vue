@@ -221,6 +221,7 @@ if (!["admin", "moderator"].includes(auth.value?.user?.role)) {
 
 useHead({
   title: "图片内容审核 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 const loading = ref(true);

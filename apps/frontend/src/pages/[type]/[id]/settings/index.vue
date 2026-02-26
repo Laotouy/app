@@ -124,7 +124,7 @@
             id="project-env-client"
             v-model="clientSide"
             class="small-multiselect"
-            placeholder="Select one"
+            placeholder="请选择"
             :options="sideTypes"
             :custom-label="
               (value) => {
@@ -158,7 +158,7 @@
             id="project-env-server"
             v-model="serverSide"
             class="small-multiselect"
-            placeholder="Select one"
+            placeholder="请选择"
             :options="sideTypes"
             :custom-label="
               (value) => {
@@ -329,6 +329,10 @@ import LanguagesIcon from "~/assets/images/utils/languages.svg?component";
 import { isStaff } from "~/helpers/users.js";
 
 const auth = useState("auth");
+
+useHead({
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
+});
 
 const props = defineProps({
   project: {

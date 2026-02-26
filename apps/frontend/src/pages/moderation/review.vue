@@ -149,6 +149,7 @@ import Badge from "~/components/ui/Badge.vue";
 
 useHead({
   title: "审核资源 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 const app = useNuxtApp();

@@ -3,9 +3,9 @@
     <McVersionPicker v-model="draftVersion.game_versions" :game-versions="gameVersions" />
     <div v-if="draftVersion.game_versions.length" class="space-y-1">
       <div class="flex items-center justify-between">
-        <span class="font-semibold text-contrast"> Added versions </span>
+        <span class="font-semibold text-contrast"> 已添加版本 </span>
         <ButtonStyled type="transparent" size="standard">
-          <button @click="clearAllVersions()">Clear all</button>
+          <button @click="clearAllVersions()">清除全部</button>
         </ButtonStyled>
       </div>
       <div
@@ -24,7 +24,7 @@
             </TagItem>
           </template>
           <template v-else>
-            <span>No versions selected.</span>
+            <span>未选择版本。</span>
           </template>
         </div>
       </div>

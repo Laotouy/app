@@ -637,8 +637,8 @@ const props = defineProps({
     },
   },
 });
-const title = `${props.project.title} - WIKI`;
-const description = `浏览 ${props.project.title} 个图片的WIKI页面`;
+const title = `${props.project.title} WIKI 百科 - 我的世界资源文档 | BBSMC`;
+const description = `查阅 ${props.project.title} 的 WIKI 文档和使用指南，了解详细的安装教程、配置说明和常见问题解答。在 BBSMC 获取完整的资源百科信息。`;
 let wiki = ref(null);
 const router = useNativeRouter();
 const route = useNativeRoute();
@@ -650,6 +650,7 @@ useSeoMeta({
   description,
   ogTitle: title,
   ogDescription: description,
+  ogImage: props.project.icon_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
 });
 
 if (

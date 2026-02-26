@@ -8,9 +8,9 @@
 
     <div v-if="draftVersion.loaders.length" class="space-y-1">
       <div class="flex items-center justify-between">
-        <span class="font-semibold text-contrast"> Added loaders </span>
+        <span class="font-semibold text-contrast"> 已添加加载器 </span>
         <ButtonStyled type="transparent" size="standard">
-          <button @click="onClearAll()">Clear all</button>
+          <button @click="onClearAll()">清除全部</button>
         </ButtonStyled>
       </div>
       <div

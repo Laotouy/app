@@ -119,6 +119,10 @@ import SaveIcon from "~/assets/images/utils/save.svg?component";
 
 const tags = useTags();
 
+useHead({
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
+});
+
 const props = defineProps({
   project: {
     type: Object,
@@ -148,7 +152,7 @@ const webDisplayLabel = (x) => {
       return "发布地址";
 
     case "modrinth":
-      return "Modrinth地址";
+      return "Modrinth";
 
     case "bilibili":
       return "哔哩哔哩";

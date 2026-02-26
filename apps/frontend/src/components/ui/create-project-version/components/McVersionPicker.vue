@@ -2,7 +2,7 @@
   <div class="space-y-2.5">
     <div class="flex items-center justify-between">
       <span class="font-semibold text-contrast">
-        Minecraft versions <span class="text-red">*</span>
+        Minecraft 版本 <span class="text-red">*</span>
       </span>
 
       <Chips
@@ -15,7 +15,7 @@
     </div>
     <div class="iconified-input w-full">
       <SearchIcon aria-hidden="true" />
-      <input v-model="searchQuery" type="text" placeholder="Search versions" />
+      <input v-model="searchQuery" type="text" placeholder="搜索版本" />
     </div>
     <div
       class="border-surface-5 flex h-72 select-none flex-col gap-3 overflow-y-auto rounded-xl border border-solid p-3 py-4"
@@ -55,9 +55,9 @@
         </div>
       </div>
 
-      <span v-if="!filteredVersions.length">No versions found.</span>
+      <span v-if="!filteredVersions.length">未找到版本。</span>
     </div>
-    <div>Hold shift and click to select range.</div>
+    <div>按住 Shift 并点击可选择范围。</div>
   </div>
 </template>
 
@@ -141,7 +141,7 @@ const toggleVersion = (version: string) => {
   emit("update:modelValue", next);
 };
 
-const DEV_RELEASE_KEY = "Snapshots";
+const DEV_RELEASE_KEY = "快照";
 
 function groupVersions(gameVersions: GameVersion[]) {
   gameVersions = [...gameVersions].sort(

@@ -152,8 +152,6 @@ const props = defineProps({
     },
   },
 });
-const title = `${props.project.title} - WIKI`;
-const description = `浏览 ${props.project.title} 个图片的WIKI页面`;
 let wiki = ref(null);
 const route = useNativeRoute();
 const router = useNativeRouter();
@@ -161,13 +159,6 @@ const data = useNuxtApp();
 let wikiBodyCache = ref("");
 let wikiSort = ref(0);
 const editSortModel = ref();
-
-useSeoMeta({
-  title,
-  description,
-  ogTitle: title,
-  ogDescription: description,
-});
 
 // console.log('wikis', props.wikis);
 if (
@@ -204,6 +195,17 @@ if (
 
 wikiBodyCache = wiki.body;
 wikiSort = wiki.sort_order;
+
+const wikiName = wiki.title || route.params.wiki;
+const title = `${wikiName} - ${props.project.title} WIKI | BBSMC`;
+const description = `查阅 ${props.project.title} 的 WIKI 页面「${wikiName}」，了解详细的使用指南、安装教程和配置说明。在 BBSMC 获取完整的资源百科信息。`;
+useSeoMeta({
+  title,
+  description,
+  ogTitle: title,
+  ogDescription: description,
+  ogImage: props.project.icon_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
+});
 
 async function saveChanges() {
   if (wikiBodyCache === wiki.body && wikiSort === wiki.sort_order) {

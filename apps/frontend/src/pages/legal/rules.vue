@@ -205,7 +205,11 @@
 </template>
 
 <script setup>
-useHead({ title: "内容规则 - BBSMC资源社区" });
+useSeoMeta({
+  title: "内容规则 - BBSMC 我的世界资源社区 | 社区内容发布规范",
+  description:
+    "阅读 BBSMC 我的世界资源社区的内容发布规则和社区规范，了解资源上传、评论讨论和社区互动的行为准则和管理政策。",
+});
 </script>
 
 <style lang="scss" scoped>

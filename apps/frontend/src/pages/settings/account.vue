@@ -187,46 +187,44 @@
     </Modal>
     <Modal
       ref="manageTwoFactorModal"
-      :header="`${
-        auth.user.has_totp && twoFactorStep === 0 ? 'Remove' : 'Setup'
-      } two-factor authentication`"
+      :header="`${auth.user.has_totp && twoFactorStep === 0 ? '移除' : '设置'} 双重验证`"
     >
       <div class="universal-modal">
         <template v-if="auth.user.has_totp && twoFactorStep === 0">
           <label for="two-factor-code">
-            <span class="label__title">Enter two-factor code</span>
-            <span class="label__description">Please enter a two-factor code to proceed.</span>
+            <span class="label__title">输入双重验证码</span>
+            <span class="label__description">请输入双重验证码以继续。</span>
           </label>
           <input
             id="two-factor-code"
             v-model="twoFactorCode"
             maxlength="11"
             type="text"
-            placeholder="Enter code..."
+            placeholder="输入验证码..."
             @keyup.enter="removeTwoFactor()"
           />
-          <p v-if="twoFactorIncorrect" class="known-errors">The code entered is incorrect!</p>
+          <p v-if="twoFactorIncorrect" class="known-errors">输入的验证码不正确！</p>
           <div class="input-group push-right">
             <button class="iconified-button" @click="$refs.manageTwoFactorModal.hide()">
               <XIcon />
-              Cancel
+              取消
             </button>
             <button class="iconified-button danger-button" @click="removeTwoFactor">
               <TrashIcon />
-              Remove 2FA
+              移除双重验证
             </button>
           </div>
         </template>
         <template v-else>
           <template v-if="twoFactorStep === 0">
             <p>
-              Two-factor authentication keeps your account secure by requiring access to a second
-              device in order to sign in.
+              双重验证通过要求访问第二设备来保护您的账号安全。
               <br /><br />
-              Scan the QR code with <a href="https://authy.com/">Authy</a>,
-              <a href="https://www.microsoft.com/en-us/security/mobile-authenticator-app">
-                Microsoft Authenticator</a
-              >, or any other 2FA app to begin.
+              使用 <a href="https://authy.com/">Authy</a>、<a
+                href="https://www.microsoft.com/en-us/security/mobile-authenticator-app"
+                >Microsoft Authenticator</a
+              >
+              或其他双重验证应用扫描二维码。
             </p>
             <qrcode-vue
               v-if="twoFactorSecret"
@@ -238,16 +236,14 @@
               level="H"
             />
             <p>
-              If the QR code does not scan, you can manually enter the secret:
+              如果无法扫描二维码，您可以手动输入密钥：
               <strong>{{ twoFactorSecret }}</strong>
             </p>
           </template>
           <template v-if="twoFactorStep === 1">
             <label for="verify-code">
-              <span class="label__title">Verify code</span>
-              <span class="label__description"
-                >Enter the one-time code from authenticator to verify access.
-              </span>
+              <span class="label__title">验证码</span>
+              <span class="label__description">输入验证器中的一次性验证码以确认。 </span>
             </label>
             <input
               id="verify-code"
@@ -255,18 +251,16 @@
               maxlength="6"
               type="text"
               autocomplete="one-time-code"
-              placeholder="Enter code..."
+              placeholder="输入验证码..."
               @keyup.enter="verifyTwoFactorCode()"
             />
-            <p v-if="twoFactorIncorrect" class="known-errors">The code entered is incorrect!</p>
+            <p v-if="twoFactorIncorrect" class="known-errors">输入的验证码不正确！</p>
           </template>
           <template v-if="twoFactorStep === 2">
             <p>
-              Download and save these back-up codes in a safe place. You can use these in-place of a
-              2FA code if you ever lose access to your device! You should protect these codes like
-              your password.
+              请下载并妥善保存这些备用码。如果您丢失了设备，可以使用这些备用码替代双重验证码！请像保护密码一样保护这些备用码。
             </p>
-            <p>Backup codes can only be used once.</p>
+            <p>备用码只能使用一次。</p>
             <ul>
               <li v-for="code in backupCodes" :key="code">{{ code }}</li>
             </ul>
@@ -274,7 +268,7 @@
           <div class="input-group push-right">
             <button v-if="twoFactorStep === 1" class="iconified-button" @click="twoFactorStep = 0">
               <LeftArrowIcon />
-              Back
+              返回
             </button>
             <button
               v-if="twoFactorStep !== 2"
@@ -282,7 +276,7 @@
               @click="$refs.manageTwoFactorModal.hide()"
             >
               <XIcon />
-              Cancel
+              取消
             </button>
             <button
               v-if="twoFactorStep <= 1"
@@ -290,7 +284,7 @@
               @click="twoFactorStep === 1 ? verifyTwoFactorCode() : (twoFactorStep = 1)"
             >
               <RightArrowIcon />
-              Continue
+              继续
             </button>
             <button
               v-if="twoFactorStep === 2"
@@ -298,7 +292,7 @@
               @click="$refs.manageTwoFactorModal.hide()"
             >
               <CheckIcon />
-              Complete setup
+              完成设置
             </button>
           </div>
         </template>
@@ -640,7 +634,8 @@ import TACaptcha from "@/components/ui/TACaptcha.vue";
 import ConversationThread from "~/components/ui/thread/ConversationThread.vue";
 
 useHead({
-  title: "Account settings - Modrinth",
+  title: "账户与安全 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 definePageMeta({
@@ -964,7 +959,7 @@ async function deleteAccount() {
   }
 
   useCookie("auth-token").value = null;
-  window.location.href = "/";
+  await navigateTo("/", { external: true });
 
   stopLoading();
 }

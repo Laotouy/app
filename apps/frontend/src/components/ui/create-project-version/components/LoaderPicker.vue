@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-2.5">
-    <span class="font-semibold text-contrast">Loaders <span class="text-red">*</span></span>
+    <span class="font-semibold text-contrast">加载器 <span class="text-red">*</span></span>
 
     <Chips
       v-model="loaderGroup"
@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <span>Select one or more loaders this version supports.</span>
+    <span>选择此版本支持的加载器。</span>
   </div>
 </template>
 

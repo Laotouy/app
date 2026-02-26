@@ -1947,7 +1947,7 @@ const webDisplayLabel = (x) => {
       return "发布地址";
 
     case "modrinth":
-      return "Modrinth地址";
+      return "Modrinth";
 
     case "bilibili":
       return "哔哩哔哩";
@@ -2485,13 +2485,15 @@ const needsPurchase = computed(() => {
 
 const title = computed(() => {
   if (!project || !project.value) return "";
-  return `${project.value.title} - 我的世界 ${projectTypeDisplay.value === "Modpack" ? "整合包" : projectTypeDisplay.value}`;
+  return `${project.value.title} - 我的世界${projectTypeDisplay.value} | BBSMC 下载`;
 });
 const description = computed(() => {
   if (!project || !project.value) return "";
-  return `${project.value.description} - 下载我的世界 ${projectTypeDisplay.value === "Modpack" ? "整合包" : projectTypeDisplay.value} ${
-    project.value.title
-  } by ${members.value.find((x) => x.is_owner)?.user?.username || "创作者"} 在 BBSMC`;
+  const owner = members.value.find((x) => x.is_owner)?.user?.username || "创作者";
+  const desc = project.value.description?.trim();
+  return desc
+    ? `${desc} - 在 BBSMC 下载我的世界${projectTypeDisplay.value} ${project.value.title}，由 ${owner} 创建。`
+    : `在 BBSMC 下载我的世界${projectTypeDisplay.value} ${project.value.title}，由 ${owner} 创建。浏览详情、版本列表和社区评价。`;
 });
 
 if (!route.name?.startsWith("type-id-settings")) {
@@ -2499,12 +2501,49 @@ if (!route.name?.startsWith("type-id-settings")) {
     title: () => title.value,
     description: () => description.value,
     ogTitle: () => title.value,
-    ogDescription: () => project.value.description,
+    ogDescription: () => description.value,
     ogImage: () => project.value.icon_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
     robots: () =>
       project.value.status === "approved" || project.value.status === "archived"
         ? "all"
         : "noindex",
+  });
+
+  useHead({
+    script: [
+      {
+        type: "application/ld+json",
+        children: () =>
+          JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: project.value.title,
+            description: project.value.description,
+            image: project.value.icon_url || undefined,
+            url: `https://bbsmc.net/${route.params.type}/${project.value.slug || project.value.id}`,
+            applicationCategory: "GameApplication",
+            operatingSystem: "Windows, macOS, Linux",
+            author: {
+              "@type": "Person",
+              name: members.value.find((x) => x.is_owner)?.user?.username || "",
+            },
+            interactionStatistic: [
+              {
+                "@type": "InteractionCounter",
+                interactionType: "https://schema.org/DownloadAction",
+                userInteractionCount: project.value.downloads,
+              },
+              {
+                "@type": "InteractionCounter",
+                interactionType: "https://schema.org/FollowAction",
+                userInteractionCount: project.value.followers,
+              },
+            ],
+            datePublished: project.value.published,
+            dateModified: project.value.updated,
+          }),
+      },
+    ],
   });
 }
 

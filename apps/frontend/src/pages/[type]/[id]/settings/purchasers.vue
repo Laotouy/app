@@ -145,6 +145,10 @@ const props = defineProps({
   },
 });
 
+useHead({
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
+});
+
 const nuxtApp = useNuxtApp();
 const cosmetics = useCosmetics();
 

@@ -12,7 +12,7 @@
 
     <template v-else>
       <div class="flex flex-col gap-2">
-        <span class="text-base font-semibold text-contrast">Primary file</span>
+        <span class="text-base font-semibold text-contrast">主文件</span>
         <div class="flex flex-col gap-2.5">
           <VersionFileRow
             v-if="primaryFile"
@@ -28,9 +28,7 @@
             "
           />
         </div>
-        <span>
-          The primary file is the default file a user downloads when installing the project.
-        </span>
+        <span> 主文件是用户安装项目时默认下载的文件。 </span>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -39,7 +37,7 @@
             {{ formatMessage(messages.addFilesAdmonition) }}
           </Admonition>
 
-          <span class="text-base font-semibold text-contrast">Supplementary files</span>
+          <span class="text-base font-semibold text-contrast">附属文件</span>
 
           <DropzoneFileInput
             aria-label="Upload additional file"
@@ -48,7 +46,7 @@
             :max-size="524288000"
             size="small"
             :primary-prompt="null"
-            secondary-prompt="Drag and drop files or click to browse"
+            secondary-prompt="拖放文件或点击浏览"
             @change="handleNewFiles"
           />
 
@@ -76,10 +74,7 @@
             />
           </div>
         </div>
-        <span>
-          You can optionally add supplementary files such as source code, documentation, or required
-          resource packs.
-        </span>
+        <span> 你可以选择性地添加附属文件，例如源代码、文档或必需的资源包。 </span>
       </div>
     </template>
   </div>
@@ -225,8 +220,7 @@ const hasSupplementaryFiles = computed(
 const messages = defineMessages({
   addFilesAdmonition: {
     id: "create-project-version.create-modal.stage.add-files.admonition",
-    defaultMessage:
-      "Supplementary files are for supporting resources like source code, not for alternative versions or variants.",
+    defaultMessage: "附属文件用于支持性资源（如源代码），不应用于替代版本或变体。",
   },
 });
 </script>

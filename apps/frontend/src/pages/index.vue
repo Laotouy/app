@@ -64,6 +64,10 @@
               class="hero-slide-image"
               :class="{ 'scale-effect': !isDragging }"
               draggable="false"
+              width="800"
+              height="400"
+              loading="eager"
+              fetchpriority="high"
             />
             <div class="hero-slide-overlay">
               <span class="hero-slide-badge">{{ item.badge }}</span>
@@ -140,6 +144,9 @@
                     :src="project.icon_url"
                     :alt="project.title"
                     class="resource-icon"
+                    loading="lazy"
+                    width="48"
+                    height="48"
                   />
                   <span v-else class="resource-icon-placeholder"><PackageClosedIcon /></span>
                   <div class="resource-title-wrap">
@@ -216,6 +223,9 @@
                     :src="project.icon_url"
                     :alt="project.title"
                     class="resource-icon"
+                    loading="lazy"
+                    width="48"
+                    height="48"
                   />
                   <span v-else class="resource-icon-placeholder"><PackageClosedIcon /></span>
                   <div class="resource-title-wrap">
@@ -347,7 +357,14 @@
                 class="translation-item"
                 :title="item.title"
               >
-                <img :src="item.icon_url" :alt="item.title" class="translation-icon" />
+                <img
+                  :src="item.icon_url"
+                  :alt="item.title"
+                  class="translation-icon"
+                  loading="lazy"
+                  width="40"
+                  height="40"
+                />
                 <div class="translation-info">
                   <div class="translation-title">{{ item.title }}</div>
                   <div class="translation-meta">
@@ -409,6 +426,9 @@
                 :src="plugin.icon_url"
                 :alt="plugin.title"
                 class="mini-resource-icon"
+                loading="lazy"
+                width="48"
+                height="48"
               />
               <span v-else class="mini-resource-icon-placeholder"><PlugIcon /></span>
               <div class="mini-resource-info">
@@ -454,19 +474,35 @@
             <h3 class="sidebar-title"><LinkIcon class="sidebar-icon" /> 友情链接</h3>
           </div>
           <div class="quick-links">
-            <a href="https://www.mcmod.cn/" target="_blank" rel="noopener" class="quick-link">
+            <a
+              href="https://www.mcmod.cn/"
+              target="_blank"
+              rel="nofollow noopener"
+              class="quick-link"
+            >
               <img
                 src="https://www.mcmod.cn/images/links/mcmod.gif"
                 alt="MC百科"
                 class="friend-link-logo"
+                loading="lazy"
+                width="88"
+                height="31"
               />
               <span class="quick-link-text">MC百科</span>
             </a>
-            <a href="https://bbs.mc9y.net/" target="_blank" rel="noopener" class="quick-link">
+            <a
+              href="https://bbs.mc9y.net/"
+              target="_blank"
+              rel="nofollow noopener"
+              class="quick-link"
+            >
               <img
                 src="https://bbs.mc9y.net/styles/io_dark/io/images/logo.png"
                 alt="九域资源社区"
                 class="friend-link-logo"
+                loading="lazy"
+                width="88"
+                height="31"
               />
               <span class="quick-link-text">九域资源社区</span>
             </a>
@@ -494,6 +530,38 @@ import {
   DownloadIcon,
   UpdatedIcon,
 } from "@modrinth/assets";
+
+useSeoMeta({
+  title: "BBSMC - 我的世界中文资源社区 | Minecraft 模组、整合包、光影下载",
+  description:
+    "BBSMC 是最活跃的 Minecraft 我的世界中文资源社区。提供海量模组、整合包、光影、资源包、数据包和插件的免费下载，支持 Forge、Fabric、NeoForge 等主流加载器。加入百万玩家共同打造最好的中文 Minecraft 内容平台。",
+  ogTitle: "BBSMC - 我的世界中文资源社区 | Minecraft 模组、整合包、光影下载",
+  ogDescription:
+    "BBSMC 是最活跃的 Minecraft 我的世界中文资源社区。提供海量模组、整合包、光影、资源包、数据包和插件的免费下载，支持 Forge、Fabric、NeoForge 等主流加载器。加入百万玩家共同打造最好的中文 Minecraft 内容平台。",
+  ogImage: "https://cdn.bbsmc.net/raw/bbsmc-logo.png",
+});
+
+useHead({
+  script: [
+    {
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "BBSMC",
+        alternateName: "BBSMC 我的世界资源社区",
+        url: "https://bbsmc.net",
+        description:
+          "BBSMC 是最活跃的 Minecraft 我的世界中文资源社区，提供模组、整合包、光影、资源包和插件下载。",
+        potentialAction: {
+          "@type": "SearchAction",
+          target: "https://bbsmc.net/mods?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      }),
+    },
+  ],
+});
 
 // 使用 useAsyncData 获取所有主页数据，支持 SSR
 const { data: pageData } = await useAsyncData("homepage-data", async () => {

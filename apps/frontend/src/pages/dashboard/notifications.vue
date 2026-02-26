@@ -115,6 +115,7 @@ import Pagination from "~/components/ui/Pagination.vue";
 
 useHead({
   title: "通知 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 const auth = await useAuth();

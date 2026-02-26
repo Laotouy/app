@@ -110,6 +110,7 @@ import { commonMessages } from "~/utils/common-messages.ts";
 
 useHead({
   title: "个人资料设置 - BBSMC",
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
 definePageMeta({
@@ -121,36 +122,36 @@ const { formatMessage } = useVIntl();
 const messages = defineMessages({
   title: {
     id: "settings.profile.profile-info",
-    defaultMessage: "Profile information",
+    defaultMessage: "个人资料",
   },
   description: {
     id: "settings.profile.description",
     defaultMessage:
-      "Your profile information is publicly viewable on BBSMC and through the <docs-link>BBSMC API</docs-link>.",
+      "您的个人资料信息可在 BBSMC 公开查看，也可通过 <docs-link>BBSMC API</docs-link> 访问。",
   },
   profilePicture: {
     id: "settings.profile.profile-picture.title",
-    defaultMessage: "Profile picture",
+    defaultMessage: "头像",
   },
   profilePictureReset: {
     id: "settings.profile.profile-picture.reset",
-    defaultMessage: "Reset",
+    defaultMessage: "重置",
   },
   usernameTitle: {
     id: "settings.profile.username.title",
-    defaultMessage: "Username",
+    defaultMessage: "用户名",
   },
   usernameDescription: {
     id: "settings.profile.username.description",
-    defaultMessage: "A unique case-insensitive name to identify your profile.",
+    defaultMessage: "用于标识您个人资料的唯一名称（不区分大小写）。",
   },
   bioTitle: {
     id: "settings.profile.bio.title",
-    defaultMessage: "Bio",
+    defaultMessage: "简介",
   },
   bioDescription: {
     id: "settings.profile.bio.description",
-    defaultMessage: "A short description to tell everyone a little bit about you.",
+    defaultMessage: "一段简短的自我介绍。",
   },
 });
 

@@ -4,7 +4,9 @@
     :class="{ 'alt-layout': !cosmetics.rightSearchLayout }"
   >
     <Head>
-      <Title> {{ projectType.display }} - BBSMC</Title>
+      <Title
+        >{{ projectType.display }} - BBSMC 我的世界资源下载{{ query ? ` | ${query}` : "" }}</Title
+      >
     </Head>
     <aside
       :class="{
@@ -488,7 +490,8 @@ const maxResults = ref(20);
 const currentPage = ref(1);
 const projectType = ref({ id: "mod", display: "mod", actual: "mod" });
 const ogTitle = computed(
-  () => `搜索 ${projectType.value.display} ${query.value ? " | " + query.value : ""}`,
+  () =>
+    `${projectType.value.display} - BBSMC 我的世界资源下载${query.value ? " | " + query.value : ""}`,
 );
 const projectTypeDescriptions = {
   mod: "浏览和下载 Minecraft 模组，涵盖 Fabric、Forge、NeoForge、Quilt 等主流加载器，为你的游戏增添新内容、机制和玩法。",
@@ -517,6 +520,7 @@ useSeoMeta({
   description,
   ogTitle,
   ogDescription: description,
+  ogImage: "https://cdn.bbsmc.net/raw/bbsmc-logo.png",
 });
 
 if (route.query.q) {

@@ -623,11 +623,13 @@ const messages = defineMessages({
   },
   profileMetaDescription: {
     id: "profile.meta.description",
-    defaultMessage: "在 BBSMC 下载 {username} 的资源",
+    defaultMessage:
+      "访问 {username} 的 BBSMC 主页，浏览和下载 {username} 发布的 Minecraft 模组、整合包、光影和其他资源。加入 BBSMC 社区，发现更多创作者和资源。",
   },
   profileMetaDescriptionWithBio: {
     id: "profile.meta.description-with-bio",
-    defaultMessage: "{bio} - 在 BBSMC 下载 {username} 的资源",
+    defaultMessage:
+      "{bio} - 访问 {username} 的 BBSMC 主页，下载 {username} 发布的 Minecraft 模组、整合包和其他资源。",
   },
   profileNoProjectsLabel: {
     id: "profile.label.no-projects",
@@ -840,7 +842,9 @@ function getCategoryName(category) {
   return categoryMap[category] || category;
 }
 
-const title = computed(() => `${user.value.username} - BBSMC资源社区`);
+const title = computed(
+  () => `${user.value.username} 的主页 - BBSMC 我的世界资源社区 | 创作者资源下载`,
+);
 const description = computed(() =>
   user.value.bio
     ? formatMessage(messages.profileMetaDescriptionWithBio, {
@@ -856,6 +860,26 @@ useSeoMeta({
   ogTitle: () => title.value,
   ogDescription: () => description.value,
   ogImage: () => user.value.avatar_url ?? "https://cdn.bbsmc.net/raw/placeholder.png",
+});
+
+useHead({
+  script: [
+    {
+      type: "application/ld+json",
+      children: () =>
+        JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ProfilePage",
+          mainEntity: {
+            "@type": "Person",
+            name: user.value.username,
+            description: user.value.bio || undefined,
+            image: user.value.avatar_url || undefined,
+            url: `https://bbsmc.net/user/${user.value.username}`,
+          },
+        }),
+    },
+  ],
 });
 
 const projectTypes = computed(() => {
