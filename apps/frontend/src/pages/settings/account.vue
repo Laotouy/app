@@ -632,7 +632,7 @@ import GitHubIcon from "assets/icons/auth/sso-github.svg";
 import MicrosoftIcon from "assets/icons/auth/sso-microsoft.svg";
 import BilibiliIcon from "assets/icons/auth/sso-bilibili.svg";
 import GoogleIcon from "assets/icons/auth/sso-google.svg";
-// import QQIcon from "assets/icons/auth/sso-qq.svg";
+import QQIcon from "assets/icons/auth/sso-qq.svg";
 import KeyIcon from "assets/icons/auth/key.svg";
 import ModalConfirm from "~/components/ui/ModalConfirm.vue";
 import Modal from "~/components/ui/Modal.vue";
@@ -941,11 +941,11 @@ const authProviders = [
     display: "哔哩哔哩",
     icon: BilibiliIcon,
   },
-  // {
-  //   id: "qq",
-  //   display: "QQ",
-  //   icon: QQIcon,
-  // },
+  {
+    id: "qq",
+    display: "QQ",
+    icon: QQIcon,
+  },
 ];
 
 async function deleteAccount() {
