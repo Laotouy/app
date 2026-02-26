@@ -21,6 +21,27 @@
       <p class="hero-lead">
         适用于 PCL2 启动器。从下载汉化包到覆盖安装，包含版本隔离判断与文件冲突处理，全程图解说明。
       </p>
+
+      <div class="callout note intro-callout">
+        <div class="ci">&#128218;</div>
+        <div>
+          寒假到了，你和朋友决定一起玩一款外网整合包。满怀期待地启动游戏，然而进入服务器后看着未经汉化的任务书，脑袋里只剩四个字：<strong
+            >"哦豁，完蛋。"</strong
+          >
+          —— 别担心，跟着这篇教程，轻松搞定汉化。
+        </div>
+      </div>
+
+      <div class="sc-card intro-img">
+        <div class="sc-bar">
+          <div class="sc-dot r"></div>
+          <div class="sc-dot y"></div>
+          <div class="sc-dot g"></div>
+          <span class="sc-bar-title">未汉化的游戏界面</span>
+        </div>
+        <img src="/tutorial/bili-unlocalized.png" alt="未汉化的任务书" loading="lazy" />
+      </div>
+
       <div class="warning-strip">
         <div class="ws-icon">&#9888;</div>
         <div>
@@ -35,7 +56,7 @@
 
       <div class="video-wrap">
         <iframe
-          src="//player.bilibili.com/player.html?isOutside=true&aid=116042147829149&bvid=BV1qvFyzTE1z&cid=35945646357&p=1"
+          src="//player.bilibili.com/player.html?isOutside=true&aid=116131805269869&bvid=BV1PsfhBCEeb&cid=36284727610&p=1"
           scrolling="no"
           border="0"
           frameborder="no"
@@ -52,15 +73,70 @@
           <div class="step-n">01</div>
           <div>
             <div class="step-chapter">第一步</div>
+            <div class="step-title">在 BBSMC 上找到汉化包</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            如果你是从 BBSMC
+            上下载的整合包，在整合包下载页面的右侧会显示<strong>「汉化包」链接</strong>，点击即可跳转到对应的汉化包页面。
+          </p>
+
+          <div class="sc-card">
+            <div class="sc-bar">
+              <div class="sc-dot r"></div>
+              <div class="sc-dot y"></div>
+              <div class="sc-dot g"></div>
+              <span class="sc-bar-title">BBSMC — 整合包页面右侧汉化包入口</span>
+            </div>
+            <img
+              src="/tutorial/bili-modpack-link.png"
+              alt="BBSMC整合包页面汉化包链接"
+              loading="lazy"
+            />
+          </div>
+
+          <p class="step-desc">
+            你也可以直接在 BBSMC
+            首页点击<strong>「汉化」</strong>分类，像搜索整合包一样搜索你需要的汉化包。
+          </p>
+
+          <div class="sc-card">
+            <div class="sc-bar">
+              <div class="sc-dot r"></div>
+              <div class="sc-dot y"></div>
+              <div class="sc-dot g"></div>
+              <span class="sc-bar-title">BBSMC — 搜索汉化包</span>
+            </div>
+            <img src="/tutorial/bili-search-language.png" alt="BBSMC搜索汉化包" loading="lazy" />
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="sec-2" class="step-block">
+        <div class="step-header">
+          <div class="step-n">02</div>
+          <div>
+            <div class="step-chapter">第二步</div>
             <div class="step-title">下载正确版本的汉化包</div>
           </div>
         </div>
         <div class="step-body">
           <p class="step-desc">
-            前往 BBSMC
-            对应整合包页面，找到与当前整合包<strong>版本号完全一致</strong>的汉化包并下载。下载的文件是
-            <code>.zip</code> 压缩包，通常保存在系统的「下载」文件夹。
+            打开汉化包页面后，点击上方的<strong>「下载」按钮</strong>，跟随指引下载与你整合包<strong>版本号完全一致</strong>的汉化包。下载的文件是
+            <code>.zip</code> 压缩包。
           </p>
+
+          <div class="sc-card">
+            <div class="sc-bar">
+              <div class="sc-dot r"></div>
+              <div class="sc-dot y"></div>
+              <div class="sc-dot g"></div>
+              <span class="sc-bar-title">BBSMC — 汉化包下载界面</span>
+            </div>
+            <img src="/tutorial/bili-download-page.png" alt="汉化包下载界面" loading="lazy" />
+          </div>
 
           <div class="ver-check">
             <div class="vc-head">版本对照示例</div>
@@ -76,61 +152,19 @@
             </div>
           </div>
 
+          <div class="callout warn">
+            <div class="ci">&#9888;</div>
+            <div>
+              一定要<strong>再三确定</strong>汉化包的版本和整合包的版本是相对应的。跨版本使用会导致游戏崩溃或异常。
+            </div>
+          </div>
+
           <div class="callout note">
             <div class="ci">&#128161;</div>
             <div>
-              汉化包文件名通常包含「汉化」或「补丁」字样，例如
-              <code>ModpackName-1.9.1_汉化补丁.zip</code>，请勿解压后混淆多个版本的文件。
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 2 -->
-      <div id="sec-2" class="step-block">
-        <div class="step-header">
-          <div class="step-n">02</div>
-          <div>
-            <div class="step-chapter">第二步</div>
-            <div class="step-title">通过 PCL2 打开整合包目录</div>
-          </div>
-        </div>
-        <div class="step-body">
-          <p class="step-desc">
-            打开
-            PCL2，选中目标整合包，点击主界面下方的<strong>「版本设置」</strong>，进入设置页面后找到「快捷方式」区域，点击<strong>「版本文件夹」</strong>，文件管理器将自动定位到正确的整合包目录。
-          </p>
-
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">PCL2 — 主界面</span>
-            </div>
-            <div class="sc-img">
-              <img src="/tutorial/pcl2-main.png" alt="PCL2 版本设置按钮" loading="lazy" />
-              <div class="sc-label dn" style="bottom: 32%; right: 15%">&#9312; 点「版本设置」</div>
-            </div>
-          </div>
-
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">PCL2 — 版本设置</span>
-            </div>
-            <div class="sc-img">
-              <img src="/tutorial/pcl2-settings.png" alt="版本文件夹按钮" loading="lazy" />
-              <div class="sc-label dn" style="bottom: 32%; left: 10%">&#9313; 点「版本文件夹」</div>
-            </div>
-          </div>
-
-          <div class="callout ok">
-            <div class="ci">&#10004;</div>
-            <div>
-              点击「版本文件夹」后文件管理器直接打开整合包根目录。<strong>无论是否开启版本隔离，此方法均适用</strong>，不需要手动寻找路径。
+              下载完毕后请确保你的电脑上至少安装了一款解压缩软件（如
+              Bandizip、7-Zip）。如果没有安装，请参考本页底部的<strong>「Bandizip 安装教程」</strong
+              >。
             </div>
           </div>
         </div>
@@ -142,20 +176,32 @@
           <div class="step-n">03</div>
           <div>
             <div class="step-chapter">第三步</div>
-            <div class="step-title">确认目录结构正确</div>
+            <div class="step-title">通过 PCL2 打开整合包目录</div>
           </div>
         </div>
         <div class="step-body">
           <p class="step-desc">
-            文件管理器打开后，确认目录内包含 <code>mods</code>、<code>config</code>
-            等文件夹，这里就是接下来要覆盖汉化文件的目标位置。
+            将汉化包内的文件<strong>解压到一个文件夹内</strong>。之后打开 PCL2
+            启动器，选中目标整合包，点击<strong>「版本设置」</strong>，进入设置页面后点击<strong>「版本文件夹」</strong>，文件管理器将自动定位到正确的整合包目录。
           </p>
+
+          <div class="sc-card">
+            <div class="sc-bar">
+              <div class="sc-dot r"></div>
+              <div class="sc-dot y"></div>
+              <div class="sc-dot g"></div>
+              <span class="sc-bar-title">PCL2 — 版本设置 → 版本文件夹</span>
+            </div>
+            <img src="/tutorial/bili-pcl2-settings.png" alt="PCL2版本设置" loading="lazy" />
+          </div>
 
           <div class="two-col">
             <div class="col-card blue">
               <span class="col-tag">开启了版本隔离</span>
               <h4>独立实例目录</h4>
-              <p>每个整合包拥有独立的 mods、config 文件夹，彼此不干扰</p>
+              <p>
+                整合包在 .minecraft/versions/整合包名称 文件夹中，每个整合包拥有独立的 mods、config
+              </p>
               <div class="path-chip">
                 <small>路径形如</small>…\versions\<span class="hl">整合包名称</span>\
               </div>
@@ -170,14 +216,11 @@
             </div>
           </div>
 
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">文件管理器 — 整合包根目录（正确示例）</span>
+          <div class="callout ok">
+            <div class="ci">&#10004;</div>
+            <div>
+              点击「版本文件夹」后文件管理器直接打开整合包根目录。<strong>无论是否开启版本隔离，此方法均适用</strong>，不需要手动寻找路径。
             </div>
-            <img src="/tutorial/directory-structure.png" alt="整合包目录结构" loading="lazy" />
           </div>
 
           <ul class="checklist">
@@ -193,10 +236,6 @@
               <div class="ck">&#10003;</div>
               目录内看到 <code>kubejs</code> 或其他整合包专属文件夹
             </li>
-            <li>
-              <div class="ck">&#10003;</div>
-              路径与 PCL2「版本文件夹」打开的位置一致
-            </li>
           </ul>
         </div>
       </div>
@@ -207,13 +246,12 @@
           <div class="step-n">04</div>
           <div>
             <div class="step-chapter">第四步</div>
-            <div class="step-title">解压汉化包并覆盖到目录</div>
+            <div class="step-title">将汉化文件覆盖到目录</div>
           </div>
         </div>
         <div class="step-body">
           <p class="step-desc">
-            用 Bandizip、7-Zip
-            或系统自带解压工具打开汉化压缩包，把压缩包内的<strong>所有文件夹和文件</strong>直接拖拽（或解压）到上一步打开的整合包目录中。
+            将刚才解压的汉化文件<strong>全部拖进</strong>整合包所在的文件夹里，覆盖同名文件。弹出「替换或跳过文件」提示时，<strong>必须选择「替换目标中的文件」</strong>。
           </p>
 
           <div class="sc-card">
@@ -221,76 +259,12 @@
               <div class="sc-dot r"></div>
               <div class="sc-dot y"></div>
               <div class="sc-dot g"></div>
-              <span class="sc-bar-title">Bandizip — 汉化压缩包内容</span>
+              <span class="sc-bar-title"
+                >拖拽覆盖文件 — 勾选「为所有当前项目执行此操作」并选择替换</span
+              >
             </div>
-            <img src="/tutorial/zip-content.png" alt="压缩包内容" loading="lazy" />
+            <img src="/tutorial/bili-drag-files1.png" alt="覆盖文件并替换" loading="lazy" />
           </div>
-
-          <div class="file-tree">
-            <div class="ft-label">压缩包内的典型结构（全部选中覆盖）</div>
-            <div class="ft-row folder" style="animation-delay: 0.04s">
-              <span>&#128193;</span><span>mods/</span>
-            </div>
-            <div class="ft-row folder" style="animation-delay: 0.09s">
-              <span>&#128193;</span><span>kubejs/</span>
-            </div>
-            <div class="ft-row folder" style="animation-delay: 0.14s">
-              <span>&#128193;</span><span>config/</span>
-            </div>
-            <div class="ft-row" style="animation-delay: 0.19s">
-              <span>&#128196;</span><span>说明.txt</span>
-            </div>
-            <div class="ft-row dim" style="animation-delay: 0.24s">
-              <span>&#128196;</span><span>想多人联机游玩？.txt</span>
-            </div>
-          </div>
-
-          <div class="callout warn">
-            <div class="ci">&#9888;</div>
-            <div>
-              直接将
-              <strong>mods、config、kubejs 等文件夹</strong
-              >拖到目标目录，<strong>不要</strong>在目标目录里新建一个文件夹再往里放——多一层目录汉化就不会生效。
-            </div>
-          </div>
-
-          <div class="progress-card">
-            <div class="pc-title">正在复制 3,640 个项目…</div>
-            <div class="pc-sub">从汉化补丁 → 整合包实例目录</div>
-            <div class="prog-track">
-              <div ref="pbarRef" class="prog-fill"></div>
-            </div>
-            <div class="prog-meta">
-              <span>{{ progressPct }}%</span>
-              <span>速度：1.03 MB/秒</span>
-            </div>
-          </div>
-
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">文件管理器 — 复制进行中</span>
-            </div>
-            <img src="/tutorial/copy-progress.png" alt="复制进度" loading="lazy" />
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 5 -->
-      <div id="sec-5" class="step-block">
-        <div class="step-header">
-          <div class="step-n">05</div>
-          <div>
-            <div class="step-chapter">第五步</div>
-            <div class="step-title">出现冲突对话框时选「替换」</div>
-          </div>
-        </div>
-        <div class="step-body">
-          <p class="step-desc">
-            复制过程中若弹出「替换或跳过文件」提示，<strong>必须选择「替换目标中的文件」</strong>。选「跳过」会保留旧文件，汉化包将完全无法生效。
-          </p>
 
           <div class="dialog-outer">
             <div class="dialog-win">
@@ -301,8 +275,8 @@
                 <span class="dialog-bar-title">替换或跳过文件</span>
               </div>
               <div class="dialog-body">
-                <div class="db-h">目标包含 59 个同名文件</div>
-                <div class="db-sub">正在将 3,640 个项目复制到整合包目录…</div>
+                <div class="db-h">目标包含同名文件</div>
+                <div class="db-sub">正在将汉化文件复制到整合包目录…</div>
                 <div class="d-opt pick">
                   <span class="d-opt-icon">&#10003;</span>
                   <strong>替换目标中的文件(R)</strong>
@@ -316,38 +290,114 @@
             </div>
           </div>
 
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">Windows 文件冲突对话框（实际截图）</span>
+          <div class="callout warn">
+            <div class="ci">&#9888;</div>
+            <div>
+              直接将
+              <strong>mods、config、kubejs 等文件夹</strong
+              >拖到目标目录，<strong>不要</strong>在目标目录里新建一个文件夹再往里放——多一层目录汉化就不会生效。选「跳过」会保留旧文件，汉化也无法生效。
             </div>
-            <img src="/tutorial/file-conflict.png" alt="文件冲突对话框" loading="lazy" />
           </div>
+        </div>
+      </div>
 
-          <div class="sc-card">
-            <div class="sc-bar">
-              <div class="sc-dot r"></div>
-              <div class="sc-dot y"></div>
-              <div class="sc-dot g"></div>
-              <span class="sc-bar-title">文件管理器 — 覆盖完成后的目录</span>
+      <!-- STEP 5 -->
+      <div id="sec-5" class="step-block">
+        <div class="step-header">
+          <div class="step-n">05</div>
+          <div>
+            <div class="step-chapter">第五步</div>
+            <div class="step-title">启动游戏，享受汉化</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            覆盖完成后重新启动游戏，即可看到汉化效果。如游戏正在运行，需先<strong>完全退出再重启</strong>。
+          </p>
+
+          <div class="two-col">
+            <div class="sc-card">
+              <div class="sc-bar">
+                <div class="sc-dot r"></div>
+                <div class="sc-dot y"></div>
+                <div class="sc-dot g"></div>
+                <span class="sc-bar-title">汉化前</span>
+              </div>
+              <img src="/tutorial/bili-unlocalized.png" alt="汉化前" loading="lazy" />
             </div>
-            <img src="/tutorial/final-result.png" alt="覆盖完成" loading="lazy" />
+            <div class="sc-card">
+              <div class="sc-bar">
+                <div class="sc-dot r"></div>
+                <div class="sc-dot y"></div>
+                <div class="sc-dot g"></div>
+                <span class="sc-bar-title">汉化后</span>
+              </div>
+              <img src="/tutorial/bili-after-cn.png" alt="汉化后（已翻译为中文）" loading="lazy" />
+            </div>
           </div>
 
           <div class="callout ok">
             <div class="ci">&#127918;</div>
             <div>
-              覆盖完成后重新启动游戏，即可看到汉化效果。如游戏正在运行，需先完全退出再重启。
+              现在，你可以畅玩汉化后的整合包了！如果汉化不生效，请检查是否选错了版本或忘记替换文件。
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APPENDIX: Bandizip -->
+      <div id="sec-6" class="step-block">
+        <div class="step-header">
+          <div class="step-n appendix-n">&#128218;</div>
+          <div>
+            <div class="step-chapter">附录</div>
+            <div class="step-title">Bandizip 下载与安装</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p class="step-desc">
+            如果你的电脑上没有安装过解压缩软件，可以免费安装 Bandizip。在浏览器中访问
+            <a href="https://www.bandisoft.com/bandizip/" target="_blank" class="text-link"
+              >https://www.bandisoft.com/bandizip/</a
+            >
+            进入下载页面。
+          </p>
+
+          <div class="two-col">
+            <div class="sc-card">
+              <div class="sc-bar">
+                <div class="sc-dot r"></div>
+                <div class="sc-dot y"></div>
+                <div class="sc-dot g"></div>
+                <span class="sc-bar-title">Bandizip 官网</span>
+              </div>
+              <img src="/tutorial/bili-bandizip-site.png" alt="Bandizip官网" loading="lazy" />
+            </div>
+            <div class="sc-card">
+              <div class="sc-bar">
+                <div class="sc-dot r"></div>
+                <div class="sc-dot y"></div>
+                <div class="sc-dot g"></div>
+                <span class="sc-bar-title">点击免费下载</span>
+              </div>
+              <img src="/tutorial/bili-bandizip-download.png" alt="下载Bandizip" loading="lazy" />
+            </div>
+          </div>
+
+          <p class="step-desc">
+            下载安装包后打开，选择左边的<strong>「评价版」</strong>（免费），点击<strong>「同意并安装」</strong>，安装结束后点击关闭即可。
+          </p>
+
+          <div class="callout ok">
+            <div class="ci">&#10004;</div>
+            <div>安装完成后，你就可以右键任何 <code>.zip</code> 文件进行解压了。</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Success -->
-    <section id="sec-6" class="success-section">
+    <section id="sec-7" class="success-section">
       <div class="success-left">
         <span class="suc-emoji"></span>
         <div class="suc-title">安装完成</div>
@@ -392,24 +442,20 @@ useHead({
 
 const sections = [
   { label: "概述" },
-  { label: "01 下载" },
-  { label: "02 找到目录" },
-  { label: "03 确认位置" },
-  { label: "04 解压覆盖" },
-  { label: "05 处理冲突" },
+  { label: "01 找汉化包" },
+  { label: "02 下载" },
+  { label: "03 找到目录" },
+  { label: "04 覆盖安装" },
+  { label: "05 启动游戏" },
+  { label: "附录" },
   { label: "完成" },
 ];
 
-const secIds = ["sec-0", "sec-1", "sec-2", "sec-3", "sec-4", "sec-5", "sec-6"];
+const secIds = ["sec-0", "sec-1", "sec-2", "sec-3", "sec-4", "sec-5", "sec-6", "sec-7"];
 const activeSection = ref(0);
-const progressPct = ref(0);
-const pbarRef = ref(null);
 
 let stepObserver = null;
 let sectionObserver = null;
-let progressObserver = null;
-let progressDone = false;
-let progressTimer = null;
 
 function gotoSec(i) {
   document.getElementById(secIds[i])?.scrollIntoView({ behavior: "smooth" });
@@ -449,41 +495,17 @@ onMounted(() => {
     const el = document.getElementById(id);
     if (el) sectionObserver.observe(el);
   });
-
-  // Progress bar animation
-  if (pbarRef.value) {
-    progressObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting && !progressDone) {
-            progressDone = true;
-            let p = 0;
-            progressTimer = setInterval(() => {
-              p = Math.min(100, p + (p < 75 ? 0.45 : 0.1));
-              progressPct.value = Math.round(p);
-              if (p >= 100) clearInterval(progressTimer);
-            }, 22);
-          }
-        });
-      },
-      { threshold: 0.5 },
-    );
-    progressObserver.observe(pbarRef.value);
-  }
 });
 
 onBeforeUnmount(() => {
   stepObserver?.disconnect();
   sectionObserver?.disconnect();
-  progressObserver?.disconnect();
-  if (progressTimer) clearInterval(progressTimer);
 });
 </script>
 
 <style scoped>
 /* ── Theme-aware variables ── */
 .tutorial-page {
-  /* Base tones — mapped from site theme for auto dark/light */
   --t-ink: var(--color-text-dark);
   --t-ink-2: var(--color-text);
   --t-ink-3: var(--color-secondary);
@@ -494,7 +516,6 @@ onBeforeUnmount(() => {
   --t-orange: var(--flame);
   --t-mono: var(--font-mono);
 
-  /* Light-mode custom intermediate tones */
   --t-paper-2: #f0eeec;
   --t-paper-3: #e6e3e0;
   --t-shadow: #d8d4d0;
@@ -612,6 +633,16 @@ onBeforeUnmount(() => {
   margin-bottom: 32px;
 }
 
+.intro-callout {
+  max-width: 620px;
+  margin-bottom: 24px;
+}
+
+.intro-img {
+  max-width: 620px;
+  margin-bottom: 24px;
+}
+
 /* VIDEO */
 .video-wrap {
   position: relative;
@@ -706,6 +737,11 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 
+.step-n.appendix-n {
+  font-size: 40px;
+  text-align: center;
+}
+
 .step-chapter {
   font-size: 10px;
   font-weight: 700;
@@ -738,6 +774,11 @@ onBeforeUnmount(() => {
 .step-desc strong {
   color: var(--t-ink);
   font-weight: 700;
+}
+
+.step-desc .text-link {
+  color: var(--t-blue-accent);
+  text-decoration: underline;
 }
 
 /* SCREENSHOT CARD */
@@ -792,42 +833,9 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-.sc-img {
-  position: relative;
-}
-.sc-img img {
-  width: 100%;
-  display: block;
-}
 .sc-card > img {
   width: 100%;
   display: block;
-}
-
-.sc-label {
-  position: absolute;
-  background: var(--t-orange);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 5px 10px;
-  border-radius: 3px;
-  white-space: nowrap;
-  pointer-events: none;
-  line-height: 1.2;
-}
-
-.sc-label::after {
-  content: "";
-  position: absolute;
-  border: 5px solid transparent;
-}
-
-.sc-label.dn::after {
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-top-color: var(--t-orange);
 }
 
 /* TWO-COL CARDS */
@@ -916,45 +924,6 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-/* FILE TREE */
-.file-tree {
-  background: var(--t-paper-2);
-  border: 1.5px solid var(--t-rule);
-  border-radius: 5px;
-  padding: 18px 20px;
-  font-family: var(--t-mono);
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-
-.ft-label {
-  font-family: var(--font-body);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--t-ink-4);
-  margin-bottom: 12px;
-  font-weight: 700;
-}
-
-.ft-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 0;
-  color: var(--t-ink-2);
-  opacity: 0;
-  transform: translateX(-6px);
-  animation: ftSlide 0.25s ease forwards;
-}
-
-.ft-row.folder {
-  color: var(--t-folder-color);
-}
-.ft-row.dim {
-  color: var(--t-ink-4);
-}
-
 /* CHECKLIST */
 .checklist {
   list-style: none;
@@ -987,9 +956,6 @@ onBeforeUnmount(() => {
 }
 .checklist li:nth-child(3) {
   animation-delay: 0.19s;
-}
-.checklist li:nth-child(4) {
-  animation-delay: 0.26s;
 }
 
 .ck {
@@ -1089,52 +1055,6 @@ onBeforeUnmount(() => {
 .vc-ok {
   color: var(--t-green);
   font-weight: 700;
-}
-
-/* PROGRESS */
-.progress-card {
-  background: var(--t-raised);
-  border: 1.5px solid var(--t-rule);
-  border-radius: 5px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 2px 3px 0 var(--t-shadow);
-}
-
-.pc-title {
-  font-weight: 700;
-  font-size: 14px;
-  margin-bottom: 4px;
-  color: var(--t-ink);
-}
-.pc-sub {
-  font-size: 12px;
-  color: var(--t-ink-4);
-  margin-bottom: 14px;
-}
-
-.prog-track {
-  height: 7px;
-  background: var(--t-paper-3);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  border: 1px solid var(--t-rule);
-}
-
-.prog-fill {
-  height: 100%;
-  background: var(--t-orange);
-  width: 0;
-  animation: progAnim 3.5s 0.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
-}
-
-.prog-meta {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--t-mono);
-  font-size: 11px;
-  color: var(--t-ink-3);
 }
 
 /* DIALOG */
@@ -1368,31 +1288,6 @@ onBeforeUnmount(() => {
 }
 
 /* ANIMATIONS */
-@keyframes ftSlide {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes progAnim {
-  0% {
-    width: 0;
-  }
-  20% {
-    width: 18%;
-  }
-  55% {
-    width: 63%;
-  }
-  80% {
-    width: 86%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
 @keyframes dialogIn {
   from {
     opacity: 0;
