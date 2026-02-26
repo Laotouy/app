@@ -221,6 +221,9 @@ impl User {
         if db_user.bilibili_id.is_some() {
             auth_providers.push(AuthProvider::Bilibili)
         }
+        if db_user.qq_id.is_some() {
+            auth_providers.push(AuthProvider::QQ)
+        }
 
         // 转换封禁信息
         let active_bans = if db_user.active_bans.is_empty() {

@@ -368,6 +368,7 @@ pub fn app_setup(
                                                     steam_id: None,
                                                     microsoft_id: None,
                                                     bilibili_id: None,
+                                                    qq_id: None,
                                                     email: None,
                                                     email_verified: true,
                                                     avatar_url: None,
@@ -835,6 +836,9 @@ pub fn check_env_vars() -> bool {
 
     failed |= check_var::<String>("BILIBILI_CLIENT_ID");
     failed |= check_var::<String>("BILIBILI_CLIENT_SECRET");
+
+    failed |= check_var::<String>("QQ_CLIENT_ID");
+    failed |= check_var::<String>("QQ_CLIENT_SECRET");
 
     failed |= check_var::<String>("TREMENDOUS_API_URL");
     failed |= check_var::<String>("TREMENDOUS_API_KEY");

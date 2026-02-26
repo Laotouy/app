@@ -201,11 +201,8 @@ impl TempUser {
                                 }
                                 (None, None)
                             } else {
-                                // 非涉政 REVIEW：保留图片，审核记录延迟到用户 INSERT 后在事务内创建
-                                (
-                                    Some(upload_result.url),
-                                    Some(upload_result.raw_url),
-                                )
+                                // 非涉政 REVIEW：保留图片（S3），但用户记录中不设头像，等审核通过后再更新
+                                (None, None)
                             }
                         }
                         _ => {
@@ -303,6 +300,11 @@ impl TempUser {
                 } else {
                     None
                 },
+                qq_id: if provider == AuthProvider::QQ {
+                    Some(self.id.clone())
+                } else {
+                    None
+                },
                 password: None,
                 paypal_id: if provider == AuthProvider::PayPal {
                     Some(self.id)
@@ -346,18 +348,24 @@ impl TempUser {
                 } else {
                     "pending"
                 };
+                let old_value = serde_json::json!({
+                    "avatar_url": null,
+                    "raw_avatar_url": null,
+                })
+                .to_string();
+                let new_value = serde_json::json!({
+                    "avatar_url": &risk_info.image_url,
+                    "raw_avatar_url": &risk_info.raw_image_url,
+                    "frame_url": &risk_info.frame_url,
+                })
+                .to_string();
                 if let Err(e) = sqlx::query!(
-                    "INSERT INTO image_content_reviews
-                     (id, image_url, raw_image_url, risk_image_url, uploader_id, source_type, source_id, project_id, risk_labels, status)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                    "INSERT INTO user_profile_reviews (id, user_id, review_type, old_value, new_value, risk_labels, status)
+                     VALUES ($1, $2, 'avatar', $3, $4, $5, $6)",
                     review_id,
-                    &risk_info.image_url,
-                    Some(&risk_info.raw_image_url) as Option<&String>,
-                    risk_info.frame_url.as_deref(),
                     user_id.0,
-                    "avatar",
-                    None::<i64>,
-                    None::<i64>,
+                    &old_value,
+                    &new_value,
                     &risk_info.labels,
                     status,
                 )
@@ -478,6 +486,14 @@ impl AuthProvider {
                 format!(
                     "https://account.bilibili.com/pc/account-pc/auth/oauth?client_id={}&gourl={}&state={}",
                     client_id, gourl, state,
+                )
+            }
+            AuthProvider::QQ => {
+                let client_id = dotenvy::var("QQ_CLIENT_ID")?;
+
+                format!(
+                    "https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id={}&redirect_uri={}&state={}&scope=get_user_info",
+                    client_id, redirect_uri, state,
                 )
             }
         })
@@ -728,7 +744,10 @@ impl AuthProvider {
                     .text()
                     .await?;
 
-                log::info!("Bilibili token response: {}", raw_resp);
+                log::debug!(
+                    "Bilibili token response length: {}",
+                    raw_resp.len()
+                );
 
                 #[derive(Deserialize)]
                 struct BiliTokenData {
@@ -753,6 +772,38 @@ impl AuthProvider {
                 resp.data
                     .ok_or(AuthenticationError::InvalidCredentials)?
                     .access_token
+            }
+            AuthProvider::QQ => {
+                let code = query
+                    .get("code")
+                    .ok_or_else(|| AuthenticationError::InvalidCredentials)?;
+                let client_id = dotenvy::var("QQ_CLIENT_ID")?;
+                let client_secret = dotenvy::var("QQ_CLIENT_SECRET")?;
+
+                // QQ 换 token 返回的是 URL query string 格式
+                let url = format!(
+                    "https://graph.qq.com/oauth2.0/token?grant_type=authorization_code&client_id={}&client_secret={}&code={}&redirect_uri={}&fmt=json",
+                    client_id, client_secret, code, redirect_uri,
+                );
+
+                let raw_resp = reqwest::Client::new()
+                    .get(&url)
+                    .send()
+                    .await?
+                    .text()
+                    .await?;
+
+                log::debug!("QQ token response length: {}", raw_resp.len());
+
+                #[derive(Deserialize)]
+                struct QQTokenResp {
+                    pub access_token: Option<String>,
+                }
+
+                let resp: QQTokenResp = serde_json::from_str(&raw_resp)?;
+
+                resp.access_token
+                    .ok_or(AuthenticationError::InvalidCredentials)?
             }
         };
 
@@ -1079,7 +1130,10 @@ impl AuthProvider {
                     .text()
                     .await?;
 
-                log::info!("Bilibili user info response: {}", raw_resp);
+                log::debug!(
+                    "Bilibili user info response length: {}",
+                    raw_resp.len()
+                );
 
                 #[derive(Deserialize, Debug)]
                 struct BiliUserData {
@@ -1112,6 +1166,82 @@ impl AuthProvider {
                     username: user_data.name,
                     email: None,
                     avatar_url: Some(user_data.face),
+                    bio: None,
+                    country: None,
+                }
+            }
+            AuthProvider::QQ => {
+                let client_id = dotenvy::var("QQ_CLIENT_ID")?;
+
+                // 第一步：获取 openid
+                let me_url = format!(
+                    "https://graph.qq.com/oauth2.0/me?access_token={}&fmt=json",
+                    token
+                );
+
+                #[derive(Deserialize, Debug)]
+                struct QQMeResp {
+                    pub openid: Option<String>,
+                    pub client_id: Option<String>,
+                }
+
+                let me_resp: QQMeResp = reqwest::Client::new()
+                    .get(&me_url)
+                    .send()
+                    .await?
+                    .json()
+                    .await?;
+
+                let openid = me_resp
+                    .openid
+                    .ok_or(AuthenticationError::InvalidCredentials)?;
+
+                // 验证 client_id 匹配
+                if me_resp.client_id.as_deref() != Some(&client_id) {
+                    log::warn!(
+                        "QQ client_id mismatch: expected={}, got={:?}",
+                        client_id,
+                        me_resp.client_id
+                    );
+                    return Err(AuthenticationError::InvalidClientId);
+                }
+
+                // 第二步：获取用户信息
+                let user_info_url = format!(
+                    "https://graph.qq.com/user/get_user_info?access_token={}&oauth_consumer_key={}&openid={}",
+                    token, client_id, openid
+                );
+
+                #[derive(Deserialize, Debug)]
+                struct QQUserInfo {
+                    pub ret: i64,
+                    pub nickname: Option<String>,
+                    #[serde(rename = "figureurl_qq_2")]
+                    pub avatar_url: Option<String>,
+                }
+
+                let user_info: QQUserInfo = reqwest::Client::new()
+                    .get(&user_info_url)
+                    .send()
+                    .await?
+                    .json()
+                    .await?;
+
+                if user_info.ret != 0 {
+                    log::warn!(
+                        "QQ get_user_info failed with ret: {}",
+                        user_info.ret
+                    );
+                    return Err(AuthenticationError::InvalidCredentials);
+                }
+
+                TempUser {
+                    id: openid,
+                    username: user_info
+                        .nickname
+                        .unwrap_or_else(|| "qq_user".to_string()),
+                    email: None,
+                    avatar_url: user_info.avatar_url,
                     bio: None,
                     country: None,
                 }
@@ -1211,6 +1341,14 @@ impl AuthProvider {
                 )
                 .fetch_optional(executor)
                 .await?;
+
+                value.map(|x| crate::database::models::UserId(x.id))
+            }
+            AuthProvider::QQ => {
+                let value =
+                    sqlx::query!("SELECT id FROM users WHERE qq_id = $1", id)
+                        .fetch_optional(executor)
+                        .await?;
 
                 value.map(|x| crate::database::models::UserId(x.id))
             }
@@ -1341,6 +1479,19 @@ impl AuthProvider {
                 .execute(&mut **transaction)
                 .await?;
             }
+            AuthProvider::QQ => {
+                sqlx::query!(
+                    "
+                    UPDATE users
+                    SET qq_id = $2
+                    WHERE (id = $1)
+                    ",
+                    user_id as crate::database::models::UserId,
+                    id,
+                )
+                .execute(&mut **transaction)
+                .await?;
+            }
         }
 
         Ok(())
@@ -1356,6 +1507,7 @@ impl AuthProvider {
             AuthProvider::Steam => "Steam",
             AuthProvider::PayPal => "PayPal",
             AuthProvider::Bilibili => "Bilibili",
+            AuthProvider::QQ => "QQ",
         }
     }
 }
@@ -1878,6 +2030,7 @@ pub async fn create_account_with_password(
         steam_id: None,
         microsoft_id: None,
         bilibili_id: None,
+        qq_id: None,
         password: Some(password_hash),
         paypal_id: None,
         paypal_country: None,

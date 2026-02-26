@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                        SELECT id, email,\n                            avatar_url, raw_avatar_url, username, bio,\n                            created, role, badges,\n                            github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,\n                            bilibili_id,\n                            email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,\n                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,\n                            is_premium_creator, creator_verified_at\n                        FROM users\n                        WHERE id = ANY($1) OR LOWER(username) = ANY($2)\n                        ",
+  "query": "\n                        SELECT id, email,\n                            avatar_url, raw_avatar_url, username, bio,\n                            created, role, badges,\n                            github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,\n                            bilibili_id, qq_id,\n                            email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,\n                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,\n                            is_premium_creator, creator_verified_at\n                        FROM users\n                        WHERE id = ANY($1) OR LOWER(username) = ANY($2)\n                        ",
   "describe": {
     "columns": [
       {
@@ -85,66 +85,71 @@
       },
       {
         "ordinal": 16,
+        "name": "qq_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
         "name": "email_verified",
         "type_info": "Bool"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "password",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "totp_secret",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "paypal_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "paypal_country",
         "type_info": "Text"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "paypal_email",
         "type_info": "Text"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "venmo_handle",
         "type_info": "Text"
       },
       {
-        "ordinal": 23,
+        "ordinal": 24,
         "name": "stripe_customer_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 24,
+        "ordinal": 25,
         "name": "wiki_overtake_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 25,
+        "ordinal": 26,
         "name": "wiki_ban_time",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 26,
+        "ordinal": 27,
         "name": "phone_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 27,
+        "ordinal": 28,
         "name": "is_premium_creator",
         "type_info": "Bool"
       },
       {
-        "ordinal": 28,
+        "ordinal": 29,
         "name": "creator_verified_at",
         "type_info": "Timestamptz"
       }
@@ -172,6 +177,7 @@
       true,
       true,
       true,
+      true,
       false,
       true,
       true,
@@ -187,5 +193,5 @@
       true
     ]
   },
-  "hash": "bd990d94518a1b53d4f931c95aa062b085f6134e67887643f0d7fe02345851ae"
+  "hash": "be70a2894025653d9e24fa48bd325851945fea6fdb5324cf6179dc0949d79d00"
 }
