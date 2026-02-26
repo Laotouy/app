@@ -88,10 +88,10 @@
           <SSOBilibiliIcon />
           <span>哔哩哔哩</span>
         </a>
-        <a class="btn sso-btn" :href="getAuthUrl('google', redirectTarget)">
+        <!-- <a class="btn sso-btn" :href="getAuthUrl('google', redirectTarget)">
           <SSOGoogleIcon />
           <span>Google</span>
-        </a>
+        </a> -->
         <a class="btn sso-btn" :href="getAuthUrl('qq', redirectTarget)">
           <SSOQQIcon />
           <span>QQ</span>
@@ -113,7 +113,7 @@ import { RightArrowIcon, KeyIcon, MailIcon } from "@modrinth/assets";
 import SSOGitHubIcon from "assets/icons/auth/sso-github.svg";
 import SSOMicrosoftIcon from "assets/icons/auth/sso-microsoft.svg";
 import SSOBilibiliIcon from "assets/icons/auth/sso-bilibili.svg";
-import SSOGoogleIcon from "assets/icons/auth/sso-google.svg";
+// import SSOGoogleIcon from "assets/icons/auth/sso-google.svg";
 import SSOQQIcon from "assets/icons/auth/sso-qq.svg";
 import TACaptcha from "@/components/ui/TACaptcha.vue";
 import { getAuthUrl } from "@/composables/auth.js";
