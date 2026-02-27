@@ -769,7 +769,7 @@ pub async fn thread_send_message(
                     ) || image.context.inner_id().is_some()
                     {
                         return Err(ApiError::InvalidInput(format!(
-                            "Image {} 不是未使用的，并且不在 'thread_message' 上下文中",
+                            "图片 {} 已被使用或不属于 'thread_message' 上下文",
                             image_id
                         )));
                     }
@@ -790,7 +790,7 @@ pub async fn thread_send_message(
                         .await?;
                 } else {
                     return Err(ApiError::InvalidInput(format!(
-                        "Image {} 不存在",
+                        "图片 {} 不存在",
                         image_id
                     )));
                 }

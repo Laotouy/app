@@ -31,7 +31,7 @@ pub fn validation_errors_to_string(
                 if let Some((index, errors)) = list.iter().next() {
                     output.push_str(&validation_errors_to_string(
                         *errors.clone(),
-                        Some(format!("of list {field} with index {index}")),
+                        Some(format!("列表 {field} 中第 {index} 项")),
                     ));
                 }
 

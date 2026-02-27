@@ -99,13 +99,11 @@ pub async fn count_download(
     {
         (version.id, version.mod_id)
     } else {
-        return Err(ApiError::InvalidInput(
-            "Specified version does not exist!".to_string(),
-        ));
+        return Err(ApiError::InvalidInput("指定的版本不存在！".to_string()));
     };
 
     let url = url::Url::parse(&download_body.url).map_err(|_| {
-        ApiError::InvalidInput("invalid download URL specified!".to_string())
+        ApiError::InvalidInput("指定的下载链接无效！".to_string())
     })?;
 
     let ip = crate::util::ip::convert_to_ip_v6(&download_body.ip)

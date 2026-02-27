@@ -1,7 +1,10 @@
 <template>
   <section class="normal-page__content">
     <!-- Gallery Carousel - 暂时禁用 -->
-    <div v-if="false && showGalleryCarousel && sortedGallery.length > 0" class="gallery-carousel card">
+    <div
+      v-if="false && showGalleryCarousel && sortedGallery.length > 0"
+      class="gallery-carousel card"
+    >
       <!-- 主图区域 -->
       <div class="carousel-main" @mouseenter="pauseAutoPlay" @mouseleave="resumeAutoPlay">
         <img

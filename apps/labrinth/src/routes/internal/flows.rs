@@ -1893,7 +1893,7 @@ pub async fn delete_auth_provider(
                 "您现在无法使用 {} 身份验证提供程序登录 BBSMC",
                 delete_provider.provider.as_str()
             ),
-            "如果不是您进行的更改，请立即通过我们的 Discord 支持渠道或电子邮件 (support@bbsmc.net) 联系我们。",
+            "如果不是您进行的更改，请立即通过电子邮件 (support@bbsmc.net) 联系我们。",
             None,
         )?;
     }
@@ -2658,9 +2658,7 @@ pub async fn remove_2fa(
     if !validate_2fa_code(
         login.code.clone(),
         user.totp_secret.ok_or_else(|| {
-            ApiError::InvalidInput(
-                "User does not have 2FA enabled on the account!".to_string(),
-            )
+            ApiError::InvalidInput("该账户未启用双因素身份验证！".to_string())
         })?,
         true,
         user.id,
@@ -2701,7 +2699,7 @@ pub async fn remove_2fa(
             email,
             "双因素身份验证已移除",
             "登录 BBSMC 时，您不再需要双因素身份验证即可访问。",
-            "如果不是您进行的更改，请立即通过我们的 Discord 支持渠道或电子邮件 (support@bbsmc.net) 联系我们。",
+            "如果不是您进行的更改，请立即通过电子邮件 (support@bbsmc.net) 联系我们。",
             None,
         )?;
     }
@@ -2824,11 +2822,12 @@ pub async fn change_password(
         }
 
         if let Some(pass) = user.password.as_ref() {
-            let old_password = change_password.old_password.as_ref().ok_or_else(|| {
-                ApiError::CustomAuthentication(
-                    "You must specify the old password to change your password!".to_string(),
-                )
-            })?;
+            let old_password =
+                change_password.old_password.as_ref().ok_or_else(|| {
+                    ApiError::CustomAuthentication(
+                        "修改密码时必须提供旧密码！".to_string(),
+                    )
+                })?;
 
             let hasher = Argon2::default();
             hasher.verify_password(
@@ -2842,48 +2841,47 @@ pub async fn change_password(
 
     let mut transaction = pool.begin().await?;
 
-    let update_password = if let Some(new_password) =
-        &change_password.new_password
-    {
-        let score = zxcvbn::zxcvbn(
-            new_password,
-            &[&user.username, &user.email.clone().unwrap_or_default()],
-        );
+    let update_password =
+        if let Some(new_password) = &change_password.new_password {
+            let score = zxcvbn::zxcvbn(
+                new_password,
+                &[&user.username, &user.email.clone().unwrap_or_default()],
+            );
 
-        if score.score() < zxcvbn::Score::Three {
-            return Err(ApiError::InvalidInput(
-                if let Some(feedback) =
-                    score.feedback().and_then(|x| x.warning())
-                {
-                    format!("Password too weak: {}", feedback)
-                } else {
-                    "Specified password is too weak! Please improve its strength.".to_string()
-                },
-            ));
-        }
+            if score.score() < zxcvbn::Score::Three {
+                return Err(ApiError::InvalidInput(
+                    if let Some(feedback) =
+                        score.feedback().and_then(|x| x.warning())
+                    {
+                        format!("密码强度太弱：{}", feedback)
+                    } else {
+                        "密码强度太弱！请提高密码复杂度。".to_string()
+                    },
+                ));
+            }
 
-        let hasher = Argon2::default();
-        let salt = SaltString::generate(&mut ChaCha20Rng::from_entropy());
-        let password_hash = hasher
-            .hash_password(new_password.as_bytes(), &salt)?
-            .to_string();
+            let hasher = Argon2::default();
+            let salt = SaltString::generate(&mut ChaCha20Rng::from_entropy());
+            let password_hash = hasher
+                .hash_password(new_password.as_bytes(), &salt)?
+                .to_string();
 
-        Some(password_hash)
-    } else {
-        if !(user.github_id.is_some()
-            || user.gitlab_id.is_some()
-            || user.microsoft_id.is_some()
-            || user.google_id.is_some()
-            || user.steam_id.is_some()
-            || user.discord_id.is_some())
-        {
-            return Err(ApiError::InvalidInput(
-                "You must have another authentication method added to remove password authentication!".to_string(),
-            ));
-        }
+            Some(password_hash)
+        } else {
+            if !(user.github_id.is_some()
+                || user.gitlab_id.is_some()
+                || user.microsoft_id.is_some()
+                || user.google_id.is_some()
+                || user.steam_id.is_some()
+                || user.discord_id.is_some())
+            {
+                return Err(ApiError::InvalidInput(
+                    "移除密码登录前，必须先添加其他身份验证方式！".to_string(),
+                ));
+            }
 
-        None
-    };
+            None
+        };
 
     sqlx::query!(
         "
@@ -3014,9 +3012,7 @@ pub async fn resend_verify_email(
 
     if let Some(email) = user.email {
         if user.email_verified.unwrap_or(false) {
-            return Err(ApiError::InvalidInput(
-                "User email is already verified!".to_string(),
-            ));
+            return Err(ApiError::InvalidInput("用户邮箱已验证！".to_string()));
         }
 
         let flow = Flow::ConfirmEmail {
@@ -3030,7 +3026,7 @@ pub async fn resend_verify_email(
 
         Ok(HttpResponse::NoContent().finish())
     } else {
-        Err(ApiError::InvalidInput("该账户设置电子邮箱".to_string()))
+        Err(ApiError::InvalidInput("该账户未设置电子邮箱".to_string()))
     }
 }
 
@@ -3059,8 +3055,7 @@ pub async fn verify_email(
 
         if user.email != Some(confirm_email) {
             return Err(ApiError::InvalidInput(
-                "E-mail does not match verify email. Try re-requesting the verification link."
-                    .to_string(),
+                "邮箱地址与待验证邮箱不匹配，请重新获取验证链接。".to_string(),
             ));
         }
 
@@ -3085,8 +3080,7 @@ pub async fn verify_email(
         Ok(HttpResponse::NoContent().finish())
     } else {
         Err(ApiError::InvalidInput(
-            "Flow does not exist. Try re-requesting the verification link."
-                .to_string(),
+            "验证流程不存在或已过期，请重新获取验证链接。".to_string(),
         ))
     }
 }

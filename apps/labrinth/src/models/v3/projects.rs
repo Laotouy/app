@@ -563,16 +563,16 @@ impl ProjectStatus {
     }
     pub fn as_friendly_str(&self) -> &'static str {
         match self {
-            ProjectStatus::Approved => "Listed",
-            ProjectStatus::Rejected => "Rejected",
-            ProjectStatus::Draft => "Draft",
-            ProjectStatus::Unlisted => "Unlisted",
-            ProjectStatus::Processing => "Under review",
-            ProjectStatus::Unknown => "Unknown",
-            ProjectStatus::Archived => "Archived",
-            ProjectStatus::Withheld => "Withheld",
-            ProjectStatus::Scheduled => "Scheduled",
-            ProjectStatus::Private => "Private",
+            ProjectStatus::Approved => "已发布",
+            ProjectStatus::Rejected => "已拒绝",
+            ProjectStatus::Draft => "草稿",
+            ProjectStatus::Unlisted => "未列出",
+            ProjectStatus::Processing => "审核中",
+            ProjectStatus::Unknown => "未知",
+            ProjectStatus::Archived => "已归档",
+            ProjectStatus::Withheld => "已暂扣",
+            ProjectStatus::Scheduled => "已计划",
+            ProjectStatus::Private => "私有",
         }
     }
 

@@ -103,7 +103,7 @@ bitflags::bitflags! {
         // 删除组织
         const ORGANIZATION_DELETE = 1 << 38;
 
-        // 仅限 modrinth 发出的会话
+        // 仅限 BBSMC 发出的会话
         const SESSION_ACCESS = 1 << 39;
 
         // 写入wiki

@@ -17,7 +17,7 @@ use crate::database::redis::RedisPool;
 use crate::database::{self, models as db_models};
 use crate::file_hosting::FileHost;
 use crate::models;
-// Modrinth 上游提交 79c263301: 移除 parse_base62，使用数据库 text_id_lower 列检查 slug 冲突
+// BBSMC 上游提交 79c263301: 移除 parse_base62，使用数据库 text_id_lower 列检查 slug 冲突
 use crate::models::images::ImageContext;
 use crate::models::notifications::NotificationBody;
 use crate::models::pats::Scopes;
@@ -308,7 +308,7 @@ pub struct EditProject {
     #[validate(custom(
         function = "crate::util::validate::validate_url_hashmap_optional_values"
     ))]
-    // <name, url> (leave url empty to delete)
+    // <名称, 链接> (留空链接表示删除)
     pub link_urls: Option<HashMap<String, Option<String>>>,
     pub license_id: Option<String>,
     #[validate(
@@ -398,7 +398,7 @@ pub async fn project_edit(
         if let Some(perms) = permissions {
             let mut transaction = pool.begin().await?;
 
-            // Modrinth 上游修复 97e4d8e13: 记录需要从搜索索引中删除的版本
+            // BBSMC 上游修复 97e4d8e13: 记录需要从搜索索引中删除的版本
             let mut versions_to_remove: Option<
                 Vec<crate::models::ids::VersionId>,
             > = None;
@@ -442,7 +442,7 @@ pub async fn project_edit(
             if let Some(wiki_open) = &new_project.wiki_open {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的该分类!".to_string(),
+                        "您没有权限编辑此项目的 Wiki 开放设置!".to_string(),
                     ));
                 }
 
@@ -499,7 +499,7 @@ pub async fn project_edit(
             if let Some(status) = &new_project.status {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的该分类!".to_string(),
+                        "您没有权限编辑此项目的状态!".to_string(),
                     ));
                 }
 
@@ -717,7 +717,7 @@ pub async fn project_edit(
                     }
                 }
 
-                // Modrinth 上游修复 97e4d8e13: 记录需要从搜索索引中删除的版本
+                // BBSMC 上游修复 97e4d8e13: 记录需要从搜索索引中删除的版本
                 // 将实际删除操作移到 transaction.commit() 之后
                 if project_item.inner.status.is_searchable()
                     && !status.is_searchable()
@@ -746,7 +746,7 @@ pub async fn project_edit(
             if let Some(requested_status) = &new_project.requested_status {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的该分类!".to_string(),
+                        "您没有权限编辑此项目的请求状态!".to_string(),
                     ));
                 }
 
@@ -885,11 +885,11 @@ pub async fn project_edit(
             if let Some(slug) = &new_project.slug {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的 slug!".to_string(),
+                        "您没有权限编辑此项目的自定义链接!".to_string(),
                     ));
                 }
 
-                // Modrinth 上游提交 79c263301: 使用 DBProject::get 检查 slug 是否与现有项目 ID 冲突
+                // BBSMC 上游提交 79c263301: 使用 DBProject::get 检查 slug 是否与现有项目 ID 冲突
                 let existing = db_models::Project::get(
                     &slug.to_lowercase(),
                     &mut *transaction,
@@ -898,7 +898,7 @@ pub async fn project_edit(
                 .await?;
                 if existing.is_some() {
                     return Err(ApiError::InvalidInput(
-                        "Slug 与另一个项目的 ID 冲突!".to_string(),
+                        "自定义链接（slug）与另一个项目的 ID 冲突!".to_string(),
                     ));
                 }
 
@@ -910,7 +910,7 @@ pub async fn project_edit(
                     .clone()
                     .unwrap_or_default())
                 {
-                    // Modrinth 上游提交 79c263301: 添加 text_id_lower 检查
+                    // BBSMC 上游提交 79c263301: 添加 text_id_lower 检查
                     let results = sqlx::query!(
                         "
                         SELECT EXISTS(
@@ -927,7 +927,8 @@ pub async fn project_edit(
 
                     if results.exists.unwrap_or(true) {
                         return Err(ApiError::InvalidInput(
-                            "Slug 与另一个项目的 slug 或 ID 冲突!".to_string(),
+                            "自定义链接（slug）与另一个项目的链接或 ID 冲突!"
+                                .to_string(),
                         ));
                     }
                 }
@@ -960,7 +961,7 @@ pub async fn project_edit(
 
                 spdx::Expression::parse(&license).map_err(|err| {
                     ApiError::InvalidInput(format!(
-                        "填写的URL内SPDX 许可证标识符无效: {err}"
+                        "SPDX 许可证标识符无效: {err}"
                     ))
                 })?;
 
@@ -1011,7 +1012,7 @@ pub async fn project_edit(
                             .await?
                             .ok_or_else(|| {
                                 ApiError::InvalidInput(format!(
-                                    "平台 {} 不存在.",
+                                    "平台 {} 不存在!",
                                     platform.clone()
                                 ))
                             })?;
@@ -1117,7 +1118,7 @@ pub async fn project_edit(
             {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的 monetization 状态!".to_string(),
+                        "您没有权限编辑此项目的盈利状态!".to_string(),
                     ));
                 }
 
@@ -1128,8 +1129,7 @@ pub async fn project_edit(
                     && !user.role.is_mod()
                 {
                     return Err(ApiError::CustomAuthentication(
-                        "You do not have the permissions to edit the monetization status of this project!"
-                            .to_string(),
+                        "您没有权限编辑此项目的强制取消盈利状态!".to_string(),
                     ));
                 }
 
@@ -1149,7 +1149,7 @@ pub async fn project_edit(
             if let Some(issues_type) = &new_project.issues_type {
                 if !perms.contains(ProjectPermissions::EDIT_DETAILS) {
                     return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此项目的许可证 URL!".to_string(),
+                        "您没有权限编辑此项目的问题反馈类型!".to_string(),
                     ));
                 }
                 sqlx::query!(
@@ -1210,8 +1210,8 @@ pub async fn project_edit(
                 .await?;
             }
 
-            // check new description and body for links to associated images
-            // if they no longer exist in the description or body, delete them
+            // 检查新的描述和正文中是否仍引用了关联图片
+            // 如果图片不再被描述或正文引用，则删除它们
             let checkable_strings: Vec<&str> =
                 vec![&new_project.description, &new_project.summary]
                     .into_iter()
@@ -1253,7 +1253,7 @@ pub async fn project_edit(
             )
             .await?;
 
-            // Modrinth 上游修复 97e4d8e13: 确保版本在路由执行结束前从搜索索引中删除
+            // BBSMC 上游修复 97e4d8e13: 确保版本在路由执行结束前从搜索索引中删除
             // 在事务提交和缓存清理后再删除搜索索引，确保任务完成后再返回响应
             if let Some(versions) = versions_to_remove {
                 remove_documents(&versions, &search_config).await?;
@@ -1277,7 +1277,7 @@ pub async fn project_edit(
             Ok(HttpResponse::NoContent().body(""))
         } else {
             Err(ApiError::CustomAuthentication(
-                "You do not have permission to edit this project!".to_string(),
+                "您没有权限编辑此项目!".to_string(),
             ))
         }
     } else {
@@ -1673,7 +1673,7 @@ pub async fn projects_edit(
                         .find(|x| &x.name == platform)
                         .ok_or_else(|| {
                             ApiError::InvalidInput(format!(
-                                "平台 {} 不存在.",
+                                "平台 {} 不存在!",
                                 platform.clone()
                             ))
                         })?
@@ -1761,7 +1761,7 @@ pub async fn bulk_edit_project_categories(
                 .find(|x| x.category == category)
                 .ok_or_else(|| {
                     ApiError::InvalidInput(format!(
-                        "类别 {} 不存在.",
+                        "类别 {} 不存在!",
                         category.clone()
                     ))
                 })?
@@ -1820,7 +1820,7 @@ pub async fn project_icon_edit(
             )
             .await?;
 
-        // Hide the project
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -1836,7 +1836,7 @@ pub async fn project_icon_edit(
 
         if !permissions.contains(ProjectPermissions::EDIT_DETAILS) {
             return Err(ApiError::CustomAuthentication(
-                "您没有权限编辑此项目的图标.".to_string(),
+                "您没有权限编辑此项目的图标!".to_string(),
             ));
         }
     }
@@ -1931,7 +1931,7 @@ pub async fn delete_project_icon(
             )
             .await?;
 
-        // Hide the project
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -1946,7 +1946,7 @@ pub async fn delete_project_icon(
 
         if !permissions.contains(ProjectPermissions::EDIT_DETAILS) {
             return Err(ApiError::CustomAuthentication(
-                "您没有权限编辑此项目的图标.".to_string(),
+                "您没有权限编辑此项目的图标!".to_string(),
             ));
         }
     }
@@ -2030,7 +2030,7 @@ pub async fn add_gallery_item(
         && user.username.to_lowercase() != "bbsmc"
     {
         return Err(ApiError::CustomAuthentication(
-            "您已达到上传渲染图的最大数量.".to_string(),
+            "您已达到上传渲染图的最大数量!".to_string(),
         ));
     }
 
@@ -2043,7 +2043,7 @@ pub async fn add_gallery_item(
             )
             .await?;
 
-        // Hide the project 隐藏项目
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -2059,7 +2059,7 @@ pub async fn add_gallery_item(
 
         if !permissions.contains(ProjectPermissions::EDIT_DETAILS) {
             return Err(ApiError::CustomAuthentication(
-                "您没有权限编辑此项目的渲染图.".to_string(),
+                "您没有权限编辑此项目的渲染图!".to_string(),
             ));
         }
     }
@@ -2075,14 +2075,14 @@ pub async fn add_gallery_item(
         read_from_payload(
             &mut payload,
             10 * (1 << 20),
-            "渲染图图片超过最大 10MiB.",
+            "渲染图文件大小不能超过 10MiB",
         )
         .await?
     } else {
         read_from_payload(
             &mut payload,
             3 * (1 << 20),
-            "渲染图图片超过最大 3MiB.",
+            "渲染图文件大小不能超过 3MiB",
         )
         .await?
     };
@@ -2276,7 +2276,7 @@ pub async fn edit_gallery_item(
             )
             .await?;
 
-        // Hide the project
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -2291,7 +2291,7 @@ pub async fn edit_gallery_item(
 
         if !permissions.contains(ProjectPermissions::EDIT_DETAILS) {
             return Err(ApiError::CustomAuthentication(
-                "您没有权限编辑此项目的渲染图.".to_string(),
+                "您没有权限编辑此项目的渲染图!".to_string(),
             ));
         }
     }
@@ -2308,7 +2308,7 @@ pub async fn edit_gallery_item(
     .await?
     .ok_or_else(|| {
         ApiError::InvalidInput(format!(
-            "URL {} 的渲染图不属于此项目的渲染图.",
+            "URL {} 的渲染图不属于此项目!",
             item.url
         ))
     })?
@@ -2436,7 +2436,7 @@ pub async fn delete_gallery_item(
             )
             .await?;
 
-        // Hide the project
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -2452,7 +2452,7 @@ pub async fn delete_gallery_item(
 
         if !permissions.contains(ProjectPermissions::EDIT_DETAILS) {
             return Err(ApiError::CustomAuthentication(
-                "您没有权限编辑此项目的渲染图.".to_string(),
+                "您没有权限编辑此项目的渲染图!".to_string(),
             ));
         }
     }
@@ -2469,7 +2469,7 @@ pub async fn delete_gallery_item(
     .await?
     .ok_or_else(|| {
         ApiError::InvalidInput(format!(
-            "URL {} 的渲染图不属于此项目的渲染图.",
+            "URL {} 的渲染图不属于此项目!",
             item.url
         ))
     })?;
@@ -2544,7 +2544,7 @@ pub async fn project_delete(
             )
             .await?;
 
-        // Hide the project
+        // 隐藏项目
         if team_member.is_none() && organization_team_member.is_none() {
             return Err(ApiError::CustomAuthentication(
                 "指定的项目不存在!".to_string(),
@@ -2688,9 +2688,7 @@ pub async fn project_follow(
 
         Ok(HttpResponse::NoContent().body(""))
     } else {
-        Err(ApiError::InvalidInput(
-            "You are already following this project!".to_string(),
-        ))
+        Err(ApiError::InvalidInput("您已经关注了此项目!".to_string()))
     }
 }
 
@@ -2799,7 +2797,7 @@ pub async fn project_get_organization(
             db_models::Organization::get_id(organization_id, &**pool, &redis)
                 .await?
                 .ok_or_else(|| {
-                    ApiError::InvalidInput("附件组织不存在!".to_string())
+                    ApiError::InvalidInput("关联的组织不存在!".to_string())
                 })?;
 
         let members_data = TeamMember::get_from_team_full(
@@ -2927,7 +2925,7 @@ pub async fn project_forum_create(
                 .contains(ProjectPermissions::EDIT_MEMBER)
         {
             return Err(ApiError::Validation(
-                "你没有权限创建讨论区".to_string(),
+                "您没有权限创建讨论区".to_string(),
             ));
         }
 
