@@ -115,15 +115,43 @@
         <section class="section">
           <header class="section-header">
             <div class="section-title-group">
-              <span class="section-label">TRENDING</span>
-              <h2 class="section-title">热门资源</h2>
+              <span class="section-label">{{ searchQuery ? "SEARCH" : "TRENDING" }}</span>
+              <h2 class="section-title">{{ searchQuery ? "搜索结果" : "热门资源" }}</h2>
             </div>
-            <NuxtLink to="/mods" class="section-more">浏览全部 →</NuxtLink>
+            <div class="section-header-right">
+              <div class="home-search">
+                <SearchIcon class="home-search-icon" aria-hidden="true" />
+                <input
+                  v-model="searchQuery"
+                  type="search"
+                  placeholder="搜索资源..."
+                  class="home-search-input"
+                  autocomplete="off"
+                />
+                <button v-if="searchQuery" class="home-search-clear" @click="searchQuery = ''">
+                  <XIcon />
+                </button>
+              </div>
+              <NuxtLink v-if="!searchQuery" to="/mods" class="section-more">浏览全部 →</NuxtLink>
+            </div>
           </header>
 
-          <div class="resource-grid">
+          <!-- 搜索加载状态 -->
+          <div v-if="searchLoading" class="search-loading">
+            <span class="search-loading-spinner" />
+            <span>搜索中...</span>
+          </div>
+
+          <!-- 搜索无结果 -->
+          <div v-else-if="searchQuery && displayProjects.length === 0" class="search-empty">
+            <SearchIcon class="search-empty-icon" />
+            <p>未找到与「{{ searchQuery }}」相关的资源</p>
+            <button class="search-empty-btn" @click="searchQuery = ''">清除搜索</button>
+          </div>
+
+          <div v-else class="resource-grid">
             <NuxtLink
-              v-for="project in hotProjects"
+              v-for="project in displayProjects"
               :key="project.project_id"
               :to="getProjectLink(project)"
               class="resource-card"
@@ -529,6 +557,8 @@ import {
   HeartIcon,
   DownloadIcon,
   UpdatedIcon,
+  SearchIcon,
+  XIcon,
 } from "@modrinth/assets";
 
 useSeoMeta({
@@ -603,6 +633,49 @@ const hotProjects = computed(() => pageData.value?.hotProjects ?? []);
 const translations = computed(() => pageData.value?.translations ?? []);
 const latestModpackTranslations = computed(() => pageData.value?.latestModpackTranslations ?? []);
 const latestPlugins = computed(() => pageData.value?.latestPlugins ?? []);
+
+// 搜索功能
+const searchQuery = ref("");
+const searchResults = ref([]);
+const searchLoading = ref(false);
+let searchDebounceTimer = null;
+
+const displayProjects = computed(() => {
+  if (searchQuery.value && searchResults.value.length > 0) {
+    return searchResults.value;
+  }
+  return hotProjects.value;
+});
+
+const performSearch = async (query) => {
+  if (!query.trim()) {
+    searchResults.value = [];
+    searchLoading.value = false;
+    return;
+  }
+  searchLoading.value = true;
+  try {
+    const res = await useBaseFetch(
+      `search?query=${encodeURIComponent(query.trim())}&limit=12&index=relevance`,
+    );
+    searchResults.value = res.hits ?? [];
+  } catch {
+    searchResults.value = [];
+  } finally {
+    searchLoading.value = false;
+  }
+};
+
+watch(searchQuery, (val) => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  if (!val.trim()) {
+    searchResults.value = [];
+    searchLoading.value = false;
+    return;
+  }
+  searchLoading.value = true;
+  searchDebounceTimer = setTimeout(() => performSearch(val), 300);
+});
 
 const stats = ref({
   projects: 12580,
@@ -916,6 +989,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopAutoPlay();
   isClient.value = false;
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
 });
 </script>
 
@@ -1376,9 +1450,160 @@ onUnmounted(() => {
   gap: 8px;
   transition: gap 0.3s var(--ease-out);
   text-decoration: none;
+  white-space: nowrap;
 
   &:hover {
     gap: 14px;
+  }
+}
+
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+// 主页搜索框
+.home-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.home-search-icon {
+  position: absolute;
+  left: 10px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s;
+
+  .home-search:focus-within & {
+    opacity: 1;
+    color: var(--color-brand);
+  }
+}
+
+.home-search-input {
+  width: 220px;
+  height: 36px;
+  padding: 0 32px 0 34px;
+  border: 1px solid var(--color-divider);
+  border-radius: 18px;
+  background: var(--color-raised-bg);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    width 0.3s;
+
+  &::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+  }
+
+  &:focus {
+    width: 280px;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb, 241, 100, 54), 0.15);
+  }
+}
+
+.home-search-clear {
+  position: absolute;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: var(--color-button-bg);
+    color: var(--color-text);
+  }
+}
+
+// 搜索状态
+.search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.search-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-divider);
+  border-top-color: var(--color-brand);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.search-empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.3;
+  margin-bottom: 12px;
+}
+
+.search-empty p {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+}
+
+.search-empty-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--color-divider);
+  border-radius: 20px;
+  background: var(--color-raised-bg);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    background: var(--color-button-bg);
+    border-color: var(--color-brand);
   }
 }
 
@@ -2344,6 +2569,30 @@ onUnmounted(() => {
 
   .sidebar {
     grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .section-header-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .home-search-input {
+    width: 100%;
+
+    &:focus {
+      width: 100%;
+    }
+  }
+
+  .section-more {
+    justify-content: center;
   }
 }
 </style>
