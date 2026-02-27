@@ -428,6 +428,14 @@ const bannerItemsConfig = ref({
       slug: "/modpack/vefc",
     },
   ],
+  language: [
+    {
+      image: "/tutorial/language-banner.jpg",
+      title: "整合包汉化教程 - 全流程使用指南",
+      description: "想要游玩中文版整合包？村民带你学汉化！",
+      slug: "/install-tutorial",
+    },
+  ],
   software: [
     {
       image: "https://cdn.bbsmc.net/raw/images/pcl2.jpg",

@@ -589,6 +589,7 @@ onBeforeUnmount(() => {
   max-width: 820px;
   margin: 0 auto;
   padding: 72px 48px 56px;
+  text-align: center;
 }
 
 .hero-eyebrow {
@@ -630,17 +631,18 @@ onBeforeUnmount(() => {
   color: var(--t-ink-3);
   max-width: 520px;
   line-height: 1.72;
-  margin-bottom: 32px;
+  margin: 0 auto 32px;
 }
 
 .intro-callout {
   max-width: 620px;
-  margin-bottom: 24px;
+  margin: 0 auto 24px;
+  text-align: left;
 }
 
 .intro-img {
   max-width: 620px;
-  margin-bottom: 24px;
+  margin: 0 auto 24px;
 }
 
 /* VIDEO */
@@ -648,7 +650,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   max-width: 620px;
-  margin-top: 32px;
+  margin: 32px auto 0;
   padding-bottom: 56.25%;
   height: 0;
   overflow: hidden;
@@ -676,6 +678,8 @@ onBeforeUnmount(() => {
   gap: 14px;
   align-items: flex-start;
   max-width: 620px;
+  margin: 0 auto;
+  text-align: left;
 }
 
 .ws-icon {
