@@ -488,7 +488,13 @@ async fn text_risk(
         &sk,
         Some(&params),
     );
-    let result = response_body.await.unwrap();
+    let result = match response_body.await {
+        Ok(r) => r,
+        Err(e) => {
+            log::error!("文本风控 API 请求失败: {e}");
+            return Ok(vec!["风控API异常".to_string()]);
+        }
+    };
     if result.get("Result").is_some()
         && result.get("Result").unwrap().get("Code").unwrap() == 0
     {
@@ -608,7 +614,16 @@ async fn imasge_risk(
         &sk,
         Some(&params),
     );
-    let result = response_body.await.unwrap();
+    let result = match response_body.await {
+        Ok(r) => r,
+        Err(e) => {
+            log::error!("图片风控 API 请求失败: {e}");
+            return Ok(ImageRiskDetail {
+                labels: vec!["风控API异常".to_string()],
+                frame_url: None,
+            });
+        }
+    };
     if result.get("Result").is_some()
         && result.get("Result").unwrap().get("Code").unwrap() == 0
     {
