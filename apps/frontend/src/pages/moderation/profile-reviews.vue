@@ -1,135 +1,26 @@
 <template>
   <div>
-    <!-- 审核弹窗 -->
-    <NewModal ref="reviewModal">
+    <ProfileReviewModal ref="reviewModal" @reviewed="fetchReviews" />
+
+    <!-- 一键通过确认弹窗 -->
+    <NewModal ref="approveAllModal">
       <template #title>
-        <div class="truncate text-lg font-extrabold text-contrast">审核资料修改</div>
+        <div class="truncate text-lg font-extrabold text-contrast">确认批量审批</div>
       </template>
-      <div class="review-content">
-        <div v-if="currentReview" class="review-summary">
-          <div class="summary-row">
-            <span class="label">用户：</span>
-            <nuxt-link :to="`/user/${currentReview.username}`" class="user-link">
-              <Avatar
-                :src="currentReview.avatar_url"
-                :alt="currentReview.username"
-                size="xs"
-                circle
-              />
-              <span>{{ currentReview.username }}</span>
-            </nuxt-link>
-          </div>
-          <div class="summary-row">
-            <span class="label">修改类型：</span>
-            <span class="type-badge" :class="`type-${currentReview.review_type}`">
-              {{ getTypeName(currentReview.review_type) }}
-            </span>
-          </div>
-          <div class="summary-row">
-            <span class="label">风控标签：</span>
-            <span class="risk-labels">{{ currentReview.risk_labels }}</span>
-          </div>
-
-          <!-- 内容对比 -->
-          <div class="diff-section">
-            <template v-if="currentReview.review_type === 'avatar'">
-              <div class="avatar-diff">
-                <div class="diff-item">
-                  <span class="diff-label">当前头像</span>
-                  <Avatar
-                    :src="getAvatarUrl(currentReview.old_value, 'avatar_url')"
-                    size="md"
-                    circle
-                    alt="当前头像"
-                  />
-                </div>
-                <span class="diff-arrow">&rarr;</span>
-                <div class="diff-item">
-                  <span class="diff-label">新头像</span>
-                  <Avatar
-                    :src="getAvatarUrl(currentReview.new_value, 'avatar_url')"
-                    size="md"
-                    circle
-                    alt="新头像"
-                  />
-                </div>
-              </div>
-            </template>
-            <template v-else>
-              <div class="text-diff">
-                <div class="diff-item">
-                  <span class="diff-label">旧值</span>
-                  <div class="diff-value old">{{ currentReview.old_value || "(空)" }}</div>
-                </div>
-                <div class="diff-item">
-                  <span class="diff-label">新值</span>
-                  <div class="diff-value new">{{ currentReview.new_value }}</div>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <div class="review-form">
-          <label class="form-label">
-            <span>审核决定</span>
-            <span class="required">*</span>
-          </label>
-          <div class="decision-buttons">
-            <button
-              class="decision-btn approve"
-              :class="{ active: reviewDecision === 'approved' }"
-              @click="reviewDecision = 'approved'"
-            >
-              <CheckIcon aria-hidden="true" />
-              批准修改
-            </button>
-            <button
-              class="decision-btn reject"
-              :class="{ active: reviewDecision === 'rejected' }"
-              @click="reviewDecision = 'rejected'"
-            >
-              <CrossIcon aria-hidden="true" />
-              拒绝修改
-            </button>
-          </div>
-
-          <label class="form-label">
-            <span>审核备注</span>
-            <span class="optional">（可选，将通知用户）</span>
-          </label>
-          <textarea
-            v-model="reviewNotes"
-            class="review-textarea"
-            placeholder="请输入审核备注..."
-            rows="3"
-          ></textarea>
-        </div>
+      <div class="approve-all-content">
+        <p>
+          确定要一键通过全部 <strong>{{ pendingCount }}</strong> 条待审核记录吗？此操作不可撤销。
+        </p>
       </div>
       <div class="modal-actions">
-        <ButtonStyled
-          :color="
-            reviewDecision === 'approved'
-              ? 'primary'
-              : reviewDecision === 'rejected'
-                ? 'danger'
-                : 'default'
-          "
-        >
-          <button :disabled="!reviewDecision || submitting" @click="submitReview">
-            <CheckIcon v-if="reviewDecision === 'approved'" aria-hidden="true" />
-            <CrossIcon v-else-if="reviewDecision === 'rejected'" aria-hidden="true" />
-            {{
-              reviewDecision === "approved"
-                ? "确认批准"
-                : reviewDecision === "rejected"
-                  ? "确认拒绝"
-                  : "请选择审核决定"
-            }}
+        <ButtonStyled color="primary">
+          <button :disabled="approveAllLoading" @click="doApproveAll">
+            <CheckIcon aria-hidden="true" />
+            {{ approveAllLoading ? "处理中..." : "确认全部通过" }}
           </button>
         </ButtonStyled>
         <ButtonStyled>
-          <button @click="reviewModal?.hide()">取消</button>
+          <button :disabled="approveAllLoading" @click="approveAllModal?.hide()">取消</button>
         </ButtonStyled>
       </div>
     </NewModal>
@@ -143,6 +34,15 @@
       <!-- 筛选栏 -->
       <div class="filter-section">
         <Chips v-model="statusFilter" :items="statusOptions" :format-label="formatStatusLabel" />
+        <ButtonStyled
+          v-if="['all', 'pending'].includes(statusFilter) && pendingCount > 0"
+          color="primary"
+        >
+          <button :disabled="approveAllLoading" @click="approveAll">
+            <CheckIcon aria-hidden="true" />
+            {{ approveAllLoading ? "处理中..." : `一键全部通过 (${pendingCount})` }}
+          </button>
+        </ButtonStyled>
       </div>
 
       <!-- 加载中 -->
@@ -213,7 +113,7 @@
             </div>
 
             <div v-if="review.status === 'pending'" class="review-actions">
-              <button class="btn btn-primary" @click="openReviewModal(review)">
+              <button class="btn btn-primary" @click="reviewModal?.open(review)">
                 <EditIcon aria-hidden="true" />
                 审核
               </button>
@@ -236,12 +136,12 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { NewModal, ButtonStyled } from "@modrinth/ui";
 import Avatar from "~/components/ui/Avatar.vue";
 import Chips from "~/components/ui/Chips.vue";
+import ProfileReviewModal from "~/components/ui/ProfileReviewModal.vue";
 import CheckIcon from "~/assets/images/utils/check.svg?component";
-import CrossIcon from "~/assets/images/utils/x.svg?component";
 import InfoIcon from "~/assets/images/utils/info.svg?component";
 import UpdatedIcon from "~/assets/images/utils/updated.svg?component";
 import EditIcon from "~/assets/images/utils/edit.svg?component";
@@ -265,17 +165,15 @@ const statusFilter = ref("pending");
 const statusOptions = ["all", "pending", "approved", "rejected", "cancelled"];
 
 const reviewModal = ref(null);
-const currentReview = ref(null);
-const reviewDecision = ref("");
-const reviewNotes = ref("");
-const submitting = ref(false);
+const approveAllModal = ref(null);
+const approveAllLoading = ref(false);
+
+const pendingCount = computed(() => {
+  return reviews.value.filter((r) => r.status === "pending").length;
+});
 
 const getTypeName = (type) => {
-  const types = {
-    avatar: "头像",
-    username: "用户名",
-    bio: "简介",
-  };
+  const types = { avatar: "头像", username: "用户名", bio: "简介" };
   return types[type] || type;
 };
 
@@ -335,41 +233,37 @@ const fetchReviews = async () => {
   loading.value = false;
 };
 
-const openReviewModal = (review) => {
-  currentReview.value = review;
-  reviewDecision.value = "";
-  reviewNotes.value = "";
-  reviewModal.value?.show();
+const approveAll = () => {
+  if (approveAllLoading.value) return;
+  approveAllModal.value?.show();
 };
 
-const submitReview = async () => {
-  if (!currentReview.value || !reviewDecision.value) return;
-  submitting.value = true;
+const doApproveAll = async () => {
+  approveAllLoading.value = true;
   try {
-    const action = reviewDecision.value === "approved" ? "approve" : "reject";
-    await useBaseFetch(`moderation/profile-reviews/${currentReview.value.id}/${action}`, {
+    const result = await useBaseFetch("moderation/profile-reviews/approve-all", {
       method: "POST",
-      body: { notes: reviewNotes.value || null },
+      body: { notes: null },
       internal: true,
     });
+    approveAllModal.value?.hide();
     addNotification({
       group: "main",
-      title: "审核成功",
-      text: `已${reviewDecision.value === "approved" ? "批准" : "拒绝"}该资料修改`,
-      type: "success",
+      title: "批量审批完成",
+      text: `已通过 ${result?.approved || 0} 条${result?.failed ? `，失败 ${result.failed} 条` : ""}`,
+      type: result?.failed ? "warning" : "success",
     });
-    reviewModal.value?.hide();
     await fetchReviews();
   } catch (error) {
-    console.error("提交审核失败:", error);
+    console.error("批量审批失败:", error);
     addNotification({
       group: "main",
-      title: "审核失败",
+      title: "批量审批失败",
       text: error?.data?.description || "操作失败，请重试",
       type: "error",
     });
   } finally {
-    submitting.value = false;
+    approveAllLoading.value = false;
   }
 };
 
@@ -398,7 +292,11 @@ onMounted(() => {
 }
 
 .filter-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .loading-section {
@@ -576,6 +474,22 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
+.approve-all-content {
+  padding: 1rem;
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+}
+
 .empty-section {
   display: flex;
   flex-direction: column;
@@ -588,173 +502,5 @@ onMounted(() => {
     width: 2rem;
     height: 2rem;
   }
-}
-
-// 审核弹窗样式
-.review-content {
-  padding: 1rem;
-  min-width: 500px;
-}
-
-.review-summary {
-  margin-bottom: 1.5rem;
-}
-
-.summary-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-
-  .label {
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    min-width: 5rem;
-  }
-}
-
-.diff-section {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--color-button-bg);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg);
-}
-
-.avatar-diff {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-}
-
-.diff-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.diff-label {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  font-weight: 600;
-}
-
-.diff-arrow {
-  font-size: 1.5rem;
-  color: var(--color-text-secondary);
-}
-
-.text-diff {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.diff-value {
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  word-break: break-all;
-
-  &.old {
-    background: rgba(239, 68, 68, 0.05);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: var(--color-text-secondary);
-  }
-
-  &.new {
-    background: rgba(34, 197, 94, 0.05);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    color: var(--color-text);
-  }
-}
-
-.review-form {
-  .form-label {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-
-    .required {
-      color: rgb(239, 68, 68);
-    }
-
-    .optional {
-      font-weight: 400;
-      color: var(--color-text-secondary);
-      font-size: 0.875rem;
-    }
-  }
-}
-
-.decision-buttons {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.decision-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--color-button-bg);
-  border-radius: var(--radius-lg);
-  background: var(--color-raised-bg);
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  &:hover {
-    border-color: var(--color-text-secondary);
-  }
-
-  &.approve.active {
-    border-color: rgb(34, 197, 94);
-    background: rgba(34, 197, 94, 0.1);
-    color: rgb(34, 197, 94);
-  }
-
-  &.reject.active {
-    border-color: rgb(239, 68, 68);
-    background: rgba(239, 68, 68, 0.1);
-    color: rgb(239, 68, 68);
-  }
-}
-
-.review-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--color-button-bg);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  resize: vertical;
-  font-family: inherit;
-  margin-bottom: 1rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-brand);
-  }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 0 1rem 1rem;
 }
 </style>

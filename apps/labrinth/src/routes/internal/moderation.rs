@@ -29,6 +29,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         web::get().to(crate::routes::v3::profile_reviews::list_reviews),
     );
     cfg.route(
+        "moderation/profile-reviews/approve-all",
+        web::post().to(crate::routes::v3::profile_reviews::approve_all_pending),
+    );
+    cfg.route(
         "moderation/profile-reviews/{id}/approve",
         web::post().to(crate::routes::v3::profile_reviews::approve_review),
     );

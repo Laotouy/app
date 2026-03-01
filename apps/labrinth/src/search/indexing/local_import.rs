@@ -122,8 +122,7 @@ pub async fn index_local(
     // 步骤 3: 分批处理项目，每批 INDEX_BATCH_SIZE 个
     let mut uploads = Vec::new();
     let total_len = db_projects.len();
-    let num_batches =
-        (total_len + INDEX_BATCH_SIZE - 1) / INDEX_BATCH_SIZE;
+    let num_batches = total_len.div_ceil(INDEX_BATCH_SIZE);
 
     struct PartialGallery {
         url: String,
@@ -161,13 +160,13 @@ pub async fn index_local(
             .try_fold(
                 DashMap::new(),
                 |acc: DashMap<ProjectId, Vec<PartialGallery>>, m| {
-                    acc.entry(ProjectId(m.mod_id))
-                        .or_default()
-                        .push(PartialGallery {
+                    acc.entry(ProjectId(m.mod_id)).or_default().push(
+                        PartialGallery {
                             url: m.image_url,
                             featured: m.featured.unwrap_or(false),
                             ordering: m.ordering,
-                        });
+                        },
+                    );
                     async move { Ok(acc) }
                 },
             )
@@ -272,8 +271,7 @@ pub async fn index_local(
             };
 
             let (featured_gallery, gallery) =
-                if let Some((_, gallery)) = mods_gallery.remove(&project.id)
-                {
+                if let Some((_, gallery)) = mods_gallery.remove(&project.id) {
                     let mut vals = Vec::new();
                     let mut featured = None;
 
@@ -294,9 +292,7 @@ pub async fn index_local(
                 };
 
             let (categories, display_categories) =
-                if let Some((_, categories)) =
-                    categories.remove(&project.id)
-                {
+                if let Some((_, categories)) = categories.remove(&project.id) {
                     let mut vals = Vec::new();
                     let mut featured_vals = Vec::new();
 
@@ -317,13 +313,12 @@ pub async fn index_local(
                     .iter()
                     .flat_map(|x| x.version_fields.clone())
                     .collect::<Vec<_>>();
-                let aggregated_version_fields =
-                    VersionField::from_query_json(
-                        project_version_fields,
-                        &loader_fields,
-                        &loader_field_enum_values,
-                        true,
-                    );
+                let aggregated_version_fields = VersionField::from_query_json(
+                    project_version_fields,
+                    &loader_fields,
+                    &loader_field_enum_values,
+                    true,
+                );
                 let project_loader_fields =
                     from_duplicate_version_fields(aggregated_version_fields);
 
@@ -372,9 +367,7 @@ pub async fn index_local(
                         .cloned()
                         .map(|x| {
                             x.into_iter()
-                                .filter_map(|x| {
-                                    x.as_str().map(String::from)
-                                })
+                                .filter_map(|x| x.as_str().map(String::from))
                                 .collect::<Vec<_>>()
                         })
                         .unwrap_or_default();
@@ -385,9 +378,7 @@ pub async fn index_local(
                         .cloned()
                         .map(|x| {
                             x.into_iter()
-                                .filter_map(|x| {
-                                    x.as_str().map(String::from)
-                                })
+                                .filter_map(|x| x.as_str().map(String::from))
                                 .collect::<Vec<_>>()
                         })
                         .unwrap_or_default();
@@ -412,17 +403,13 @@ pub async fn index_local(
                             Some(&v2_og_project_type),
                         );
 
-                    if let Ok(client_side) =
-                        serde_json::to_value(client_side)
-                    {
+                    if let Ok(client_side) = serde_json::to_value(client_side) {
                         loader_fields.insert(
                             "client_side".to_string(),
                             vec![client_side],
                         );
                     }
-                    if let Ok(server_side) =
-                        serde_json::to_value(server_side)
-                    {
+                    if let Ok(server_side) = serde_json::to_value(server_side) {
                         loader_fields.insert(
                             "server_side".to_string(),
                             vec![server_side],
@@ -459,8 +446,7 @@ pub async fn index_local(
                         open_source,
                         color: project.color.map(|x| x as u32),
                         loader_fields,
-                        project_loader_fields: project_loader_fields
-                            .clone(),
+                        project_loader_fields: project_loader_fields.clone(),
                         // 'loaders' is aggregate of all versions' loaders
                         loaders: project_loaders.clone(),
                     };
@@ -472,8 +458,7 @@ pub async fn index_local(
 
         // 批次间休息，让 API 请求有机会获取数据库连接
         if batch_idx < num_batches - 1 {
-            tokio::time::sleep(std::time::Duration::from_millis(200))
-                .await;
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         }
     }
 
