@@ -662,260 +662,238 @@ pub async fn approve_all_pending(
         ));
     }
 
-    // 获取所有待审核记录（仅列表查询，不需要 FOR UPDATE，各条记录在独立事务中再锁定）
+    // 单事务：JOIN 预取用户数据 + FOR UPDATE 锁定审核记录
+    let mut transaction = pool.begin().await?;
+
     let pending_reviews = sqlx::query!(
-        "SELECT id, user_id, review_type, old_value, new_value, status
-         FROM user_profile_reviews
-         WHERE status = 'pending'
-         ORDER BY created_at ASC",
+        r#"
+        SELECT pr.id, pr.user_id, pr.review_type, pr.new_value,
+               u.username, u.avatar_url, u.raw_avatar_url
+        FROM user_profile_reviews pr
+        JOIN users u ON u.id = pr.user_id
+        WHERE pr.status = 'pending'
+        ORDER BY pr.created_at ASC
+        FOR UPDATE OF pr
+        "#,
     )
-    .fetch_all(&**pool)
+    .fetch_all(&mut *transaction)
     .await?;
 
     if pending_reviews.is_empty() {
         return Ok(HttpResponse::Ok().json(serde_json::json!({
             "approved": 0,
             "failed": 0,
-            "skipped": 0,
         })));
     }
 
-    let mut approved_count = 0i64;
+    let mut approved_ids: Vec<i64> = Vec::new();
     let mut failed_count = 0i64;
-    let mut skipped_count = 0i64;
+    // 收集需要清除缓存的用户信息 (db_user_id, username)
+    let mut cache_entries: Vec<(
+        crate::database::models::ids::UserId,
+        Option<String>,
+    )> = Vec::new();
+    // 收集需要删除的旧头像
+    let mut old_avatars_to_delete: Vec<(Option<String>, Option<String>)> =
+        Vec::new();
 
     for review in &pending_reviews {
-        // 每个审核使用独立事务，失败不影响其他审核
-        let result: Result<bool, ApiError> = async {
-            let mut transaction = pool.begin().await?;
+        let db_user_id = crate::database::models::ids::UserId(review.user_id);
 
-            // 再次锁定检查状态（防止并发）
-            let locked = sqlx::query_scalar!(
-                "SELECT status FROM user_profile_reviews WHERE id = $1 AND status = 'pending' FOR UPDATE",
-                review.id,
-            )
-            .fetch_optional(&mut *transaction)
-            .await?;
+        match review.review_type.as_str() {
+            "username" => {
+                // 检查用户名冲突
+                let conflict = sqlx::query_scalar!(
+                    "SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2",
+                    &review.new_value,
+                    review.user_id,
+                )
+                .fetch_optional(&mut *transaction)
+                .await?;
 
-            if locked.is_none() {
-                // 已被其他操作处理，跳过
-                return Ok(false);
-            }
-
-            let target_user = User::get_id(
-                crate::database::models::ids::UserId(review.user_id),
-                &**pool,
-                &redis,
-            )
-            .await?
-            .ok_or(ApiError::NotFound)?;
-
-            let old_avatar_url = target_user.avatar_url.clone();
-            let old_raw_avatar_url = target_user.raw_avatar_url.clone();
-
-            match review.review_type.as_str() {
-                "username" => {
-                    let existing = sqlx::query_scalar!(
-                        "SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2",
-                        &review.new_value,
-                        review.user_id,
+                if conflict.is_some() {
+                    // 冲突 → 标记为拒绝
+                    sqlx::query!(
+                        "UPDATE user_profile_reviews
+                         SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(),
+                             review_notes = '批量审批：用户名在审核期间已被其他用户占用'
+                         WHERE id = $2",
+                        moderator.id.0 as i64,
+                        review.id,
                     )
-                    .fetch_optional(&mut *transaction)
+                    .execute(&mut *transaction)
                     .await?;
 
-                    if existing.is_some() {
-                        // 用户名已被占用，标记为拒绝
-                        sqlx::query!(
-                            "UPDATE user_profile_reviews
-                             SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(),
-                                 review_notes = '批量审批：用户名在审核期间已被其他用户占用'
-                             WHERE id = $2",
-                            moderator.id.0 as i64,
-                            review.id,
-                        )
-                        .execute(&mut *transaction)
-                        .await?;
+                    NotificationBuilder {
+                        body: NotificationBody::ProfileReviewResult {
+                            review_id: review.id,
+                            review_type: "username".to_string(),
+                            status: "rejected".to_string(),
+                            review_notes: Some(
+                                "批量审批：用户名在审核期间已被其他用户占用"
+                                    .to_string(),
+                            ),
+                        },
+                    }
+                    .insert(db_user_id, &mut transaction, &redis)
+                    .await?;
 
-                        let notification = NotificationBuilder {
-                            body: NotificationBody::ProfileReviewResult {
-                                review_id: review.id,
-                                review_type: "username".to_string(),
-                                status: "rejected".to_string(),
-                                review_notes: Some(
-                                    "批量审批：用户名在审核期间已被其他用户占用".to_string(),
-                                ),
-                            },
-                        };
-                        notification
-                            .insert(
-                                crate::database::models::ids::UserId(review.user_id),
-                                &mut transaction,
-                                &redis,
-                            )
-                            .await?;
+                    cache_entries
+                        .push((db_user_id, Some(review.username.clone())));
+                    failed_count += 1;
+                    continue;
+                }
 
-                        transaction.commit().await?;
+                sqlx::query!(
+                    "UPDATE users SET username = $1 WHERE id = $2",
+                    &review.new_value,
+                    review.user_id,
+                )
+                .execute(&mut *transaction)
+                .await?;
 
-                        // 清除用户缓存（审核状态已变更）
-                        User::clear_caches(
-                            &[(target_user.id, Some(target_user.username.clone()))],
-                            &redis,
-                        )
-                        .await?;
+                // 清除新旧两个用户名的缓存
+                cache_entries.push((db_user_id, Some(review.username.clone())));
+                cache_entries
+                    .push((db_user_id, Some(review.new_value.clone())));
+            }
+            "bio" => {
+                sqlx::query!(
+                    "UPDATE users SET bio = $1 WHERE id = $2",
+                    &review.new_value,
+                    review.user_id,
+                )
+                .execute(&mut *transaction)
+                .await?;
 
-                        return Err(ApiError::InvalidInput("用户名冲突".to_string()));
+                cache_entries.push((db_user_id, Some(review.username.clone())));
+            }
+            "avatar" => {
+                let new_avatar: serde_json::Value =
+                    match serde_json::from_str(&review.new_value) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            log::warn!(
+                                "批量审批: 无效的头像数据 (review_id={})",
+                                review.id
+                            );
+                            failed_count += 1;
+                            continue;
+                        }
+                    };
+
+                let new_avatar_url =
+                    new_avatar.get("avatar_url").and_then(|v| v.as_str());
+                let new_raw_avatar_url =
+                    new_avatar.get("raw_avatar_url").and_then(|v| v.as_str());
+
+                if let (Some(avatar_url), Some(raw_url)) =
+                    (new_avatar_url, new_raw_avatar_url)
+                {
+                    // 记录旧头像，事务提交后删除
+                    let same = match (&review.avatar_url, new_avatar_url) {
+                        (Some(old), Some(new)) => old == new,
+                        (None, None) => true,
+                        _ => false,
+                    };
+                    if !same {
+                        old_avatars_to_delete.push((
+                            review.avatar_url.clone(),
+                            review.raw_avatar_url.clone(),
+                        ));
                     }
 
                     sqlx::query!(
-                        "UPDATE users SET username = $1 WHERE id = $2",
-                        &review.new_value,
-                        review.user_id,
-                    )
-                    .execute(&mut *transaction)
-                    .await?;
-                }
-                "bio" => {
-                    sqlx::query!(
-                        "UPDATE users SET bio = $1 WHERE id = $2",
-                        &review.new_value,
-                        review.user_id,
-                    )
-                    .execute(&mut *transaction)
-                    .await?;
-                }
-                "avatar" => {
-                    let new_avatar: serde_json::Value =
-                        serde_json::from_str(&review.new_value).map_err(|_| {
-                            ApiError::InvalidInput("无效的头像数据".to_string())
-                        })?;
-
-                    let new_avatar_url = new_avatar
-                        .get("avatar_url")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| {
-                            ApiError::InvalidInput("缺少 avatar_url".to_string())
-                        })?;
-                    let new_raw_avatar_url = new_avatar
-                        .get("raw_avatar_url")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| {
-                            ApiError::InvalidInput("缺少 raw_avatar_url".to_string())
-                        })?;
-
-                    sqlx::query!(
                         "UPDATE users SET avatar_url = $1, raw_avatar_url = $2 WHERE id = $3",
-                        new_avatar_url,
-                        new_raw_avatar_url,
+                        avatar_url,
+                        raw_url,
                         review.user_id,
                     )
                     .execute(&mut *transaction)
                     .await?;
-                }
-                _ => {
-                    return Err(ApiError::InvalidInput(format!(
-                        "未知的审核类型: {}",
-                        review.review_type
-                    )));
+
+                    cache_entries
+                        .push((db_user_id, Some(review.username.clone())));
+                } else {
+                    log::warn!(
+                        "批量审批: 缺少头像字段 (review_id={})",
+                        review.id
+                    );
+                    failed_count += 1;
+                    continue;
                 }
             }
+            _ => {
+                log::warn!(
+                    "批量审批: 未知审核类型 {} (review_id={})",
+                    review.review_type,
+                    review.id
+                );
+                failed_count += 1;
+                continue;
+            }
+        }
 
-            // 更新审核记录
-            sqlx::query!(
-                "UPDATE user_profile_reviews
-                 SET status = 'approved', reviewed_by = $1, reviewed_at = NOW(), review_notes = $2
-                 WHERE id = $3",
-                moderator.id.0 as i64,
-                body.notes.as_deref(),
-                review.id,
-            )
-            .execute(&mut *transaction)
-            .await?;
+        approved_ids.push(review.id);
+    }
 
-            // 发送通知
-            let notification = NotificationBuilder {
+    // 批量更新所有通过的审核记录
+    if !approved_ids.is_empty() {
+        sqlx::query!(
+            "UPDATE user_profile_reviews
+             SET status = 'approved', reviewed_by = $1, reviewed_at = NOW(), review_notes = $2
+             WHERE id = ANY($3)",
+            moderator.id.0 as i64,
+            body.notes.as_deref(),
+            &approved_ids,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        // 批量插入通知
+        for review in pending_reviews
+            .iter()
+            .filter(|r| approved_ids.contains(&r.id))
+        {
+            NotificationBuilder {
                 body: NotificationBody::ProfileReviewResult {
                     review_id: review.id,
                     review_type: review.review_type.clone(),
                     status: "approved".to_string(),
                     review_notes: body.notes.clone(),
                 },
-            };
-            notification
-                .insert(
-                    crate::database::models::ids::UserId(review.user_id),
-                    &mut transaction,
-                    &redis,
-                )
-                .await?;
-
-            transaction.commit().await?;
-
-            // 清除用户缓存
-            User::clear_caches(
-                &[(target_user.id, Some(target_user.username.clone()))],
+            }
+            .insert(
+                crate::database::models::ids::UserId(review.user_id),
+                &mut transaction,
                 &redis,
             )
             .await?;
-            if review.review_type == "username" {
-                User::clear_caches(
-                    &[(target_user.id, Some(review.new_value.clone()))],
-                    &redis,
-                )
-                .await?;
-            }
-
-            // 事务提交后清理旧头像
-            if review.review_type == "avatar" {
-                let new_avatar: Option<serde_json::Value> =
-                    serde_json::from_str(&review.new_value).ok();
-                let new_url = new_avatar
-                    .as_ref()
-                    .and_then(|v| v.get("avatar_url"))
-                    .and_then(|v| v.as_str());
-
-                let same_avatar = match (&old_avatar_url, new_url) {
-                    (Some(old), Some(new)) => old == new,
-                    (None, None) => true,
-                    _ => false,
-                };
-
-                if !same_avatar
-                    && let Err(e) = delete_old_images(
-                        old_avatar_url,
-                        old_raw_avatar_url,
-                        &***file_host,
-                    )
-                    .await
-                {
-                    log::warn!(
-                        "批量审批删除旧头像失败 (review_id={}): {}",
-                        review.id,
-                        e
-                    );
-                }
-            }
-
-            Ok(true)
-        }
-        .await;
-
-        match result {
-            Ok(true) => approved_count += 1,
-            Ok(false) => skipped_count += 1,
-            Err(e) => {
-                log::warn!("批量审批失败 (review_id={}): {:?}", review.id, e);
-                failed_count += 1;
-            }
         }
     }
 
+    let approved_count = approved_ids.len() as i64;
+
+    transaction.commit().await?;
+
+    // 事务提交后：批量清除缓存
+    if !cache_entries.is_empty() {
+        let _ = User::clear_caches(&cache_entries, &redis).await;
+    }
     crate::routes::internal::moderation::clear_pending_counts_cache(&redis)
         .await;
+
+    // 事务提交后：尽力清理旧头像
+    for (old_url, old_raw) in old_avatars_to_delete {
+        if let Err(e) = delete_old_images(old_url, old_raw, &***file_host).await
+        {
+            log::warn!("批量审批删除旧头像失败: {}", e);
+        }
+    }
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "approved": approved_count,
         "failed": failed_count,
-        "skipped": skipped_count,
     })))
 }
 
