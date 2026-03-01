@@ -201,7 +201,8 @@ pub async fn search_for_project(
         .as_deref()
         .unwrap_or("10")
         .parse::<usize>()?
-        .min(100);
+        .min(100)
+        .max(1);
 
     let sort = get_sort_index(config, index)?;
     let meilisearch_index = client.get_index(sort.0).await?;
