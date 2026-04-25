@@ -12,6 +12,7 @@
         <span v-if="draftVersion.type === 'software'">软件资源</span>
         <span v-else-if="draftVersion.type === 'minecraft'">Minecraft 资源</span>
         <span v-else-if="draftVersion.type === 'language'">汉化包</span>
+        <span v-else-if="draftVersion.type === 'map'">地图</span>
         <span v-else class="text-secondary">未选择</span>
       </div>
     </div>

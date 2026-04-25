@@ -242,6 +242,17 @@ export function createManageVersionContext(
 
   // === 项目类型推断 ===
   const projectType = computed<Labrinth.Projects.v2.ProjectType>(() => {
+    // BBSMC: 用户在"资源类型"步骤选了地图 → 直接定为 map
+    // （loaders 永远是 ["map"]，反推不出 map，必须在前面拦截）
+    if (draftVersion.value.type === "map") {
+      return "map" as Labrinth.Projects.v2.ProjectType;
+    }
+
+    // BBSMC: 项目本身就是 map 类型（编辑版本场景）
+    if ((projectV2 as any).value?.project_type === "map") {
+      return "map" as Labrinth.Projects.v2.ProjectType;
+    }
+
     // BBSMC: 自动识别的整合包（modrinth.index.json / manifest.json）或用户手动勾选
     if (draftVersion.value.is_modpack) {
       return "modpack";
@@ -287,6 +298,7 @@ export function createManageVersionContext(
    * - resourcepack → minecraft
    * - modpack → mrpack
    * - datapack → datapack
+   * - map → map（地图无运行时加载器，统一打 map 标）
    */
   const noLoadersProject = computed(() => {
     const pt = (projectV2 as any).value?.project_type;
@@ -294,13 +306,17 @@ export function createManageVersionContext(
       pt === "resourcepack" ||
       pt === "modpack" ||
       pt === "datapack" ||
-      projectType.value === "resourcepack"
+      pt === "map" ||
+      projectType.value === "resourcepack" ||
+      projectType.value === "map"
     );
   });
   const noEnvironmentProject = computed(
     () => projectType.value !== "mod" && projectType.value !== "modpack",
   );
-  const noDependenciesProject = computed(() => projectType.value === "modpack");
+  const noDependenciesProject = computed(
+    () => projectType.value === "modpack" || projectType.value === "map",
+  );
   const isLanguageVersion = computed(() => draftVersion.value.type === "language");
   const isDiskOnly = computed(() => !!draftVersion.value.disk_only);
 

@@ -46,6 +46,7 @@ const versionTypeOptions = [
   { value: "minecraft" as const, label: "Minecraft 资源", hint: "模组、资源包、整合包等" },
   { value: "software" as const, label: "软件资源", hint: "独立运行的软件" },
   { value: "language" as const, label: "汉化包", hint: "对其他版本的翻译" },
+  { value: "map" as const, label: "地图", hint: "完整存档、建筑模板、结构文件" },
 ];
 
 const { modal } = injectManageVersionContext();
@@ -62,6 +63,8 @@ function resetLoadersForCurrentType() {
   const pt = projectV2.value?.project_type;
   if (draftVersion.value.type === "language") {
     draftVersion.value.loaders = ["language"];
+  } else if (draftVersion.value.type === "map" || pt === "map") {
+    draftVersion.value.loaders = ["map"];
   } else if (pt === "resourcepack") {
     draftVersion.value.loaders = ["minecraft"];
   } else if (pt === "modpack") {
@@ -73,7 +76,7 @@ function resetLoadersForCurrentType() {
   }
 }
 
-function handleSelectType(value: "minecraft" | "software" | "language") {
+function handleSelectType(value: "minecraft" | "software" | "language" | "map") {
   if (editingVersion.value) return;
   const prevType = draftVersion.value.type;
   draftVersion.value.type = value;

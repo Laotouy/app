@@ -293,6 +293,13 @@
       </div>
     </div>
 
+    <MapInstallHint
+      v-if="!isEditing && project.project_type === 'map' && primaryFile"
+      :filename="primaryFile.filename"
+      :categories="project.categories"
+      class="universal-card"
+    />
+
     <div class="version-page__changelog universal-card">
       <h3>更新日志</h3>
       <template v-if="isEditing">
@@ -1300,6 +1307,7 @@ import { formatProjectRelease, renderString } from "@modrinth/utils";
 import { ButtonStyled, ConfirmModal, MarkdownEditor, NewModal } from "@modrinth/ui";
 import { BoxIcon as ModBoxIcon, InfoIcon as ModInfoIcon, FileIcon as ModFileIcon } from "@modrinth/assets";
 import CreateProjectVersionModal from "~/components/ui/create-project-version/CreateProjectVersionModal.vue";
+import MapInstallHint from "~/components/ui/MapInstallHint.vue";
 import { Multiselect } from "vue-multiselect";
 import JSZip from "jszip";
 import UploadModal from "@modrinth/ui/src/components/modal/UploadModal.vue";

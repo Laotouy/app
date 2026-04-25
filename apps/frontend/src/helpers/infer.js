@@ -470,9 +470,30 @@ export const inferVersionInfo = async function (rawFile, project, gameVersions) 
     },
   };
 
+  // BBSMC 地图板块: 单文件二进制（litematic / schem / nbt / mcstructure）不是 zip 容器，
+  // 直接按后缀返回，跳过 JSZip 解析（否则 loadAsync 会抛错中断整个推断）
+  const rawName = (rawFile.name || "").toLowerCase();
+  const SINGLE_FILE_MAP_EXTS = [".litematic", ".schem", ".schematic", ".nbt", ".mcstructure"];
+  if (SINGLE_FILE_MAP_EXTS.some((ext) => rawName.endsWith(ext))) {
+    return {
+      loaders: ["map"],
+      project_type: "map",
+    };
+  }
+
   const zipReader = new JSZip();
 
-  const zip = await zipReader.loadAsync(rawFile);
+  let zip;
+  try {
+    zip = await zipReader.loadAsync(rawFile);
+  } catch (err) {
+    // BBSMC 兜底: 当前项目就是地图，zip 损坏 / 实为 7z 或 rar 改后缀 / 加密压缩
+    // 仍把它当成地图，让用户能继续走完版本创建流程（后端无校验，文件直传 CDN）
+    if (project.actualProjectType === "map") {
+      return { loaders: ["map"], project_type: "map" };
+    }
+    throw err;
+  }
 
   for (const fileName in inferFunctions) {
     const file = zip.file(fileName);
@@ -481,5 +502,29 @@ export const inferVersionInfo = async function (rawFile, project, gameVersions) 
       const text = await file.async("text");
       return inferFunctions[fileName](text, zip);
     }
+  }
+
+  // BBSMC 地图板块: zip 容器内的地图特征
+  // - 含 level.dat → 完整地图存档
+  // - 含 .schem/.litematic/.nbt/.mcstructure → 建筑/结构模板压缩包
+  const allEntries = Object.keys(zip.files);
+  const hasLevelDat = allEntries.some(
+    (f) => f === "level.dat" || f.endsWith("/level.dat"),
+  );
+  if (hasLevelDat) {
+    return { loaders: ["map"], project_type: "map" };
+  }
+  const hasSchemEntries = allEntries.some((f) =>
+    /\.(schem|schematic|litematic|nbt|mcstructure)$/i.test(f),
+  );
+  if (hasSchemEntries) {
+    return { loaders: ["map"], project_type: "map" };
+  }
+
+  // BBSMC 兜底: zip 解析成功但内部无任何已知特征文件
+  // 旧版地图（仅 region/、playerdata/ 等而无 level.dat）/ 文件夹结构散乱的存档
+  // 当前项目是地图 → 仍按地图处理
+  if (project.actualProjectType === "map") {
+    return { loaders: ["map"], project_type: "map" };
   }
 };
