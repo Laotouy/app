@@ -646,6 +646,33 @@ export function createManageVersionContext(
 
   // === 提交：保存编辑 ===
   async function handleSaveVersionEdits() {
+    // BBSMC: 先同步 uploadMode → disk_only / 网盘字段 / 已有文件删除标记，
+    // 必须放在 toRaw 之前完成，因为切到 disk 模式时需要往 existingFilesToDelete 推 sha1
+    if (uploadMode.value === "disk") {
+      draftVersion.value.disk_only = true;
+      // 切到"仅网盘下载"时，把所有已上传的站内文件加入删除队列，
+      // 否则后端不会清掉这些文件，UI 切换形同虚设
+      const existingFiles = draftVersion.value.existing_files ?? [];
+      for (const file of existingFiles) {
+        const sha1 = file.hashes?.sha1;
+        if (sha1 && !existingFilesToDelete.value.includes(sha1)) {
+          existingFilesToDelete.value.push(sha1);
+        }
+      }
+      // 切到 disk 模式后不应再上传新文件（UI 已隐藏，但兜底清空）
+      filesToAdd.value = [];
+    } else if (uploadMode.value === "local" || uploadMode.value === "both") {
+      draftVersion.value.disk_only = false;
+      if (uploadMode.value === "local") {
+        draftVersion.value.disk_urls = [];
+        draftVersion.value.quark_disk = "";
+        draftVersion.value.xunlei_disk = "";
+        draftVersion.value.baidu_disk = "";
+        draftVersion.value.modrinth = "";
+        draftVersion.value.curseforge = "";
+      }
+    }
+
     const version = toRaw(draftVersion.value);
     const files = toRaw(filesToAdd.value);
     const filesToDelete = toRaw(existingFilesToDelete.value);
@@ -658,23 +685,6 @@ export function createManageVersionContext(
     }
 
     if (noEnvironmentProject.value) version.environment = undefined;
-
-    // BBSMC: 根据 uploadMode 同步 disk_only / 网盘字段（与 handleVersionCreate 一致）
-    // 用户从"仅站内"切到"站内+网盘"时，前端 uploadMode='both' 但 disk_only 仍保留旧值，
-    // 此处保证发出去的字段与 UI 选择一致；切回"仅站内"时清空网盘 input
-    if (uploadMode.value === "disk") {
-      version.disk_only = true;
-    } else if (uploadMode.value === "local" || uploadMode.value === "both") {
-      version.disk_only = false;
-      if (uploadMode.value === "local") {
-        version.disk_urls = [];
-        version.quark_disk = "";
-        version.xunlei_disk = "";
-        version.baidu_disk = "";
-        version.modrinth = "";
-        version.curseforge = "";
-      }
-    }
 
     try {
       if (!version.version_id) throw new Error("Version ID is required to save edits.");

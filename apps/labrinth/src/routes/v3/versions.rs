@@ -519,16 +519,12 @@ pub async fn version_edit_helper(
             //   2. 站内+网盘 (disk_only=false + disk_urls 非空) → 同样先清后插
             //   3. 仅站内 (disk_only=false + disk_urls=[])    → 清空网盘表
             // 之前的实现只看 disk_only，导致"站内+网盘"模式下网盘链接被无脑清空丢失
-            if let Some(true) = new_version.disk_only {
-                if new_version
-                    .disk_urls
-                    .as_ref()
-                    .is_none_or(|u| u.is_empty())
-                {
-                    return Err(ApiError::InvalidInput(
-                        "启用网盘模式时必须提供网盘链接".to_string(),
-                    ));
-                }
+            if let Some(true) = new_version.disk_only
+                && new_version.disk_urls.as_ref().is_none_or(|u| u.is_empty())
+            {
+                return Err(ApiError::InvalidInput(
+                    "启用网盘模式时必须提供网盘链接".to_string(),
+                ));
             }
             if let Some(urls) = new_version.disk_urls.as_ref() {
                 sqlx::query!(
