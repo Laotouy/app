@@ -25,6 +25,7 @@ pub mod versions;
 
 pub mod creator;
 pub mod image_reviews;
+pub mod incentive;
 pub mod issues;
 pub mod oauth_clients;
 pub mod payment_merchant;
@@ -64,6 +65,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(forum::config)
             .configure(issues::config)
             .configure(bans::config)
+            .configure(incentive::config)
             .configure(project_order::config),
     );
 }
