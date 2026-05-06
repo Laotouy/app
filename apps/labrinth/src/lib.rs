@@ -7,8 +7,8 @@ use actix_web::web;
 use chrono::Utc;
 use database::redis::RedisPool;
 use queue::{
-    analytics::AnalyticsQueue, payouts::PayoutsQueue, session::AuthQueue,
-    socket::ActiveSockets,
+    analytics::AnalyticsQueue, incentive::IncentiveQueue,
+    payouts::PayoutsQueue, session::AuthQueue, socket::ActiveSockets,
 };
 use sqlx::Postgres;
 use tokio::sync::RwLock;
@@ -67,6 +67,7 @@ pub struct LabrinthConfig {
     pub session_queue: web::Data<AuthQueue>,
     pub payouts_queue: web::Data<PayoutsQueue>,
     pub analytics_queue: Arc<AnalyticsQueue>,
+    pub incentive_queue: Arc<IncentiveQueue>,
     pub active_sockets: web::Data<RwLock<ActiveSockets>>,
     pub automated_moderation_queue: web::Data<AutomatedModerationQueue>,
     pub rate_limiter: KeyedRateLimiter,
@@ -255,6 +256,47 @@ pub fn app_setup(
                     warn!("分析服务索引失败: {:?}", e);
                 }
                 info!("分析索引完成");
+            }
+        });
+    }
+
+    let incentive_queue = Arc::new(IncentiveQueue::new());
+    {
+        let incentive_queue_ref = incentive_queue.clone();
+        let pool_ref = pool.clone();
+        scheduler.run(std::time::Duration::from_secs(60), move || {
+            let incentive_queue_ref = incentive_queue_ref.clone();
+            let pool_ref = pool_ref.clone();
+            async move {
+                if let Err(e) = incentive_queue_ref.index(&pool_ref).await {
+                    warn!("激励队列 flush 失败: {:?}", e);
+                }
+            }
+        });
+    }
+    {
+        let pool_ref = pool.clone();
+        scheduler.run(std::time::Duration::from_secs(3600), move || {
+            let pool_ref = pool_ref.clone();
+            async move {
+                match queue::incentive::settle_pending(&pool_ref).await {
+                    Ok(n) if n > 0 => info!("激励结算完成 {} 条", n),
+                    Err(e) => warn!("激励结算失败: {:?}", e),
+                    _ => {}
+                }
+            }
+        });
+    }
+    {
+        let pool_ref = pool.clone();
+        scheduler.run(std::time::Duration::from_secs(3600), move || {
+            let pool_ref = pool_ref.clone();
+            async move {
+                match queue::incentive::detect_anomalies(&pool_ref).await {
+                    Ok(n) if n > 0 => info!("激励异常告警入库 {} 条", n),
+                    Err(e) => warn!("激励异常监测失败: {:?}", e),
+                    _ => {}
+                }
             }
         });
     }
@@ -706,6 +748,7 @@ pub fn app_setup(
         session_queue,
         payouts_queue,
         analytics_queue,
+        incentive_queue,
         active_sockets,
         automated_moderation_queue,
         rate_limiter: limiter,
@@ -737,6 +780,7 @@ pub fn app_config(
     .app_data(labrinth_config.payouts_queue.clone())
     .app_data(web::Data::new(labrinth_config.ip_salt.clone()))
     .app_data(web::Data::new(labrinth_config.analytics_queue.clone()))
+    .app_data(web::Data::new(labrinth_config.incentive_queue.clone()))
     .app_data(web::Data::new(labrinth_config.clickhouse.clone()))
     .app_data(labrinth_config.active_sockets.clone())
     .app_data(labrinth_config.automated_moderation_queue.clone())

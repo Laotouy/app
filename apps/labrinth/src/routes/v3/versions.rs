@@ -25,6 +25,7 @@ use crate::models::projects::{
 use crate::models::projects::{Loader, skip_nulls};
 use crate::models::teams::ProjectPermissions;
 use crate::queue::analytics::AnalyticsQueue;
+use crate::queue::incentive::IncentiveQueue;
 use crate::queue::session::AuthQueue;
 use crate::search::SearchConfig;
 use crate::search::indexing::remove_documents;
@@ -285,6 +286,7 @@ pub async fn version_download(
     info: web::Path<(VersionId,)>,
     pool: web::Data<PgPool>,
     analytics_queue: web::Data<Arc<AnalyticsQueue>>,
+    incentive_queue: web::Data<Arc<IncentiveQueue>>,
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
@@ -363,6 +365,12 @@ pub async fn version_download(
                     .unwrap_or_default(),
                 headers: Vec::new(),
             });
+            incentive_queue.add(
+                id.0,
+                user_id,
+                ip,
+                chrono::Utc::now().timestamp(),
+            );
         } else {
             let url = version_item.disks.first().unwrap().url.clone();
 
@@ -385,6 +393,12 @@ pub async fn version_download(
                     .unwrap_or_default(),
                 headers: Vec::new(),
             });
+            incentive_queue.add(
+                id.0,
+                user_id,
+                ip,
+                chrono::Utc::now().timestamp(),
+            );
         }
         Ok(HttpResponse::NoContent().body(""))
     } else {
