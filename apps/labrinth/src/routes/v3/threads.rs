@@ -38,7 +38,12 @@ pub async fn is_authorized_thread(
     user: &User,
     pool: &PgPool,
 ) -> Result<bool, ApiError> {
-    if user.role.is_mod() {
+    // 激励申请 thread 只有 admin 能跨越限制访问；其他 thread 沿用 mod 兜底
+    if thread.type_ == ThreadType::IncentiveApplication {
+        if user.role.is_admin() {
+            return Ok(true);
+        }
+    } else if user.role.is_mod() {
         return Ok(true);
     }
 
@@ -170,6 +175,24 @@ pub async fn is_authorized_thread(
             } else {
                 false
             }
+        }
+        ThreadType::IncentiveApplication => {
+            // 激励申请线程：申请人或团队成员可以访问
+            sqlx::query!(
+                r#"
+                SELECT EXISTS(
+                    SELECT 1 FROM incentive_applications a
+                    JOIN mods m ON m.id = a.project_id
+                    LEFT JOIN team_members tm ON tm.team_id = m.team_id AND tm.user_id = $2 AND tm.accepted = TRUE
+                    WHERE a.thread_id = $1 AND (a.applicant_user_id = $2 OR tm.user_id IS NOT NULL)
+                ) as "exists!"
+                "#,
+                thread.id.0,
+                user_id.0,
+            )
+            .fetch_one(pool)
+            .await?
+            .exists
         }
     })
 }
@@ -352,6 +375,41 @@ pub async fn filter_authorized_threads(
                     }
 
                     !bool
+                });
+            })
+            .try_collect::<Vec<()>>()
+            .await?;
+        }
+
+        // 处理 IncentiveApplication 类型的线程：通过 thread_id 反查 + 申请人或团队成员可读
+        let incentive_thread_ids = check_threads
+            .iter()
+            .filter(|x| x.type_ == ThreadType::IncentiveApplication)
+            .map(|x| x.id.0)
+            .collect::<Vec<_>>();
+
+        if !incentive_thread_ids.is_empty() {
+            sqlx::query!(
+                r#"
+                SELECT a.thread_id AS "thread_id!"
+                FROM incentive_applications a
+                JOIN mods m ON m.id = a.project_id
+                LEFT JOIN team_members tm ON tm.team_id = m.team_id AND tm.user_id = $2 AND tm.accepted = TRUE
+                WHERE a.thread_id = ANY($1)
+                  AND a.thread_id IS NOT NULL
+                  AND (a.applicant_user_id = $2 OR tm.user_id IS NOT NULL)
+                "#,
+                &incentive_thread_ids[..],
+                user_id as database::models::ids::UserId,
+            )
+            .fetch(&***pool)
+            .map_ok(|row| {
+                check_threads.retain(|x| {
+                    let matched = x.id.0 == row.thread_id;
+                    if matched {
+                        return_threads.push(x.clone());
+                    }
+                    !matched
                 });
             })
             .try_collect::<Vec<()>>()
@@ -746,6 +804,54 @@ pub async fn thread_send_message(
                         .insert_many(mod_ids, &mut transaction, &redis)
                         .await?;
                     }
+                }
+            }
+        } else if thread.type_ == ThreadType::IncentiveApplication {
+            // 激励申请线程的消息通知
+            let appl = sqlx::query!(
+                r#"
+                SELECT a.applicant_user_id, a.project_id, m.name AS "project_name?"
+                FROM incentive_applications a
+                LEFT JOIN mods m ON m.id = a.project_id
+                WHERE a.thread_id = $1
+                ORDER BY a.created_at DESC LIMIT 1
+                "#,
+                thread.id.0
+            )
+            .fetch_optional(&**pool)
+            .await?;
+
+            if let Some(appl) = appl {
+                let applicant_user_id =
+                    database::models::ids::UserId(appl.applicant_user_id);
+                let project_title =
+                    appl.project_name.unwrap_or_else(|| "项目".to_string());
+
+                // 仅管理员（admin）回复时通知申请人；作者回复不群发，moderator 也不参与激励 thread
+                if user.role.is_admin() && user.id != applicant_user_id.into() {
+                    let project_b62 =
+                        crate::models::ids::base62_impl::to_base62(
+                            appl.project_id as u64,
+                        );
+                    NotificationBuilder {
+                        body: NotificationBody::LegacyMarkdown {
+                            notification_type: Some(
+                                "incentive_application_message".to_string(),
+                            ),
+                            name: format!(
+                                "[激励申请] 管理员回复：{project_title}"
+                            ),
+                            text:
+                                "管理员在你的激励申请中回复了消息，请前往查看。"
+                                    .to_string(),
+                            link: format!(
+                                "/project/{project_b62}/settings/incentive"
+                            ),
+                            actions: vec![],
+                        },
+                    }
+                    .insert(applicant_user_id, &mut transaction, &redis)
+                    .await?;
                 }
             }
         }
