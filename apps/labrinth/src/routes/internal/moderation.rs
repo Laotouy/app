@@ -531,6 +531,8 @@ pub struct ModerationPendingCounts {
     pub profile_reviews: i64,
     pub image_reviews: i64,
     pub creator_applications: i64,
+    #[serde(default)]
+    pub incentive_applications: i64,
 }
 
 pub(crate) const PENDING_COUNTS_NAMESPACE: &str = "moderation_pending_counts";
@@ -581,6 +583,13 @@ pub async fn get_pending_counts(
     .fetch_one(&**pool)
     .await?;
 
+    let incentive_applications: i64 = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM incentive_applications WHERE status = 'pending'"
+    )
+    .fetch_one(&**pool)
+    .await?
+    .unwrap_or(0);
+
     let result = ModerationPendingCounts {
         projects: counts.projects,
         reports: counts.reports,
@@ -588,6 +597,7 @@ pub async fn get_pending_counts(
         profile_reviews: counts.profile_reviews,
         image_reviews: counts.image_reviews,
         creator_applications: counts.creator_applications,
+        incentive_applications,
     };
 
     redis_conn
