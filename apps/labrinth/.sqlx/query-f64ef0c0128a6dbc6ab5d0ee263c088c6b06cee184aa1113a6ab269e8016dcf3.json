@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT user_id, payouts_split\n                    FROM team_members\n                    WHERE team_id = $1 AND payouts_split > 0\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "payouts_split",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f64ef0c0128a6dbc6ab5d0ee263c088c6b06cee184aa1113a6ab269e8016dcf3"
+}
