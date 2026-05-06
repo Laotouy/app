@@ -56,6 +56,21 @@
           >
             <StarIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem
+            v-if="auth?.user?.role === 'admin'"
+            link="/moderation/incentive-applications"
+            label="激励申请"
+            :count="pendingCounts?.incentive_applications || 0"
+          >
+            <CoinsIcon aria-hidden="true" />
+          </NavStackItem>
+          <NavStackItem
+            v-if="auth?.user?.role === 'admin'"
+            link="/moderation/incentive-projects"
+            label="激励项目"
+          >
+            <CoinsIcon aria-hidden="true" />
+          </NavStackItem>
         </NavStack>
       </aside>
     </div>
@@ -76,6 +91,7 @@ import LanguagesIcon from "~/assets/images/utils/languages.svg?component";
 import ShieldIcon from "~/assets/images/utils/shield.svg?component";
 import CalendarClockIcon from "~/assets/images/utils/calendar-clock.svg?component";
 import StarIcon from "~/assets/images/utils/star.svg?component";
+import CoinsIcon from "~/assets/images/utils/coins.svg?component";
 import UserIcon from "~/assets/images/utils/user.svg?component";
 import ImageIcon from "~/assets/images/utils/image.svg?component";
 
