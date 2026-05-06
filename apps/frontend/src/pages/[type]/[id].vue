@@ -101,6 +101,15 @@
           >
             <UsersIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem
+            v-if="auth.user && auth.user.role === 'admin'"
+            :link="`/${project.project_type}/${
+              project.slug ? project.slug : project.id
+            }/settings/incentive`"
+            label="下载激励"
+          >
+            <CurrencyIcon aria-hidden="true" />
+          </NavStackItem>
           <h3>视图</h3>
           <NavStackItem
             :link="`/${project.project_type}/${
