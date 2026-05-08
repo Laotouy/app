@@ -1050,18 +1050,18 @@ pub async fn incentive_stats(
     .fetch_one(pool.as_ref())
     .await?;
 
-    // 3. 30 天每日趋势
+    // 3. 30 天每日趋势（按应用时区分日聚合，PG session 已设为 Asia/Shanghai）
     let daily_rows = sqlx::query!(
         r#"
         SELECT
-            DATE(recorded_at AT TIME ZONE 'UTC') AS "date!",
+            DATE(recorded_at) AS "date!",
             COUNT(*)::bigint AS "effective_downloads!",
             COALESCE(SUM(payout_amount), 0)::numeric AS "daily_amount!",
             COUNT(DISTINCT project_id)::bigint AS "active_projects!"
         FROM incentive_download_events
         WHERE recorded_at >= NOW() - INTERVAL '30 days'
-        GROUP BY DATE(recorded_at AT TIME ZONE 'UTC')
-        ORDER BY DATE(recorded_at AT TIME ZONE 'UTC')
+        GROUP BY DATE(recorded_at)
+        ORDER BY DATE(recorded_at)
         "#,
     )
     .fetch_all(pool.as_ref())

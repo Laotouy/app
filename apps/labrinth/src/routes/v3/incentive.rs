@@ -281,15 +281,16 @@ pub async fn project_incentive_detail(
             None => (0, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO),
         };
 
+    // 按应用时区分日聚合，PG session 已设为 Asia/Shanghai
     let daily_rows = sqlx::query!(
         r#"
-        SELECT DATE(recorded_at AT TIME ZONE 'UTC') AS "date!",
+        SELECT DATE(recorded_at) AS "date!",
                COUNT(*)::bigint AS "effective_downloads!",
                COALESCE(SUM(payout_amount), 0)::numeric AS "daily_amount!"
         FROM incentive_download_events
         WHERE project_id = $1 AND recorded_at >= NOW() - INTERVAL '30 days'
-        GROUP BY DATE(recorded_at AT TIME ZONE 'UTC')
-        ORDER BY DATE(recorded_at AT TIME ZONE 'UTC')
+        GROUP BY DATE(recorded_at)
+        ORDER BY DATE(recorded_at)
         "#,
         project_id,
     )
