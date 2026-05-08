@@ -290,7 +290,8 @@ const thread = ref(null);
 const reason = ref("");
 const replyText = ref("");
 
-const formatDate = (s) => (s ? new Date(s).toLocaleString("zh-CN") : "");
+const formatDate = (s) =>
+  s ? new Date(s).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }) : "";
 
 // 把 last_30_days 转成 Chart 组件需要的格式
 const chartLabels = computed(

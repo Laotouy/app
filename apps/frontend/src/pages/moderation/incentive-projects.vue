@@ -361,7 +361,8 @@ const voidPending = ref(false);
 const disableNotes = ref("");
 const enableNotes = ref("");
 
-const formatDateTime = (s) => (s ? app.$dayjs(s).format("YYYY-MM-DD HH:mm") : "");
+const formatDateTime = (s) =>
+  s ? app.$dayjs(s).tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm") : "";
 const formatRelative = (s) => (s ? app.$dayjs(s).fromNow() : "");
 
 const formatNumber = (n) => {

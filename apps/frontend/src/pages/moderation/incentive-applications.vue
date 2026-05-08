@@ -286,7 +286,8 @@ const formatStatusLabel = (status) => {
   return m[status] || status;
 };
 
-const formatDateTime = (s) => app.$dayjs(s).format("YYYY-MM-DD HH:mm");
+const formatDateTime = (s) =>
+  app.$dayjs(s).tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm");
 
 const fetchItems = async () => {
   loading.value = true;
