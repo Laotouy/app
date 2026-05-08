@@ -15,7 +15,7 @@
           <label class="checkbox-row">
             <input v-model="voidPending" type="checkbox" />
             <span>
-              <b>同时清空待结算金额（voided）</b>
+              <b>同时作废所有待结算金额</b>
               <small class="block text-secondary">
                 未达 30 天结算窗口的金额将永远不再结算给作者。
                 适用于发现刷量嫌疑时强制中止。
@@ -37,7 +37,7 @@
       <div class="modal-actions">
         <ButtonStyled :color="voidPending ? 'red' : 'orange'">
           <button :disabled="submitting" @click="doDisable">
-            {{ submitting ? "处理中..." : voidPending ? "关闭并清空 pending" : "关闭激励" }}
+            {{ submitting ? "处理中..." : voidPending ? "关闭并作废待结算" : "关闭激励" }}
           </button>
         </ButtonStyled>
         <ButtonStyled>
@@ -54,7 +54,7 @@
       <div class="modal-content">
         <p>项目：<b>{{ active?.title || active?.project_id }}</b></p>
         <p class="hint">
-          手动开通会跳过作者申请流程，直接写入 <code>incentive_enabled_projects</code> 表。
+          手动开通会跳过作者申请流程，直接将该项目标记为「已开通激励」状态。
           已累计的有效下载和待结算金额会保留。
         </p>
         <div class="form-group">
@@ -520,7 +520,7 @@ const doDisable = async () => {
     addNotification({
       group: "main",
       title: "成功",
-      text: voidPending.value ? "激励已关闭，pending 已清空" : "激励已关闭",
+      text: voidPending.value ? "激励已关闭，待结算已作废" : "激励已关闭",
       type: "success",
     });
     disableModal.value?.hide();

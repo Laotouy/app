@@ -6,7 +6,7 @@
         <div class="truncate text-lg font-extrabold text-contrast">撤回申请</div>
       </template>
       <div class="modal-content">
-        <p>确认撤回当前的下载激励申请？</p>
+        <p>确认撤回当前的创作者激励申请？</p>
         <p class="hint">撤回后审核状态将变为「已撤回」，可以重新提交。</p>
       </div>
       <div class="modal-actions">
@@ -24,7 +24,7 @@
     <section class="universal-card">
       <div class="label">
         <h3>
-          <span class="label__title size-card-header">下载激励</span>
+          <span class="label__title size-card-header">创作者激励</span>
         </h3>
       </div>
 
@@ -50,7 +50,7 @@
         <div v-if="overview?.incentive_enabled" class="notice-card success">
           <CheckIcon class="notice-icon" />
           <div class="notice-content">
-            <strong>该资源已开通下载激励</strong>
+            <strong>该资源已开通创作者激励</strong>
             <p>用户的有效下载会自动产生激励金额，30 天后结算到你的账户。</p>
           </div>
         </div>
@@ -192,9 +192,9 @@
         >
           <InfoIcon class="notice-icon" />
           <div class="notice-content">
-            <strong>该资源尚未申请下载激励</strong>
+            <strong>该资源尚未申请创作者激励</strong>
             <p v-if="overview?.viewer?.is_team_member">
-              你的团队权限不足，无法提交申请（需要 EDIT_DETAILS 权限）。
+              你的团队权限不足，无法提交申请（需要「编辑项目详情」权限）。
             </p>
             <p v-else-if="overview?.viewer?.is_admin">
               站点管理员只能查看，不能代为申请。
@@ -211,7 +211,7 @@
           "
         >
           <div class="apply-form">
-            <h4>申请开通下载激励</h4>
+            <h4>申请开通创作者激励</h4>
             <div class="rules-card">
               <p><b>激励规则</b></p>
               <ul>
@@ -221,6 +221,10 @@
                 <li>金额在事件发生 30 天后自动结算到账户，可通过钱包提现</li>
                 <li>若发现刷量行为，未结算金额将被作废</li>
               </ul>
+              <p class="agreement-hint">
+                提交申请即视为已阅读并同意
+                <NuxtLink to="/legal/incentive" target="_blank">《创作者激励计划协议》</NuxtLink>。
+              </p>
             </div>
 
             <div class="form-group">
@@ -545,6 +549,19 @@ onMounted(loadAll);
     margin-bottom: 0.75rem;
   }
 
+  .agreement-hint {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    a {
+      color: var(--color-link);
+      text-decoration: underline;
+      &:hover {
+        color: var(--color-link-hover);
+      }
+    }
+  }
   .rules-card {
     background: var(--color-bg);
     padding: 1rem;

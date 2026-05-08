@@ -35,8 +35,8 @@
 
     <section class="universal-card">
       <div class="header-section">
-        <h2>下载激励申请审核</h2>
-        <p class="description">审核作者提交的项目下载激励开通申请</p>
+        <h2>创作者激励申请审核</h2>
+        <p class="description">审核作者提交的项目创作者激励开通申请</p>
       </div>
 
       <div class="filter-section">

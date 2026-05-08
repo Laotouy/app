@@ -106,7 +106,7 @@
             :link="`/${project.project_type}/${
               project.slug ? project.slug : project.id
             }/settings/incentive`"
-            label="下载激励"
+            label="创作者激励"
           >
             <CurrencyIcon aria-hidden="true" />
           </NavStackItem>
