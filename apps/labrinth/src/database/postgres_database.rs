@@ -1,4 +1,6 @@
+use crate::util::date::APP_TZ_NAME;
 use log::info;
+use sqlx::Executor;
 use sqlx::migrate::MigrateDatabase;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::{Connection, PgConnection, Postgres};
@@ -22,6 +24,16 @@ pub async fn connect() -> Result<PgPool, sqlx::Error> {
                 .unwrap_or(16),
         )
         .max_lifetime(Some(Duration::from_secs(60 * 60)))
+        // 让所有连接默认使用 APP_TZ_NAME（北京时间），从而 CURRENT_DATE / DATE_TRUNC /
+        // DATE() 等针对 timestamptz 的隐式时区转换自动按北京日聚合。
+        // timestamptz 字段的存储/读取仍然是 UTC，由 sqlx + chrono::DateTime<Utc> 强类型保证。
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                let stmt = format!("SET TIME ZONE '{APP_TZ_NAME}'");
+                conn.execute(stmt.as_str()).await?;
+                Ok(())
+            })
+        })
         .connect(&database_url)
         .await?;
 
