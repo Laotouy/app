@@ -901,7 +901,7 @@ pub async fn review_incentive_application(
         let (name, text) = if target_status == "approved" {
             (
                 format!("[激励申请] 已通过：{title}"),
-                "你的下载激励申请已通过，激励将开始累计。".to_string(),
+                "你的创作者激励申请已通过，激励将开始累计。".to_string(),
             )
         } else {
             (
