@@ -626,12 +626,8 @@ export namespace Labrinth {
         | 'gitlab'
         | 'google'
         | 'steam'
-        | 'paypal'
 
       export type UserPayoutData = {
-        paypal_address?: string
-        paypal_country?: string
-        venmo_handle?: string
         balance: number
       }
     }

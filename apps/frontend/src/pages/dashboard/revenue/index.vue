@@ -1,121 +1,60 @@
 <template>
   <div>
     <section class="universal-card">
-      <h2 class="text-2xl">Revenue</h2>
+      <h2 class="text-2xl">收益</h2>
       <div v-if="userBalance.available >= minWithdraw">
         <p>
-          You have
+          您当前有
           <strong>{{ $formatMoney(userBalance.available) }}</strong>
-          available to withdraw. <strong>{{ $formatMoney(userBalance.pending) }}</strong> of your
-          balance is <nuxt-link class="text-link" to="/legal2/cmp-info#pending">pending</nuxt-link>.
+          可供提现。另有
+          <strong>{{ $formatMoney(userBalance.pending) }}</strong>
+          余额处于<nuxt-link class="text-link" to="/legal/incentive#pending">待结算</nuxt-link>状态。
         </p>
       </div>
       <p v-else>
-        You have made
-        <strong>{{ $formatMoney(userBalance.available) }}</strong
-        >, which is under the minimum of ${{ minWithdraw }} to withdraw.
-        <strong>{{ $formatMoney(userBalance.pending) }}</strong> of your balance is
-        <nuxt-link class="text-link" to="/legal2/cmp-info#pending">pending</nuxt-link>.
+        您已累计获得
+        <strong>{{ $formatMoney(userBalance.available) }}</strong>，未达到 ¥{{
+          minWithdraw
+        }}
+        的提现最低额度。另有
+        <strong>{{ $formatMoney(userBalance.pending) }}</strong>
+        余额处于<nuxt-link class="text-link" to="/legal/incentive#pending">待结算</nuxt-link>状态。
       </p>
       <div class="input-group mt-4">
-        <nuxt-link
-          v-if="userBalance.available >= minWithdraw"
-          class="iconified-button brand-button"
-          to="/dashboard/revenue/withdraw"
-        >
-          <TransferIcon /> Withdraw
+        <nuxt-link class="iconified-button brand-button" to="/dashboard/revenue/withdraw">
+          <TransferIcon /> 提现
         </nuxt-link>
         <NuxtLink class="iconified-button" to="/dashboard/revenue/transfers">
-          <HistoryIcon /> View transfer history
+          <HistoryIcon /> 查看转账记录
         </NuxtLink>
       </div>
       <p>
-        By uploading projects to BBSMC and withdrawing money from your account, you agree to the
-        <nuxt-link to="/legal2/cmp" class="text-link">Rewards Program Terms</nuxt-link>. For more
-        information on how the rewards system works, see our information page
-        <nuxt-link to="/legal2/cmp-info" class="text-link">here</nuxt-link>.
+        通过在 BBSMC 上传项目并从您的账户提现，即表示您同意
+        <nuxt-link to="/legal/incentive" class="text-link">《创作者激励计划协议》</nuxt-link>。如需了解激励机制的详细规则，请查看
+        <nuxt-link to="/legal/incentive#rules" class="text-link">激励规则</nuxt-link>章节。
       </p>
     </section>
     <section class="universal-card">
-      <h2 class="text-2xl">Payout methods</h2>
-      <h3>PayPal</h3>
-      <template v-if="auth.user.auth_providers.includes('paypal')">
-        <p>
-          Your PayPal {{ auth.user.payout_data.paypal_country }} account is currently connected with
-          email
-          {{ auth.user.payout_data.paypal_address }}
-        </p>
-        <button class="btn mt-4" @click="removeAuthProvider('paypal')">
-          <XIcon /> Disconnect account
-        </button>
-      </template>
-      <template v-else>
-        <p>Connect your PayPal account to enable withdrawing to your PayPal balance.</p>
-        <a class="btn mt-4" :href="`${getAuthUrl('paypal')}&token=${auth.token}`">
-          <PayPalIcon />
-          Sign in with PayPal
-        </a>
-      </template>
-      <h3>Tremendous</h3>
+      <h2 class="text-2xl">提现通道</h2>
       <p>
-        Tremendous payments are sent to your BBSMC email. To change/set your BBSMC email, visit
-        <nuxt-link to="/settings/account" class="text-link">here</nuxt-link>.
+        BBSMC 正在升级提现通道，原有的提现方式已下线，新通道即将上线。在此期间，您的余额将继续累计，无需任何操作。
       </p>
-      <h3>Venmo</h3>
-      <p>Enter your Venmo username below to enable withdrawing to your Venmo balance.</p>
-      <label class="hidden" for="venmo">Venmo address</label>
-      <input
-        id="venmo"
-        v-model="auth.user.payout_data.venmo_handle"
-        class="mt-4"
-        type="search"
-        name="search"
-        placeholder="@example"
-        autocomplete="off"
-      />
-      <button class="btn btn-secondary" @click="updateVenmo"><SaveIcon /> Save information</button>
     </section>
   </div>
 </template>
 <script setup>
-import { TransferIcon, HistoryIcon, PayPalIcon, SaveIcon, XIcon } from "@modrinth/assets";
+import { TransferIcon, HistoryIcon } from "@modrinth/assets";
 
 useHead({
-  title: "收入 - BBSMC",
+  title: "收益 - BBSMC",
   meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
-const auth = await useAuth();
-const minWithdraw = ref(0.01);
+const minWithdraw = ref(50);
 
 const { data: userBalance } = await useAsyncData(`payout/balance`, () =>
   useBaseFetch(`payout/balance`, { apiVersion: 3 }),
 );
-
-async function updateVenmo() {
-  startLoading();
-  try {
-    const data = {
-      venmo_handle: auth.value.user.payout_data.venmo_handle ?? null,
-    };
-
-    await useBaseFetch(`user/${auth.value.user.id}`, {
-      method: "PATCH",
-      body: data,
-      apiVersion: 3,
-    });
-    await useAuth(auth.value.token);
-  } catch (err) {
-    const data = useNuxtApp();
-    data.$notify({
-      group: "main",
-      title: "发生错误",
-      text: err.data.description,
-      type: "error",
-    });
-  }
-  stopLoading();
-}
 </script>
 <style lang="scss" scoped>
 strong {

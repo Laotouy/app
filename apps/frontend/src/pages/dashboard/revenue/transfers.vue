@@ -12,15 +12,13 @@
           v-model="selectedYear"
           :options="years"
           :display-name="(x) => (x === 'all' ? '所有年份' : x)"
-          name="Year filter"
+          name="按年份筛选"
         />
         <DropdownSelect
           v-model="selectedMethod"
           :options="methods"
-          :display-name="
-            (x) => (x === 'all' ? '所有方式' : x === 'paypal' ? 'PayPal' : capitalizeString(x))
-          "
-          name="Method filter"
+          :display-name="(x) => (x === 'all' ? '所有方式' : capitalizeString(x))"
+          name="按方式筛选"
         />
       </div>
       <p>
@@ -50,10 +48,7 @@
         class="universal-card recessed payout"
       >
         <div class="platform">
-          <PayPalIcon v-if="payout.method === 'paypal'" />
-          <TremendousIcon v-else-if="payout.method === 'tremendous'" />
-          <VenmoIcon v-else-if="payout.method === 'venmo'" />
-          <UnknownIcon v-else />
+          <UnknownIcon />
         </div>
         <div class="payout-info">
           <div>
@@ -67,11 +62,11 @@
           </div>
           <div class="payout-status">
             <span>
-              <Badge v-if="payout.status === 'success'" color="green" type="Success" />
-              <Badge v-else-if="payout.status === 'cancelling'" color="yellow" type="Cancelling" />
-              <Badge v-else-if="payout.status === 'cancelled'" color="red" type="Cancelled" />
-              <Badge v-else-if="payout.status === 'failed'" color="red" type="Failed" />
-              <Badge v-else-if="payout.status === 'in-transit'" color="yellow" type="In transit" />
+              <Badge v-if="payout.status === 'success'" color="green" type="成功" />
+              <Badge v-else-if="payout.status === 'cancelling'" color="yellow" type="取消中" />
+              <Badge v-else-if="payout.status === 'cancelled'" color="red" type="已取消" />
+              <Badge v-else-if="payout.status === 'failed'" color="red" type="失败" />
+              <Badge v-else-if="payout.status === 'in-transit'" color="yellow" type="处理中" />
               <Badge v-else :type="payout.status" />
             </span>
             <template v-if="payout.method">
@@ -94,12 +89,10 @@
   </div>
 </template>
 <script setup>
-import { XIcon, PayPalIcon, UnknownIcon } from "@modrinth/assets";
+import { XIcon, UnknownIcon } from "@modrinth/assets";
 import { capitalizeString } from "@modrinth/utils";
 import { Badge, Breadcrumbs, DropdownSelect } from "@modrinth/ui";
 import dayjs from "dayjs";
-import TremendousIcon from "~/assets/images/external/tremendous.svg?component";
-import VenmoIcon from "~/assets/images/external/venmo-small.svg?component";
 
 const vintl = useVIntl();
 const { formatMessage } = vintl;
