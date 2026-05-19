@@ -23,7 +23,6 @@ use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
 use actix_ws::Closed;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use base64::Engine;
 use chrono::{Duration, Utc};
 use rand::Rng;
 use rand_chacha::ChaCha20Rng;
@@ -306,18 +305,6 @@ impl TempUser {
                     None
                 },
                 password: None,
-                paypal_id: if provider == AuthProvider::PayPal {
-                    Some(self.id)
-                } else {
-                    None
-                },
-                paypal_country: self.country,
-                paypal_email: if provider == AuthProvider::PayPal {
-                    self.email.clone()
-                } else {
-                    None
-                },
-                venmo_handle: None,
                 stripe_customer_id: None,
                 totp_secret: None,
                 username,
@@ -458,23 +445,6 @@ impl AuthProvider {
                     self_addr,
                     "http://specs.openid.net/auth/2.0/identifier_select",
                     "http://specs.openid.net/auth/2.0/identifier_select",
-                )
-            }
-            AuthProvider::PayPal => {
-                let api_url = dotenvy::var("PAYPAL_API_URL")?;
-                let client_id = dotenvy::var("PAYPAL_CLIENT_ID")?;
-
-                let auth_url = if api_url.contains("sandbox") {
-                    "sandbox.paypal.com"
-                } else {
-                    "paypal.com"
-                };
-
-                format!(
-                    "https://{auth_url}/connect?flowEntry=static&client_id={client_id}&scope={}&response_type=code&redirect_uri={redirect_uri}&state={state}",
-                    urlencoding::encode(
-                        "openid email address https://uri.paypal.com/services/paypalattributes"
-                    ),
                 )
             }
             AuthProvider::Bilibili => {
@@ -689,37 +659,6 @@ impl AuthProvider {
                 } else {
                     return Err(AuthenticationError::InvalidCredentials);
                 }
-            }
-            AuthProvider::PayPal => {
-                let code = query
-                    .get("code")
-                    .ok_or_else(|| AuthenticationError::InvalidCredentials)?;
-                let api_url = dotenvy::var("PAYPAL_API_URL")?;
-                let client_id = dotenvy::var("PAYPAL_CLIENT_ID")?;
-                let client_secret = dotenvy::var("PAYPAL_CLIENT_SECRET")?;
-
-                let mut map = HashMap::new();
-                map.insert("code", code.as_str());
-                map.insert("grant_type", "authorization_code");
-
-                let token: AccessToken = reqwest::Client::new()
-                    .post(format!("{api_url}oauth2/token"))
-                    .header(reqwest::header::ACCEPT, "application/json")
-                    .header(
-                        AUTHORIZATION,
-                        format!(
-                            "Basic {}",
-                            base64::engine::general_purpose::STANDARD
-                                .encode(format!("{client_id}:{client_secret}"))
-                        ),
-                    )
-                    .form(&map)
-                    .send()
-                    .await?
-                    .json()
-                    .await?;
-
-                token.access_token
             }
             AuthProvider::Bilibili => {
                 let code = query
@@ -1035,47 +974,6 @@ impl AuthProvider {
                     return Err(AuthenticationError::InvalidCredentials);
                 }
             }
-            AuthProvider::PayPal => {
-                #[derive(Deserialize, Debug)]
-                pub struct PayPalUser {
-                    pub payer_id: String,
-                    pub email: String,
-                    pub picture: Option<String>,
-                    pub address: PayPalAddress,
-                }
-
-                #[derive(Deserialize, Debug)]
-                pub struct PayPalAddress {
-                    pub country: String,
-                }
-
-                let api_url = dotenvy::var("PAYPAL_API_URL")?;
-
-                let paypal_user: PayPalUser = reqwest::Client::new()
-                    .get(format!(
-                        "{api_url}identity/openidconnect/userinfo?schema=openid"
-                    ))
-                    .header(reqwest::header::USER_AGENT, "Modrinth")
-                    .header(AUTHORIZATION, format!("Bearer {token}"))
-                    .send()
-                    .await?
-                    .json()
-                    .await?;
-
-                TempUser {
-                    id: paypal_user.payer_id,
-                    username: paypal_user
-                        .email
-                        .split('@')
-                        .next()
-                        .unwrap_or_default()
-                        .to_string(),
-                    email: Some(paypal_user.email),
-                    avatar_url: paypal_user.picture,
-                    bio: None,
-                    country: Some(paypal_user.address.country),
-                }
-            }
             AuthProvider::Bilibili => {
                 use hmac::{Hmac, Mac};
                 use sha2::Sha256;
@@ -1324,16 +1222,6 @@ impl AuthProvider {
 
                 value.map(|x| crate::database::models::UserId(x.id))
             }
-            AuthProvider::PayPal => {
-                let value = sqlx::query!(
-                    "SELECT id FROM users WHERE paypal_id = $1",
-                    id
-                )
-                .fetch_optional(executor)
-                .await?;
-
-                value.map(|x| crate::database::models::UserId(x.id))
-            }
             AuthProvider::Bilibili => {
                 let value = sqlx::query!(
                     "SELECT id FROM users WHERE bilibili_id = $1",
@@ -1440,32 +1328,6 @@ impl AuthProvider {
                 .execute(&mut **transaction)
                 .await?;
             }
-            AuthProvider::PayPal => {
-                if id.is_none() {
-                    sqlx::query!(
-                        "
-                        UPDATE users
-                        SET paypal_country = NULL, paypal_email = NULL, paypal_id = NULL
-                        WHERE (id = $1)
-                        ",
-                        user_id as crate::database::models::UserId,
-                    )
-                    .execute(&mut **transaction)
-                    .await?;
-                } else {
-                    sqlx::query!(
-                        "
-                        UPDATE users
-                        SET paypal_id = $2
-                        WHERE (id = $1)
-                        ",
-                        user_id as crate::database::models::UserId,
-                        id,
-                    )
-                    .execute(&mut **transaction)
-                    .await?;
-                }
-            }
             AuthProvider::Bilibili => {
                 sqlx::query!(
                     "
@@ -1505,7 +1367,6 @@ impl AuthProvider {
             AuthProvider::GitLab => "GitLab",
             AuthProvider::Google => "Google",
             AuthProvider::Steam => "Steam",
-            AuthProvider::PayPal => "PayPal",
             AuthProvider::Bilibili => "Bilibili",
             AuthProvider::QQ => "QQ",
         }
@@ -1671,21 +1532,7 @@ pub async fn auth_callback(
 
                 let user = crate::database::models::User::get_id(id, &**client, &redis).await?;
 
-                if provider == AuthProvider::PayPal  {
-                    sqlx::query!(
-                        "
-                        UPDATE users
-                        SET paypal_country = $1, paypal_email = $2, paypal_id = $3
-                        WHERE (id = $4)
-                        ",
-                        oauth_user.country,
-                        oauth_user.email,
-                        oauth_user.id,
-                        id as crate::database::models::ids::UserId,
-                    )
-                        .execute(&mut *transaction)
-                        .await?;
-                } else if let Some(email) = user.and_then(|x| x.email) {
+                if let Some(email) = user.and_then(|x| x.email) {
                     send_email(
                         email,
                         "已添加身份验证方法",
@@ -1883,9 +1730,7 @@ pub async fn delete_auth_provider(
         .update_user_id(user.id.into(), None, &mut transaction)
         .await?;
 
-    if delete_provider.provider != AuthProvider::PayPal
-        && let Some(email) = user.email
-    {
+    if let Some(email) = user.email {
         send_email(
             email,
             "身份验证方法已移除",
@@ -2032,10 +1877,6 @@ pub async fn create_account_with_password(
         bilibili_id: None,
         qq_id: None,
         password: Some(password_hash),
-        paypal_id: None,
-        paypal_country: None,
-        paypal_email: None,
-        venmo_handle: None,
         stripe_customer_id: None,
         totp_secret: None,
         username: new_account.username.clone(),

@@ -194,7 +194,6 @@ pub async fn user_edit(
             bio: new_user.bio,
             role: new_user.role,
             badges: new_user.badges,
-            venmo_handle: None,
         }),
         pool,
         redis,

@@ -60,10 +60,6 @@ pub struct User {
     pub qq_id: Option<String>,
     pub password: Option<String>,
 
-    pub paypal_id: Option<String>,
-    pub paypal_country: Option<String>,
-    pub paypal_email: Option<String>,
-    pub venmo_handle: Option<String>,
     pub stripe_customer_id: Option<String>,
 
     pub totp_secret: Option<String>,
@@ -107,14 +103,13 @@ impl User {
                 avatar_url, raw_avatar_url, bio, created,
                 github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
                 bilibili_id, qq_id,
-                email_verified, password, paypal_id, paypal_country, paypal_email,
-                venmo_handle, stripe_customer_id
+                email_verified, password, stripe_customer_id
             )
             VALUES (
                 $1, $2, $3, $4, $5,
                 $6, $7,
                 $8, $9, $10, $11, $12, $13,
-                $14, $15, $16, $17, $18, $19, $20, $21, $22
+                $14, $15, $16, $17, $18
             )
             ",
             self.id as UserId,
@@ -134,10 +129,6 @@ impl User {
             self.qq_id,
             self.email_verified,
             self.password,
-            self.paypal_id,
-            self.paypal_country,
-            self.paypal_email,
-            self.venmo_handle,
             self.stripe_customer_id
         )
         .execute(&mut **transaction)
@@ -228,8 +219,8 @@ impl User {
                             created, role, badges,
                             github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
                             bilibili_id, qq_id,
-                            email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,
-                            venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,
+                            email_verified, password, totp_secret,
+                            stripe_customer_id,wiki_overtake_count,wiki_ban_time,phone_number,
                             is_premium_creator, creator_verified_at
                         FROM users
                         WHERE id = ANY($1) OR LOWER(username) = ANY($2)
@@ -259,10 +250,6 @@ impl User {
                             role: u.role,
                             badges: Badges::from_bits(u.badges as u64).unwrap_or_default(),
                             password: u.password,
-                            paypal_id: u.paypal_id,
-                            paypal_country: u.paypal_country,
-                            paypal_email: u.paypal_email,
-                            venmo_handle: u.venmo_handle,
                             stripe_customer_id: u.stripe_customer_id,
                             totp_secret: u.totp_secret,
                             wiki_overtake_count: u.wiki_overtake_count,

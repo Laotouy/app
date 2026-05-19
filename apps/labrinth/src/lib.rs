@@ -391,8 +391,8 @@ pub fn app_setup(
                                                 avatar_url, raw_avatar_url, username, bio,
                                                 created, role, badges,
                                                 github_id, discord_id, gitlab_id, google_id, steam_id, microsoft_id,
-                                                email_verified, password, totp_secret, paypal_id, paypal_country, paypal_email,
-                                                venmo_handle, stripe_customer_id,wiki_overtake_count,wiki_ban_time
+                                                email_verified, password, totp_secret,
+                                                stripe_customer_id,wiki_overtake_count,wiki_ban_time
                                             FROM users
                                             WHERE id = $1
                                             ",
@@ -421,10 +421,6 @@ pub fn app_setup(
                                                     role: u.role.clone(),
                                                     badges: Badges::from_bits(u.badges as u64).unwrap_or_default(),
                                                     password: None,
-                                                    paypal_id: None,
-                                                    paypal_country: None,
-                                                    paypal_email: None,
-                                                    venmo_handle: None,
                                                     stripe_customer_id: None,
                                                     totp_secret: None,
                                                     wiki_overtake_count: u.wiki_overtake_count,
@@ -883,15 +879,6 @@ pub fn check_env_vars() -> bool {
 
     failed |= check_var::<String>("QQ_CLIENT_ID");
     failed |= check_var::<String>("QQ_CLIENT_SECRET");
-
-    failed |= check_var::<String>("TREMENDOUS_API_URL");
-    failed |= check_var::<String>("TREMENDOUS_API_KEY");
-    failed |= check_var::<String>("TREMENDOUS_PRIVATE_KEY");
-
-    failed |= check_var::<String>("PAYPAL_API_URL");
-    failed |= check_var::<String>("PAYPAL_WEBHOOK_ID");
-    failed |= check_var::<String>("PAYPAL_CLIENT_ID");
-    failed |= check_var::<String>("PAYPAL_CLIENT_SECRET");
 
     failed |= check_var::<String>("HCAPTCHA_SECRET");
 

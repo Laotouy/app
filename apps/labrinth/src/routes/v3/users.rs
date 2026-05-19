@@ -349,8 +349,6 @@ pub struct EditUser {
     pub bio: Option<Option<String>>,
     pub role: Option<Role>,
     pub badges: Option<Badges>,
-    #[validate(length(max = 160))]
-    pub venmo_handle: Option<String>,
 }
 
 pub async fn user_edit(
@@ -361,7 +359,7 @@ pub async fn user_edit(
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
-    let (scopes, user) = get_user_from_headers(
+    let (_scopes, user) = get_user_from_headers(
         &req,
         &**pool,
         &redis,
@@ -566,26 +564,6 @@ pub async fn user_edit(
                     WHERE (id = $2)
                     ",
                     badges.bits() as i64,
-                    id as crate::database::models::ids::UserId,
-                )
-                .execute(&mut *transaction)
-                .await?;
-            }
-
-            if let Some(venmo_handle) = &new_user.venmo_handle {
-                if !scopes.contains(Scopes::PAYOUTS_WRITE) {
-                    return Err(ApiError::CustomAuthentication(
-                        "您没有权限编辑此用户的Venmo handle!".to_string(),
-                    ));
-                }
-
-                sqlx::query!(
-                    "
-                    UPDATE users
-                    SET venmo_handle = $1
-                    WHERE (id = $2)
-                    ",
-                    venmo_handle,
                     id as crate::database::models::ids::UserId,
                 )
                 .execute(&mut *transaction)

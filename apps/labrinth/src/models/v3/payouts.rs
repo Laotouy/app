@@ -20,7 +20,7 @@ pub struct Payout {
     #[serde(with = "rust_decimal::serde::float_option")]
     pub fee: Option<Decimal>,
     pub method: Option<PayoutMethodType>,
-    /// the address this payout was sent to: ex: email, paypal email, venmo handle
+    /// 提现接收地址（如银行卡号、支付宝账号、邮箱等，取决于具体通道）
     pub method_address: Option<String>,
     pub platform_id: Option<String>,
 }
@@ -44,9 +44,6 @@ impl Payout {
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum PayoutMethodType {
-    Venmo,
-    PayPal,
-    Tremendous,
     Unknown,
 }
 
@@ -59,20 +56,12 @@ impl std::fmt::Display for PayoutMethodType {
 impl PayoutMethodType {
     pub fn as_str(&self) -> &'static str {
         match self {
-            PayoutMethodType::Venmo => "venmo",
-            PayoutMethodType::PayPal => "paypal",
-            PayoutMethodType::Tremendous => "tremendous",
             PayoutMethodType::Unknown => "unknown",
         }
     }
 
-    pub fn from_string(string: &str) -> PayoutMethodType {
-        match string {
-            "venmo" => PayoutMethodType::Venmo,
-            "paypal" => PayoutMethodType::PayPal,
-            "tremendous" => PayoutMethodType::Tremendous,
-            _ => PayoutMethodType::Unknown,
-        }
+    pub fn from_string(_string: &str) -> PayoutMethodType {
+        PayoutMethodType::Unknown
     }
 }
 
