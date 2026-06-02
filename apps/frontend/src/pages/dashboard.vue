@@ -33,7 +33,11 @@
           <NavStackItem link="/dashboard/purchases" label="已购买资源">
             <CoinsIcon aria-hidden="true" />
           </NavStackItem>
-          <NavStackItem link="/dashboard/revenue" label="收益">
+          <NavStackItem
+            v-if="auth?.user?.role === 'admin'"
+            link="/dashboard/revenue"
+            label="收益"
+          >
             <CurrencyIcon aria-hidden="true" />
           </NavStackItem>
         </NavStack>
@@ -62,5 +66,6 @@ definePageMeta({
   middleware: "auth",
 });
 
+const auth = await useAuth();
 const route = useNativeRoute();
 </script>

@@ -6,9 +6,15 @@
         <div class="truncate text-lg font-extrabold text-contrast">关闭激励</div>
       </template>
       <div class="modal-content">
-        <p>项目：<b>{{ active?.title || active?.project_id }}</b></p>
-        <p>累计有效下载：<b>{{ active?.lifetime_eff_downloads }}</b></p>
-        <p>待结算金额：<b class="text-amber">¥{{ formatMoney(active?.pending_amount) }}</b></p>
+        <p>
+          项目：<b>{{ active?.title || active?.project_id }}</b>
+        </p>
+        <p>
+          累计有效下载：<b>{{ active?.lifetime_eff_downloads }}</b>
+        </p>
+        <p>
+          待结算金额：<b class="text-amber">¥{{ formatMoney(active?.pending_amount) }}</b>
+        </p>
         <p>已结算金额：¥{{ formatMoney(active?.settled_amount) }}</p>
 
         <div class="form-group mt-4">
@@ -17,8 +23,7 @@
             <span>
               <b>同时作废所有待结算金额</b>
               <small class="block text-secondary">
-                未达 30 天结算窗口的金额将永远不再结算给作者。
-                适用于发现刷量嫌疑时强制中止。
+                未达 7 天结算窗口的金额将永远不再结算给作者。 适用于发现刷量嫌疑时强制中止。
               </small>
             </span>
           </label>
@@ -52,7 +57,9 @@
         <div class="truncate text-lg font-extrabold text-contrast">手动开通激励</div>
       </template>
       <div class="modal-content">
-        <p>项目：<b>{{ active?.title || active?.project_id }}</b></p>
+        <p>
+          项目：<b>{{ active?.title || active?.project_id }}</b>
+        </p>
         <p class="hint">
           手动开通会跳过作者申请流程，直接将该项目标记为「已开通激励」状态。
           已累计的有效下载和待结算金额会保留。
@@ -172,21 +179,12 @@
       <div v-if="stats.tier_distribution?.length" class="charts-block">
         <h4>项目档位分布（按累计有效下载）</h4>
         <div class="tier-grid">
-          <div
-            v-for="t in stats.tier_distribution"
-            :key="t.tier"
-            class="tier-card"
-          >
+          <div v-for="t in stats.tier_distribution" :key="t.tier" class="tier-card">
             <div class="tier-label">{{ formatTierLabel(t.tier) }}</div>
             <div class="tier-count">{{ t.project_count }} 个项目</div>
-            <div class="tier-downloads">
-              累计 {{ formatNumber(t.total_downloads) }} 次下载
-            </div>
+            <div class="tier-downloads">累计 {{ formatNumber(t.total_downloads) }} 次下载</div>
             <div class="tier-bar">
-              <div
-                class="tier-bar-fill"
-                :style="{ width: tierBarWidth(t) }"
-              />
+              <div class="tier-bar-fill" :style="{ width: tierBarWidth(t) }" />
             </div>
           </div>
         </div>
@@ -196,11 +194,7 @@
       <div v-if="stats.top_projects?.length" class="charts-block">
         <h4>Top 20 项目（按待结算金额）</h4>
         <div class="top-list">
-          <div
-            v-for="(p, idx) in stats.top_projects"
-            :key="p.project_id"
-            class="top-row"
-          >
+          <div v-for="(p, idx) in stats.top_projects" :key="p.project_id" class="top-row">
             <span class="rank">#{{ idx + 1 }}</span>
             <nuxt-link
               :to="`/project/${p.slug || p.project_id}`"
@@ -212,10 +206,7 @@
             <span class="downloads">{{ formatNumber(p.lifetime_eff_downloads) }} 次</span>
             <span class="amount text-amber">¥{{ formatMoney(p.pending_amount) }}</span>
             <div class="bar">
-              <div
-                class="bar-fill"
-                :style="{ width: topBarWidth(p) }"
-              />
+              <div class="bar-fill" :style="{ width: topBarWidth(p) }" />
             </div>
           </div>
         </div>
@@ -226,7 +217,7 @@
       <div class="header-section">
         <h2>项目列表</h2>
         <p class="description">
-          展示所有有激励数据或已开通激励的项目。预览阶段所有资源的下载都会自动累计有效下载和待结算金额。
+          展示所有有激励数据或已开通激励的项目。只有审核通过并开通激励的资源会继续累计有效下载和待结算金额。
         </p>
       </div>
 
@@ -259,7 +250,7 @@
                 <b>{{ item.title || item.project_id }}</b>
               </nuxt-link>
               <span class="status-badge" :class="item.enabled ? 'enabled' : 'auto'">
-                {{ item.enabled ? "已开通" : "自动累计" }}
+                {{ item.enabled ? "已开通" : "未开通" }}
               </span>
               <span v-if="parseFloat(item.pending_amount) > 0" class="pulse-dot"></span>
             </div>
@@ -300,9 +291,7 @@
             <button v-if="item.enabled" class="btn btn-danger" @click="openDisable(item)">
               关闭激励
             </button>
-            <button v-else class="btn btn-secondary" @click="openEnable(item)">
-              手动开通
-            </button>
+            <button v-else class="btn btn-secondary" @click="openEnable(item)">手动开通</button>
           </div>
         </div>
       </div>
@@ -315,7 +304,7 @@
               ? "暂无项目数据"
               : filterMode === "enabled"
                 ? "暂无已开通激励的项目"
-                : "暂无自动累计的项目"
+                : "暂无未开通激励的项目"
           }}
         </p>
       </div>
@@ -351,8 +340,7 @@ const stats = ref(null);
 
 const filterMode = ref("all");
 const filterOptions = ["all", "enabled", "auto"];
-const formatFilterLabel = (v) =>
-  ({ all: "全部", enabled: "已开通", auto: "自动累计" })[v] || v;
+const formatFilterLabel = (v) => ({ all: "全部", enabled: "已开通", auto: "未开通" })[v] || v;
 
 const disableModal = ref(null);
 const enableModal = ref(null);
@@ -374,20 +362,6 @@ const formatMoney = (n) => {
   const x = Number(n) || 0;
   return x.toFixed(x < 1 ? 4 : 2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
-
-const enabledCount = computed(() => items.value.filter((i) => i.enabled).length);
-const totalDownloads = computed(() =>
-  items.value.reduce((s, i) => s + (i.lifetime_eff_downloads || 0), 0),
-);
-const totalPending = computed(() =>
-  items.value.reduce((s, i) => s + parseFloat(i.pending_amount || "0"), 0).toFixed(2),
-);
-const totalSettled = computed(() =>
-  items.value.reduce((s, i) => s + parseFloat(i.settled_amount || "0"), 0).toFixed(2),
-);
-const totalVoided = computed(() =>
-  items.value.reduce((s, i) => s + parseFloat(i.voided_amount || "0"), 0).toFixed(2),
-);
 
 const filteredItems = computed(() => {
   if (filterMode.value === "enabled") return items.value.filter((i) => i.enabled);
@@ -431,9 +405,7 @@ const fetchStats = async () => {
 };
 
 // 趋势图数据
-const trendLabels = computed(
-  () => stats.value?.daily_trend?.map((d) => d.date) || [],
-);
+const trendLabels = computed(() => stats.value?.daily_trend?.map((d) => d.date) || []);
 const trendDownloadsData = computed(() => [
   {
     name: "有效下载",
@@ -478,9 +450,7 @@ const formatTierLabel = (tier) => {
 };
 
 const tierBarWidth = (t) => {
-  const max = Math.max(
-    ...(stats.value?.tier_distribution?.map((x) => x.project_count) || [1]),
-  );
+  const max = Math.max(...(stats.value?.tier_distribution?.map((x) => x.project_count) || [1]));
   return `${(t.project_count / max) * 100}%`;
 };
 
@@ -618,9 +588,15 @@ onMounted(() => {
       &.money {
         font-size: 1.35rem;
       }
-      &.pending { color: var(--color-orange, #d97706); }
-      &.settled { color: var(--color-green, #059669); }
-      &.voided { color: var(--color-red, #dc2626); }
+      &.pending {
+        color: var(--color-orange, #d97706);
+      }
+      &.settled {
+        color: var(--color-green, #059669);
+      }
+      &.voided {
+        color: var(--color-red, #dc2626);
+      }
     }
     .hint {
       color: var(--color-text-secondary);
@@ -890,9 +866,15 @@ onMounted(() => {
   }
 }
 
-.text-amber { color: var(--color-orange, #d97706); }
-.text-green { color: var(--color-green, #059669); }
-.text-red { color: var(--color-red, #dc2626); }
+.text-amber {
+  color: var(--color-orange, #d97706);
+}
+.text-green {
+  color: var(--color-green, #059669);
+}
+.text-red {
+  color: var(--color-red, #dc2626);
+}
 
 .project-actions {
   display: flex;

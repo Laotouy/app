@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, project_id, team_id, payout_amount, split_snapshot\n        FROM incentive_download_events\n        WHERE status = 'pending'\n          AND recorded_at < NOW() - INTERVAL '30 days'\n        ORDER BY id ASC\n        LIMIT 5000\n        ",
+  "query": "\n        SELECT id, project_id, team_id, payout_amount, split_snapshot\n        FROM incentive_download_events\n        WHERE status = 'pending'\n          AND recorded_at < NOW() - INTERVAL '7 days'\n        ORDER BY id ASC\n        LIMIT 20000\n        ",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       true
     ]
   },
-  "hash": "87093694ad50e9699a13364be5a01b9da0d83f01260d463cf54b64edbe431246"
+  "hash": "be9a33eda6f7f868c225a6dd30815c5c2750e589f46b1528bd4a031186ea6e96"
 }

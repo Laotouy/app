@@ -71,6 +71,14 @@
           >
             <CoinsIcon aria-hidden="true" />
           </NavStackItem>
+          <NavStackItem
+            v-if="auth?.user?.role === 'admin'"
+            link="/moderation/payouts"
+            label="提现处理"
+            :count="pendingCounts?.payout_transfers || 0"
+          >
+            <CoinsIcon aria-hidden="true" />
+          </NavStackItem>
         </NavStack>
       </aside>
     </div>

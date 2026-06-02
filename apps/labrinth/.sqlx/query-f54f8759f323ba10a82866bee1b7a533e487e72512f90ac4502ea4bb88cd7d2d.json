@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            payout_id,\n            COALESCE(user_real_amount, pay) AS received_amount,\n            CASE\n                WHEN received_user_fee <> 0 THEN received_user_fee\n                ELSE user_fee\n            END AS service_fee,\n            CASE\n                WHEN (\n                    user_received_personal_tax\n                    + user_received_additional_tax\n                ) <> 0 THEN (\n                    user_received_personal_tax\n                    + user_received_additional_tax\n                )\n                ELSE (\n                    user_personal_tax\n                    + user_additional_tax\n                )\n            END AS user_tax\n        FROM payout_yunzhanghu_order_details\n        WHERE payout_id = ANY($1)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "payout_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "received_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 2,
+        "name": "service_fee",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "user_tax",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "f54f8759f323ba10a82866bee1b7a533e487e72512f90ac4502ea4bb88cd7d2d"
+}

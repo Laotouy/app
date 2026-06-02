@@ -51,7 +51,7 @@
           <CheckIcon class="notice-icon" />
           <div class="notice-content">
             <strong>该资源已开通创作者激励</strong>
-            <p>用户的有效下载会自动产生激励金额，30 天后结算到你的账户。</p>
+            <p>用户的有效下载会自动产生激励金额，7 天后结算为可提现余额。</p>
           </div>
         </div>
 
@@ -83,8 +83,18 @@
         </div>
 
         <!-- thread 沟通区（有申请就显示） -->
-        <div v-if="application?.thread_id && thread" class="thread-section">
-          <h4>与管理员沟通</h4>
+        <details
+          v-if="application?.thread_id && thread"
+          class="thread-section"
+          :open="!overview?.incentive_enabled"
+        >
+          <summary class="thread-summary">
+            <span>与管理员沟通</span>
+            <span v-if="thread.messages?.length" class="thread-count">
+              {{ thread.messages.length }} 条消息
+            </span>
+          </summary>
+
           <div class="messages-list">
             <div
               v-for="m in thread.messages"
@@ -124,7 +134,7 @@
               发送
             </button>
           </div>
-        </div>
+        </details>
 
         <!-- 30 天图表 -->
         <div v-if="overview?.last_30_days?.length" class="chart-section">
@@ -172,6 +182,10 @@
             <span class="value">还需 {{ overview.next_tier_remaining }} 次有效下载</span>
           </div>
           <div class="stat-row">
+            <span class="label">结算窗口期</span>
+            <span class="value">7 个自然日</span>
+          </div>
+          <div class="stat-row">
             <span class="label">待结算金额</span>
             <span class="value money">{{ overview.pending_amount }} 元</span>
           </div>
@@ -179,14 +193,29 @@
             <span class="label">已结算金额</span>
             <span class="value money">{{ overview.settled_amount }} 元</span>
           </div>
+
+          <div class="settlement-help">
+            <InfoIcon class="help-icon" aria-hidden="true" />
+            <div>
+              <strong>结算与提现</strong>
+              <p>
+                有效下载产生的金额会先进入待结算，满 7
+                个自然日并通过反作弊审计后，系统会自动转入收益余额。提现、实名签约和收款账号处理请前往收益页面完成。
+              </p>
+              <NuxtLink to="/dashboard/revenue" class="iconified-button brand-button">
+                <RightArrowIcon aria-hidden="true" />
+                前往收益提现
+              </NuxtLink>
+            </div>
+          </div>
         </div>
 
         <!-- 未开通且无 pending 申请，但查看者无管理权 → 提示 -->
         <div
           v-if="
-            !overview?.incentive_enabled
-              && application?.status !== 'pending'
-              && !overview?.viewer?.can_manage
+            !overview?.incentive_enabled &&
+            application?.status !== 'pending' &&
+            !overview?.viewer?.can_manage
           "
           class="notice-card info"
         >
@@ -196,8 +225,26 @@
             <p v-if="overview?.viewer?.is_team_member">
               你的团队权限不足，无法提交申请（需要「编辑项目详情」权限）。
             </p>
-            <p v-else-if="overview?.viewer?.is_admin">
-              站点管理员只能查看，不能代为申请。
+            <p v-else-if="overview?.viewer?.is_admin">站点管理员只能查看，不能代为申请。</p>
+          </div>
+        </div>
+
+        <div
+          v-if="
+            !overview?.incentive_enabled &&
+            application?.status !== 'pending' &&
+            overview?.viewer?.can_manage &&
+            !canApplyIncentive
+          "
+          class="notice-card warning"
+        >
+          <InfoIcon class="notice-icon" />
+          <div class="notice-content">
+            <strong>资源通过审核后才能申请创作者激励</strong>
+            <p>
+              当前资源状态为「{{
+                projectStatusLabel
+              }}」。草稿、审核中、已拒绝或被暂扣的资源不能提交激励申请。
             </p>
           </div>
         </div>
@@ -205,9 +252,10 @@
         <!-- 申请表单（未开通、无待审核申请、且查看者有 manage 权限） -->
         <template
           v-if="
-            !overview?.incentive_enabled
-              && application?.status !== 'pending'
-              && overview?.viewer?.can_manage
+            !overview?.incentive_enabled &&
+            application?.status !== 'pending' &&
+            overview?.viewer?.can_manage &&
+            canApplyIncentive
           "
         >
           <div class="apply-form">
@@ -215,10 +263,13 @@
             <div class="rules-card">
               <p><b>激励规则</b></p>
               <ul>
-                <li>每次有效下载产生激励金额：累计下载数 0-1000 次每次 0.02 元，1000-10000 次每次 0.01 元，10000 次以上每次 0.008 元</li>
+                <li>
+                  每次有效下载产生激励金额：累计下载数 0-1000 次每次 0.02 元，1000-10000 次每次 0.01
+                  元，10000 次以上每次 0.008 元
+                </li>
                 <li>同一用户/IP 段对单个项目每 7 天最多记一次有效下载</li>
                 <li>项目团队成员自下载不计激励</li>
-                <li>金额在事件发生 30 天后自动结算到账户，可通过钱包提现</li>
+                <li>金额在事件发生 7 天后自动结算到账户，可通过钱包提现</li>
                 <li>若发现刷量行为，未结算金额将被作废</li>
               </ul>
               <p class="agreement-hint">
@@ -241,13 +292,7 @@
               />
             </div>
 
-            <button
-              class="btn btn-primary"
-              :disabled="submitting"
-              @click="submit"
-            >
-              提交申请
-            </button>
+            <button class="btn btn-primary" :disabled="submitting" @click="submit">提交申请</button>
           </div>
         </template>
       </template>
@@ -257,11 +302,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import {
-  InfoIcon,
-  CheckIcon,
-  UpdatedIcon,
-} from "@modrinth/assets";
+import { InfoIcon, CheckIcon, RightArrowIcon, UpdatedIcon } from "@modrinth/assets";
 import { NewModal, ButtonStyled } from "@modrinth/ui";
 import Chart from "~/components/ui/charts/Chart.client.vue";
 
@@ -290,13 +331,28 @@ const thread = ref(null);
 const reason = ref("");
 const replyText = ref("");
 
+const approvedProjectStatuses = new Set(["approved", "unlisted", "archived", "private"]);
+const projectStatusLabels = {
+  approved: "已发布",
+  unlisted: "未列出",
+  archived: "已归档",
+  private: "私有",
+  draft: "草稿",
+  processing: "审核中",
+  rejected: "已拒绝",
+  withheld: "已暂扣",
+  scheduled: "已计划",
+};
+const canApplyIncentive = computed(() => approvedProjectStatuses.has(props.project?.status));
+const projectStatusLabel = computed(
+  () => projectStatusLabels[props.project?.status] || props.project?.status || "未知",
+);
+
 const formatDate = (s) =>
   s ? new Date(s).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }) : "";
 
 // 把 last_30_days 转成 Chart 组件需要的格式
-const chartLabels = computed(
-  () => overview.value?.last_30_days?.map((d) => d.date) || [],
-);
+const chartLabels = computed(() => overview.value?.last_30_days?.map((d) => d.date) || []);
 
 const downloadsChartData = computed(() => [
   {
@@ -343,15 +399,13 @@ const loadAll = async () => {
     ]);
 
     overview.value = detail.status === "fulfilled" ? detail.value : null;
-    application.value =
-      appl.status === "fulfilled" && appl.value ? appl.value : null;
+    application.value = appl.status === "fulfilled" && appl.value ? appl.value : null;
 
     if (application.value?.thread_id) {
       try {
-        thread.value = await useBaseFetch(
-          `thread/${application.value.thread_id}`,
-          { method: "GET" },
-        );
+        thread.value = await useBaseFetch(`thread/${application.value.thread_id}`, {
+          method: "GET",
+        });
       } catch (e) {
         thread.value = null;
       }
@@ -366,8 +420,7 @@ const loadAll = async () => {
 };
 
 const sendReply = async () => {
-  if (!replyText.value.trim() || sending.value || !application.value?.thread_id)
-    return;
+  if (!replyText.value.trim() || sending.value || !application.value?.thread_id) return;
   sending.value = true;
   try {
     await useBaseFetch(`thread/${application.value.thread_id}`, {
@@ -382,10 +435,7 @@ const sendReply = async () => {
       },
     });
     replyText.value = "";
-    thread.value = await useBaseFetch(
-      `thread/${application.value.thread_id}`,
-      { method: "GET" },
-    );
+    thread.value = await useBaseFetch(`thread/${application.value.thread_id}`, { method: "GET" });
   } catch (e) {
     nuxtApp.$notify({
       group: "main",
@@ -542,6 +592,30 @@ onMounted(loadAll);
       }
     }
   }
+
+  .settlement-help {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-green);
+    background: var(--color-green-bg, rgba(34, 197, 94, 0.1));
+
+    .help-icon {
+      flex-shrink: 0;
+      width: 1.25rem;
+      height: 1.25rem;
+      margin-top: 0.1rem;
+      color: var(--color-green);
+    }
+
+    p {
+      margin: 0.25rem 0 0.75rem;
+      color: var(--color-text-secondary);
+    }
+  }
 }
 
 .apply-form {
@@ -627,8 +701,22 @@ onMounted(loadAll);
   padding-top: 1rem;
   border-top: 1px solid var(--color-divider);
 
-  h4 {
+  .thread-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin-bottom: 0.75rem;
+    color: var(--color-heading);
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+
+    .thread-count {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
   }
 
   .messages-list {

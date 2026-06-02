@@ -548,10 +548,13 @@ pub struct ModerationPendingCounts {
     pub creator_applications: i64,
     #[serde(default)]
     pub incentive_applications: i64,
+    #[serde(default)]
+    pub payout_transfers: i64,
 }
 
 pub(crate) const PENDING_COUNTS_NAMESPACE: &str = "moderation_pending_counts";
-const PENDING_COUNTS_CACHE_KEY: &str = "all";
+const PENDING_COUNTS_ADMIN_CACHE_KEY: &str = "admin";
+const PENDING_COUNTS_MODERATOR_CACHE_KEY: &str = "moderator";
 const PENDING_COUNTS_TTL: i64 = 180; // 3 分钟
 
 /// 获取各审核类别的待处理数量
@@ -563,7 +566,7 @@ pub async fn get_pending_counts(
     redis: web::Data<RedisPool>,
     session_queue: web::Data<AuthQueue>,
 ) -> Result<HttpResponse, ApiError> {
-    check_is_moderator_from_headers(
+    let user = check_is_moderator_from_headers(
         &req,
         &**pool,
         &redis,
@@ -572,12 +575,18 @@ pub async fn get_pending_counts(
     )
     .await?;
 
+    let cache_key = if user.role.is_admin() {
+        PENDING_COUNTS_ADMIN_CACHE_KEY
+    } else {
+        PENDING_COUNTS_MODERATOR_CACHE_KEY
+    };
+
     // 查 Redis 缓存
     let mut redis_conn = redis.connect().await?;
     if let Some(cached) = redis_conn
         .get_deserialized_from_json::<ModerationPendingCounts>(
             PENDING_COUNTS_NAMESPACE,
-            PENDING_COUNTS_CACHE_KEY,
+            cache_key,
         )
         .await?
     {
@@ -605,6 +614,24 @@ pub async fn get_pending_counts(
     .await?
     .unwrap_or(0);
 
+    let payout_transfers = if user.role.is_admin() {
+        sqlx::query_scalar!(
+            "
+            SELECT COUNT(*)
+            FROM payouts
+            WHERE status = 'in-transit'
+              AND method = 'yunzhanghu_alipay'
+              AND platform_id IS NULL
+              AND yunzhanghu_submit_started_at IS NULL
+            "
+        )
+        .fetch_one(&**pool)
+        .await?
+        .unwrap_or(0)
+    } else {
+        0
+    };
+
     let result = ModerationPendingCounts {
         projects: counts.projects,
         reports: counts.reports,
@@ -613,12 +640,13 @@ pub async fn get_pending_counts(
         image_reviews: counts.image_reviews,
         creator_applications: counts.creator_applications,
         incentive_applications,
+        payout_transfers,
     };
 
     redis_conn
         .set_serialized_to_json(
             PENDING_COUNTS_NAMESPACE,
-            PENDING_COUNTS_CACHE_KEY,
+            cache_key,
             &result,
             Some(PENDING_COUNTS_TTL),
         )
@@ -632,7 +660,13 @@ pub async fn clear_pending_counts_cache(redis: &RedisPool) {
     if let Err(e) = async {
         let mut redis_conn = redis.connect().await?;
         redis_conn
-            .delete(PENDING_COUNTS_NAMESPACE, PENDING_COUNTS_CACHE_KEY)
+            .delete(PENDING_COUNTS_NAMESPACE, PENDING_COUNTS_ADMIN_CACHE_KEY)
+            .await?;
+        redis_conn
+            .delete(
+                PENDING_COUNTS_NAMESPACE,
+                PENDING_COUNTS_MODERATOR_CACHE_KEY,
+            )
             .await
     }
     .await

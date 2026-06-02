@@ -88,16 +88,23 @@ async fn process_event(
     evt: &IncentiveEvent,
     pool: &PgPool,
 ) -> Result<(), sqlx::Error> {
-    // 1. [预览阶段] 跳过 incentive_enabled_projects 检查，所有项目都计入激励统计
-    //    上线正式版本时恢复以下逻辑：
-    // let enabled = sqlx::query!(
-    //     "SELECT EXISTS(SELECT 1 FROM incentive_enabled_projects WHERE project_id = $1) as \"exists!\"",
-    //     evt.project_id as i64,
-    // )
-    // .fetch_one(pool)
-    // .await?
-    // .exists;
-    // if !enabled { return Ok(()); }
+    // 1. 仅已审核开通激励的项目累计奖励。
+    let enabled = sqlx::query!(
+        r#"
+        SELECT EXISTS(
+            SELECT 1
+            FROM incentive_enabled_projects
+            WHERE project_id = $1
+        ) AS "exists!"
+        "#,
+        evt.project_id as i64,
+    )
+    .fetch_one(pool)
+    .await?
+    .exists;
+    if !enabled {
+        return Ok(());
+    }
 
     // 2. 取项目 team_id；若用户是团队成员则跳过
     let team_id_row = sqlx::query!(
@@ -217,16 +224,16 @@ fn next_unit_payout(current_lifetime: i64) -> Decimal {
     Decimal::from_str(s).unwrap_or_default()
 }
 
-/// 30 天前 pending 的事件结算到 payouts_values，按事件发生时的 split 快照拆分
+/// 7 天前 pending 的事件结算到 payouts_values，按事件发生时的 split 快照拆分
 pub async fn settle_pending(pool: &PgPool) -> Result<u64, sqlx::Error> {
     let events = sqlx::query!(
         "
         SELECT id, project_id, team_id, payout_amount, split_snapshot
         FROM incentive_download_events
         WHERE status = 'pending'
-          AND recorded_at < NOW() - INTERVAL '30 days'
+          AND recorded_at < NOW() - INTERVAL '7 days'
         ORDER BY id ASC
-        LIMIT 5000
+        LIMIT 20000
         ",
     )
     .fetch_all(pool)
@@ -306,8 +313,8 @@ pub async fn settle_pending(pool: &PgPool) -> Result<u64, sqlx::Error> {
 
             sqlx::query!(
                 "
-                INSERT INTO payouts_values (user_id, mod_id, amount, created)
-                VALUES ($1, $2, $3, NOW())
+                INSERT INTO payouts_values (user_id, mod_id, amount, created, date_available)
+                VALUES ($1, $2, $3, NOW(), NOW())
                 ",
                 m.user_id,
                 e.project_id,
@@ -347,6 +354,22 @@ pub async fn settle_pending(pool: &PgPool) -> Result<u64, sqlx::Error> {
     }
 
     Ok(settled)
+}
+
+/// 清理 3 个月前已终结的事件明细。pending 不删除，避免异常时丢失未结算金额。
+pub async fn cleanup_old_events(pool: &PgPool) -> Result<u64, sqlx::Error> {
+    let deleted = sqlx::query!(
+        "
+        DELETE FROM incentive_download_events
+        WHERE recorded_at < NOW() - INTERVAL '3 months'
+          AND status IN ('settled', 'voided')
+        ",
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    Ok(deleted)
 }
 
 /// 异常监测：阈值通过环境变量配置，避免攻击者按已知阈值精确绕过

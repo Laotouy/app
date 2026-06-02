@@ -8,6 +8,7 @@ use crate::database::models::{self};
 use crate::database::redis::RedisPool;
 use crate::models::ids::base62_impl::{parse_base62, to_base62};
 use crate::models::pats::Scopes;
+use crate::models::projects::ProjectStatus;
 use crate::models::teams::ProjectPermissions;
 use crate::models::threads::{MessageBody, ThreadType};
 use crate::queue::session::AuthQueue;
@@ -433,6 +434,24 @@ pub async fn apply_incentive(
         pool.as_ref(),
     )
     .await?;
+
+    let project_status = sqlx::query_scalar!(
+        "
+        SELECT status
+        FROM mods
+        WHERE id = $1
+        ",
+        project_id,
+    )
+    .fetch_optional(pool.as_ref())
+    .await?
+    .ok_or(ApiError::NotFound)?;
+
+    if !ProjectStatus::from_string(&project_status).is_approved() {
+        return Err(ApiError::InvalidInput(
+            "资源通过审核后才能申请创作者激励".to_string(),
+        ));
+    }
 
     // 已开通则不允许重复申请
     let already = sqlx::query_scalar!(

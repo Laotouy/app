@@ -235,6 +235,37 @@ pub fn app_setup(
         }
     });
 
+    // 云账户资料 PII 加密回填：把旧明文字段迁移到新密文字段后清空旧列。
+    {
+        let pool_ref = pool.clone();
+        actix_rt::spawn(async move {
+            match database::models::yunzhanghu_profile_item::YunzhanghuProfile::backfill_legacy_plaintext(&pool_ref).await {
+                Ok(count) if count > 0 => {
+                    info!("已回填并清空 {} 条云账户资料旧明文字段", count);
+                }
+                Err(e) => {
+                    warn!("云账户资料旧明文字段加密回填失败: {}", e);
+                }
+                _ => {}
+            }
+        });
+    }
+
+    // 云账户实时支付订单状态轮询：每分钟扫描 in-transit 订单，主动调云账户 query-order 同步状态
+    // 适用于本地开发回调收不到、回调丢失补救等场景
+    let pool_ref = pool.clone();
+    let redis_ref = redis_pool.clone();
+    scheduler.run(std::time::Duration::from_secs(60), move || {
+        let pool_ref = pool_ref.clone();
+        let redis_ref = redis_ref.clone();
+        async move {
+            crate::routes::v3::yunzhanghu::poll_in_transit_payouts(
+                pool_ref, redis_ref,
+            )
+            .await;
+        }
+    });
+
     let analytics_queue = Arc::new(AnalyticsQueue::new());
     {
         let client_ref = clickhouse.clone();
@@ -282,6 +313,19 @@ pub fn app_setup(
                 match queue::incentive::settle_pending(&pool_ref).await {
                     Ok(n) if n > 0 => info!("激励结算完成 {} 条", n),
                     Err(e) => warn!("激励结算失败: {:?}", e),
+                    _ => {}
+                }
+            }
+        });
+    }
+    {
+        let pool_ref = pool.clone();
+        scheduler.run(std::time::Duration::from_secs(86_400), move || {
+            let pool_ref = pool_ref.clone();
+            async move {
+                match queue::incentive::cleanup_old_events(&pool_ref).await {
+                    Ok(n) if n > 0 => info!("激励事件明细清理完成 {} 条", n),
+                    Err(e) => warn!("激励事件明细清理失败: {:?}", e),
                     _ => {}
                 }
             }

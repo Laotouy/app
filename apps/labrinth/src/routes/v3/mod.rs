@@ -35,6 +35,7 @@ pub mod project_pricing;
 pub mod user_purchase;
 #[allow(clippy::unnecessary_unwrap, clippy::explicit_auto_deref)]
 mod wikis;
+pub mod yunzhanghu;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -66,7 +67,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(issues::config)
             .configure(bans::config)
             .configure(incentive::config)
-            .configure(project_order::config),
+            .configure(project_order::config)
+            .configure(yunzhanghu::config),
     );
 }
 
