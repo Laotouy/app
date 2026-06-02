@@ -75,6 +75,131 @@
       </div>
     </NewModal>
 
+    <NewModal v-if="auth.user && isAdmin(auth.user)" ref="adminProfileModal">
+      <template #title>
+        <div class="truncate text-lg font-extrabold text-contrast">管理员操作</div>
+      </template>
+
+      <div class="admin-profile-modal">
+        <p class="modal-lead">
+          强制覆盖该用户的公开资料。上传新头像会调用后端头像上传接口，成功后由后端删除旧头像的对象存储文件。
+        </p>
+
+        <div class="target-user">
+          <Avatar
+            :src="adminProfileForm.avatarPreview || user.avatar_url"
+            :alt="user.username"
+            size="48px"
+            circle
+          />
+          <div>
+            <strong>@{{ user.username }}</strong>
+            <span>{{ user.id }}</span>
+          </div>
+        </div>
+
+        <label class="form-group">
+          <span>头像</span>
+          <input
+            ref="adminAvatarInput"
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp"
+            :disabled="adminProfileSubmitting"
+            @change="selectAdminAvatar"
+          />
+          <small v-if="adminProfileForm.avatarFile">
+            已选择 {{ adminProfileForm.avatarFile.name }}，保存后会覆盖当前头像。
+          </small>
+        </label>
+
+        <label class="form-group">
+          <span>用户名</span>
+          <input
+            v-model="adminProfileForm.username"
+            maxlength="39"
+            :disabled="adminProfileSubmitting"
+            placeholder="新的用户名"
+          />
+        </label>
+
+        <label class="form-group">
+          <span>签名</span>
+          <textarea
+            v-model="adminProfileForm.bio"
+            maxlength="160"
+            rows="4"
+            :disabled="adminProfileSubmitting"
+            placeholder="新的用户签名，可留空"
+          />
+        </label>
+
+        <div class="danger-zone">
+          <div class="danger-zone-header">
+            <TrashIcon aria-hidden="true" />
+            <div>
+              <strong>一键删除该用户所有资源</strong>
+              <span>
+                当前将删除
+                {{ userProjectCount }} 个资源。删除后资源、版本和附加数据会从服务器中移除。
+              </span>
+            </div>
+          </div>
+
+          <label class="form-group">
+            <span>输入用户名确认删除</span>
+            <input
+              v-model="adminProfileForm.deleteProjectsConfirm"
+              :disabled="adminProfileSubmitting || adminDeletingProjects || userProjectCount === 0"
+              :placeholder="`输入 ${user.username} 确认`"
+            />
+          </label>
+
+          <ButtonStyled color="red">
+            <button
+              :disabled="
+                adminProfileSubmitting ||
+                adminDeletingProjects ||
+                userProjectCount === 0 ||
+                !adminDeleteProjectsConfirmed
+              "
+              @click="deleteAllUserProjects"
+            >
+              <TrashIcon aria-hidden="true" />
+              {{ adminDeletingProjects ? "删除中..." : "删除所有资源" }}
+            </button>
+          </ButtonStyled>
+        </div>
+
+        <p v-if="adminProfileError" class="operation-error">{{ adminProfileError }}</p>
+      </div>
+
+      <div class="modal-actions">
+        <ButtonStyled color="green">
+          <button
+            :disabled="adminProfileSubmitting || !adminProfileHasChanges"
+            @click="saveAdminProfile"
+          >
+            <SaveIcon aria-hidden="true" />
+            {{ adminProfileSubmitting ? "保存中..." : "保存覆盖" }}
+          </button>
+        </ButtonStyled>
+        <ButtonStyled>
+          <button
+            :disabled="adminProfileSubmitting || !adminProfileForm.avatarFile"
+            @click="clearAdminAvatar"
+          >
+            <UndoIcon aria-hidden="true" />
+            取消头像
+          </button>
+        </ButtonStyled>
+        <ButtonStyled>
+          <button :disabled="adminProfileSubmitting" @click="adminProfileModal?.hide()">
+            取消
+          </button>
+        </ButtonStyled>
+      </div>
+    </NewModal>
+
     <div class="new-page sidebar" :class="{ 'alt-layout': cosmetics.leftContentLayout }">
       <div class="normal-page__header py-4">
         <ContentPageHeader>
@@ -158,6 +283,13 @@
                       auth.user.id !== user.id,
                   },
                   {
+                    id: 'admin-profile',
+                    action: () => openAdminProfileModal(),
+                    color: 'red',
+                    hoverOnly: true,
+                    shown: auth.user && isAdmin(auth.user) && auth.user.id !== user.id,
+                  },
+                  {
                     id: 'manage-projects',
                     action: () => navigateTo('/dashboard/projects'),
                     hoverOnly: true,
@@ -183,6 +315,10 @@
                 <template #manage-bans>
                   <UserXIcon aria-hidden="true" />
                   管理封禁
+                </template>
+                <template #admin-profile>
+                  <ShieldIcon aria-hidden="true" />
+                  管理员操作
                 </template>
                 <template #manage-projects>
                   <BoxIcon aria-hidden="true" />
@@ -546,6 +682,10 @@ import {
   ChevronRightIcon,
   CheckIcon,
   InfoIcon,
+  SaveIcon,
+  ShieldIcon,
+  TrashIcon,
+  UndoIcon,
 } from "@modrinth/assets";
 import { OverflowMenu, ButtonStyled, ContentPageHeader, NewModal } from "@modrinth/ui";
 import { isStaff, isAdmin } from "~/helpers/users.js";
@@ -973,6 +1113,202 @@ function openUserDetailsModal() {
   userDetailsModal.value?.show();
 }
 
+const adminProfileModal = ref(null);
+const adminAvatarInput = ref(null);
+const adminProfileSubmitting = ref(false);
+const adminDeletingProjects = ref(false);
+const adminProfileError = ref("");
+const adminProfileForm = reactive({
+  username: "",
+  bio: "",
+  avatarFile: null,
+  avatarPreview: null,
+  deleteProjectsConfirm: "",
+});
+
+const adminProfileHasChanges = computed(() => {
+  return (
+    adminProfileForm.username.trim() !== user.value.username ||
+    adminProfileForm.bio !== (user.value.bio || "") ||
+    !!adminProfileForm.avatarFile
+  );
+});
+const userProjects = computed(() => projects.value || []);
+const userProjectCount = computed(() => userProjects.value.length);
+const adminDeleteProjectsConfirmed = computed(() => {
+  return adminProfileForm.deleteProjectsConfirm === user.value.username;
+});
+
+function openAdminProfileModal() {
+  adminProfileForm.username = user.value.username;
+  adminProfileForm.bio = user.value.bio || "";
+  adminProfileForm.deleteProjectsConfirm = "";
+  clearAdminAvatar();
+  adminProfileError.value = "";
+  adminProfileModal.value?.show();
+}
+
+function getErrorMessage(err, fallback) {
+  return err?.data?.description || err?.data || err?.message || fallback;
+}
+
+function selectAdminAvatar(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 262144) {
+    event.target.value = "";
+    addNotification({
+      group: "main",
+      title: "头像过大",
+      text: "头像必须小于 256KiB。",
+      type: "error",
+    });
+    return;
+  }
+
+  clearAdminAvatar();
+  adminProfileForm.avatarFile = file;
+  adminProfileForm.avatarPreview = URL.createObjectURL(file);
+}
+
+function clearAdminAvatar() {
+  if (adminProfileForm.avatarPreview) {
+    URL.revokeObjectURL(adminProfileForm.avatarPreview);
+  }
+  adminProfileForm.avatarFile = null;
+  adminProfileForm.avatarPreview = null;
+  if (adminAvatarInput.value) {
+    adminAvatarInput.value.value = "";
+  }
+}
+
+async function saveAdminProfile() {
+  if (!auth.value?.user || !isAdmin(auth.value.user) || adminProfileSubmitting.value) return;
+
+  adminProfileError.value = "";
+  adminProfileSubmitting.value = true;
+  startLoading();
+
+  try {
+    let pendingReview = false;
+
+    if (adminProfileForm.avatarFile) {
+      const ext = adminProfileForm.avatarFile.type.split("/").pop();
+      const iconResult = await useBaseFetch(`user/${user.value.id}/icon?ext=${ext}`, {
+        method: "PATCH",
+        body: adminProfileForm.avatarFile,
+      });
+      pendingReview = !!iconResult?.pending_review;
+    }
+
+    const body = {};
+    const nextUsername = adminProfileForm.username.trim();
+    if (nextUsername && nextUsername !== user.value.username) {
+      body.username = nextUsername;
+    }
+    if (adminProfileForm.bio !== (user.value.bio || "")) {
+      body.bio = adminProfileForm.bio;
+    }
+
+    if (Object.keys(body).length > 0) {
+      const result = await useBaseFetch(`user/${user.value.id}`, {
+        method: "PATCH",
+        body,
+      });
+      pendingReview = pendingReview || !!result?.pending_review;
+    }
+
+    await refreshUserData();
+    clearAdminAvatar();
+    adminProfileModal.value?.hide();
+    if (user.value.username !== route.params.id) {
+      await navigateTo(`/user/${user.value.username}`, { replace: true });
+    }
+    addNotification({
+      group: "main",
+      title: pendingReview ? "已提交审核" : "已保存",
+      text: pendingReview ? "资料修改命中风控，已进入资料审核队列。" : "管理员操作已完成。",
+      type: pendingReview ? "warn" : "success",
+    });
+  } catch (err) {
+    const message = getErrorMessage(err, "管理员操作失败");
+    adminProfileError.value = message;
+    addNotification({
+      group: "main",
+      title: "操作失败",
+      text: message,
+      type: "error",
+    });
+  } finally {
+    adminProfileSubmitting.value = false;
+    stopLoading();
+  }
+}
+
+async function deleteAllUserProjects() {
+  if (
+    !auth.value?.user ||
+    !isAdmin(auth.value.user) ||
+    adminDeletingProjects.value ||
+    !adminDeleteProjectsConfirmed.value
+  ) {
+    return;
+  }
+
+  const targets = [...userProjects.value];
+  if (targets.length === 0) return;
+
+  adminProfileError.value = "";
+  adminDeletingProjects.value = true;
+  startLoading();
+
+  const failed = [];
+  try {
+    for (const project of targets) {
+      try {
+        await useBaseFetch(`project/${project.id}`, {
+          method: "DELETE",
+        });
+      } catch (err) {
+        failed.push({
+          id: project.id,
+          title: project.title || project.name || project.id,
+          message: getErrorMessage(err, "删除失败"),
+        });
+      }
+    }
+
+    const failedIds = new Set(failed.map((item) => item.id));
+    projects.value = userProjects.value.filter((project) => failedIds.has(project.id));
+    adminProfileForm.deleteProjectsConfirm = "";
+
+    if (failed.length > 0) {
+      const message = `已删除 ${targets.length - failed.length} 个资源，失败 ${failed.length} 个。`;
+      adminProfileError.value = `${message} ${failed
+        .slice(0, 3)
+        .map((item) => `${item.title}: ${item.message}`)
+        .join("；")}`;
+      addNotification({
+        group: "main",
+        title: "部分资源删除失败",
+        text: message,
+        type: "error",
+      });
+    } else {
+      addNotification({
+        group: "main",
+        title: "资源已删除",
+        text: `已删除 @${user.value.username} 的 ${targets.length} 个资源。`,
+        type: "success",
+      });
+    }
+  } finally {
+    adminDeletingProjects.value = false;
+    stopLoading();
+  }
+}
+
 // 获取用户角色名称
 function getUserRoleName(role) {
   const roleNames = {
@@ -987,7 +1323,7 @@ function getUserRoleName(role) {
 async function refreshUserData() {
   // 重新获取用户数据以刷新封禁状态
   try {
-    const updatedUser = await useBaseFetch(`user/${route.params.id}`);
+    const updatedUser = await useBaseFetch(`user/${user.value?.id || route.params.id}`);
     if (updatedUser) {
       user.value = updatedUser;
     }
@@ -1193,11 +1529,137 @@ export default defineNuxtComponent({
   }
 }
 
+.admin-profile-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  min-width: min(32rem, calc(100vw - 4rem));
+
+  .modal-lead {
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.5;
+  }
+
+  .target-user {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-md);
+    padding: var(--gap-md);
+    background: var(--color-raised-bg);
+    border-radius: var(--radius-md);
+
+    div {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    strong,
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: var(--color-secondary);
+      font-family: var(--font-monospace);
+      font-size: 0.85rem;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xs);
+
+    span {
+      font-weight: 700;
+      color: var(--color-contrast);
+    }
+
+    small {
+      color: var(--color-secondary);
+      line-height: 1.35;
+    }
+  }
+
+  input,
+  textarea {
+    width: 100%;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .operation-error {
+    margin: 0;
+    padding: var(--gap-sm) var(--gap-md);
+    border-left: 0.25rem solid var(--color-red);
+    background: var(--color-red-bg);
+    color: var(--color-red);
+  }
+
+  .danger-zone {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+    padding: var(--gap-md);
+    border: 1px solid var(--color-red);
+    border-radius: var(--radius-md);
+    background: var(--color-red-bg);
+  }
+
+  .danger-zone-header {
+    display: flex;
+    gap: var(--gap-sm);
+    align-items: flex-start;
+    color: var(--color-red);
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    strong {
+      color: var(--color-red);
+    }
+
+    span {
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gap-sm);
+  margin-top: var(--gap-lg);
+  flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
   .ban-banner {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
+  }
+
+  .admin-profile-modal {
+    min-width: 0;
   }
 }
 
