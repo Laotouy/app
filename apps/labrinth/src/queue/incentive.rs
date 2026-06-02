@@ -90,13 +90,7 @@ async fn process_event(
 ) -> Result<(), sqlx::Error> {
     // 1. 仅已审核开通激励的项目累计奖励。
     let enabled = sqlx::query!(
-        r#"
-        SELECT EXISTS(
-            SELECT 1
-            FROM incentive_enabled_projects
-            WHERE project_id = $1
-        ) AS "exists!"
-        "#,
+        r#"SELECT EXISTS(SELECT 1 FROM incentive_enabled_projects WHERE project_id = $1) AS "exists!""#,
         evt.project_id as i64,
     )
     .fetch_one(pool)
