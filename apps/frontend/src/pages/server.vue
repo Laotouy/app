@@ -182,11 +182,7 @@
                 </svg>
               </button>
               <h3 class="qr-modal-title">手机淘宝扫码购买</h3>
-              <img
-                src="https://cdn.bbsmc.net/bbsmc/data/QioTNNGG/images/962f1e591f1a8058b28177c11d5ee0c76ecdd01f.png"
-                alt="手机淘宝二维码"
-                class="qr-code-image"
-              />
+              <img :src="serverQrcode" alt="手机淘宝二维码" class="qr-code-image" />
               <p class="qr-modal-hint">打开手机淘宝APP扫描二维码</p>
             </div>
           </div>
@@ -238,6 +234,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ButtonStyled } from "@modrinth/ui";
 import { isDarkTheme } from "~/plugins/theme/themes.ts";
 import { getCreatorByKey } from "~/config/affiliates.ts";
+import serverQrcode from "~/assets/images/server_qrcode.png";
 
 const router = useRouter();
 const route = useRoute();
