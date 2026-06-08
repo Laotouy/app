@@ -21,6 +21,79 @@
       </div>
     </NewModal>
 
+    <!-- 管理员强制开通弹窗 -->
+    <NewModal ref="forceEnableModal">
+      <template #title>
+        <div class="truncate text-lg font-extrabold text-contrast">强制开通激励</div>
+      </template>
+      <div class="modal-content">
+        <p>
+          资源：<b>{{ projectTitle }}</b>
+        </p>
+        <p class="hint">
+          该操作会跳过作者申请流程，直接将此资源标记为「已开通激励」。已累计的有效下载和待结算金额会保留。
+        </p>
+        <p v-if="application?.status === 'pending'" class="hint">
+          当前已有待审核申请，强制开通后资源会立即进入激励累计状态。
+        </p>
+        <div class="form-group">
+          <label>备注（可选）</label>
+          <textarea
+            v-model="forceEnableNotes"
+            rows="3"
+            maxlength="500"
+            placeholder="留下开通原因，会写入审计日志"
+            :disabled="submitting"
+          />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <ButtonStyled color="green">
+          <button :disabled="submitting" @click="doForceEnable">
+            {{ submitting ? "处理中..." : "确认开通" }}
+          </button>
+        </ButtonStyled>
+        <ButtonStyled>
+          <button :disabled="submitting" @click="forceEnableModal?.hide()">取消</button>
+        </ButtonStyled>
+      </div>
+    </NewModal>
+
+    <!-- 管理员强制关闭弹窗 -->
+    <NewModal ref="forceDisableModal">
+      <template #title>
+        <div class="truncate text-lg font-extrabold text-contrast">强制关闭激励</div>
+      </template>
+      <div class="modal-content">
+        <p>
+          资源：<b>{{ projectTitle }}</b>
+        </p>
+        <p class="hint">
+          关闭后该资源会停止累计新的创作者激励，已有待结算金额会保留。关闭理由会写入申请沟通记录，作者可以重新提交申请。
+        </p>
+        <div class="form-group">
+          <label>关闭理由</label>
+          <textarea
+            v-model="forceDisableNotes"
+            rows="3"
+            maxlength="500"
+            placeholder="说明关闭原因，作者会在沟通记录中看到"
+            :disabled="submitting"
+          />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <ButtonStyled color="red">
+          <button :disabled="submitting || !forceDisableNotes.trim()" @click="doForceDisable">
+            {{ submitting ? "处理中..." : "确认关闭" }}
+          </button>
+        </ButtonStyled>
+        <ButtonStyled>
+          <button :disabled="submitting" @click="forceDisableModal?.hide()">取消</button>
+        </ButtonStyled>
+      </div>
+    </NewModal>
+
     <section class="universal-card">
       <div class="label">
         <h3>
@@ -41,8 +114,36 @@
         >
           <InfoIcon class="notice-icon" />
           <div class="notice-content">
-            <strong>管理员只读视图</strong>
+            <strong>管理员视图</strong>
             <p>你以站点管理员身份查看此项目的激励状态，无法代为提交/撤回申请。</p>
+          </div>
+        </div>
+
+        <div v-if="canForceEnableIncentive" class="notice-card admin-force">
+          <InfoIcon class="notice-icon" />
+          <div class="notice-content">
+            <strong>管理员强制开通</strong>
+            <p>无需作者提交申请或等待审核，可直接为此资源开通创作者激励。</p>
+            <div class="admin-action-row">
+              <button class="btn btn-primary" :disabled="submitting" @click="openForceEnable">
+                强制开通激励
+              </button>
+              <span class="admin-action-hint">操作会写入后台审计日志。</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="canForceDisableIncentive" class="notice-card admin-disable">
+          <InfoIcon class="notice-icon" />
+          <div class="notice-content">
+            <strong>管理员强制关闭</strong>
+            <p>关闭后停止累计新的激励，作者可以在沟通记录中看到关闭理由并重新申请。</p>
+            <div class="admin-action-row">
+              <button class="btn btn-danger" :disabled="submitting" @click="openForceDisable">
+                强制关闭激励
+              </button>
+              <span class="admin-action-hint">关闭理由会写入申请沟通记录。</span>
+            </div>
           </div>
         </div>
 
@@ -317,11 +418,6 @@ const nuxtApp = useNuxtApp();
 const auth = await useAuth();
 const currentUserId = auth.value?.user?.id;
 
-// 预览阶段：仅 admin 可见
-if (auth.value?.user?.role !== "admin") {
-  await navigateTo("/");
-}
-
 const loading = ref(true);
 const submitting = ref(false);
 const sending = ref(false);
@@ -330,6 +426,8 @@ const application = ref(null);
 const thread = ref(null);
 const reason = ref("");
 const replyText = ref("");
+const forceEnableNotes = ref("");
+const forceDisableNotes = ref("");
 
 const approvedProjectStatuses = new Set(["approved", "unlisted", "archived", "private"]);
 const projectStatusLabels = {
@@ -344,6 +442,15 @@ const projectStatusLabels = {
   scheduled: "已计划",
 };
 const canApplyIncentive = computed(() => approvedProjectStatuses.has(props.project?.status));
+const canForceEnableIncentive = computed(
+  () => overview.value?.viewer?.is_admin && !overview.value?.incentive_enabled,
+);
+const canForceDisableIncentive = computed(
+  () => overview.value?.viewer?.is_admin && overview.value?.incentive_enabled,
+);
+const projectTitle = computed(
+  () => props.project?.title || props.project?.name || props.project?.id,
+);
 const projectStatusLabel = computed(
   () => projectStatusLabels[props.project?.status] || props.project?.status || "未知",
 );
@@ -478,10 +585,91 @@ const submit = async () => {
 };
 
 const withdrawModal = ref(null);
+const forceEnableModal = ref(null);
+const forceDisableModal = ref(null);
 
 const withdraw = () => {
   if (submitting.value) return;
   withdrawModal.value?.show();
+};
+
+const openForceEnable = () => {
+  if (submitting.value) return;
+  forceEnableNotes.value = "";
+  forceEnableModal.value?.show();
+};
+
+const openForceDisable = () => {
+  if (submitting.value) return;
+  forceDisableNotes.value = "";
+  forceDisableModal.value?.show();
+};
+
+const doForceEnable = async () => {
+  if (submitting.value || !canForceEnableIncentive.value) return;
+  submitting.value = true;
+  try {
+    await useBaseFetch(`admin/projects/${props.project.id}/incentive`, {
+      method: "PATCH",
+      internal: true,
+      body: {
+        enable: true,
+        notes: forceEnableNotes.value || null,
+      },
+    });
+    nuxtApp.$notify({
+      group: "main",
+      title: "成功",
+      text: "激励已开通",
+      type: "success",
+    });
+    forceEnableModal.value?.hide();
+    await loadAll();
+  } catch (e) {
+    nuxtApp.$notify({
+      group: "main",
+      title: "错误",
+      text: e?.data?.description || "开通失败",
+      type: "error",
+    });
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const doForceDisable = async () => {
+  if (submitting.value || !canForceDisableIncentive.value || !forceDisableNotes.value.trim()) {
+    return;
+  }
+  submitting.value = true;
+  try {
+    await useBaseFetch(`admin/projects/${props.project.id}/incentive`, {
+      method: "PATCH",
+      internal: true,
+      body: {
+        enable: false,
+        void_pending: false,
+        notes: forceDisableNotes.value.trim(),
+      },
+    });
+    nuxtApp.$notify({
+      group: "main",
+      title: "成功",
+      text: "激励已关闭，作者可以重新申请",
+      type: "success",
+    });
+    forceDisableModal.value?.hide();
+    await loadAll();
+  } catch (e) {
+    nuxtApp.$notify({
+      group: "main",
+      title: "错误",
+      text: e?.data?.description || "关闭失败",
+      type: "error",
+    });
+  } finally {
+    submitting.value = false;
+  }
 };
 
 const doWithdraw = async () => {
@@ -541,6 +729,14 @@ onMounted(loadAll);
     background: var(--color-blue-bg, #dbeafe);
     border-color: var(--color-blue, #2563eb);
   }
+  &.admin-force {
+    background: var(--color-bg);
+    border-color: var(--color-brand);
+  }
+  &.admin-disable {
+    background: var(--color-bg);
+    border-color: var(--color-red);
+  }
 
   .notice-icon {
     flex-shrink: 0;
@@ -551,6 +747,19 @@ onMounted(loadAll);
     flex: 1;
     p {
       margin: 0.25rem 0;
+    }
+
+    .admin-action-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .admin-action-hint {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
     }
   }
 }
@@ -686,6 +895,24 @@ onMounted(loadAll);
   .hint {
     color: var(--color-text-secondary);
     font-size: 0.9rem;
+  }
+
+  .form-group {
+    margin-top: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-sm);
+      resize: vertical;
+    }
   }
 }
 

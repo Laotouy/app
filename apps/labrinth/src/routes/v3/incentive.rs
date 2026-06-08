@@ -81,7 +81,7 @@ pub async fn my_incentive_overview(
         FROM team_members tm
         JOIN mods m ON m.team_id = tm.team_id
         LEFT JOIN incentive_project_counters c ON c.project_id = m.id
-        WHERE tm.user_id = $1 AND tm.payouts_split > 0
+        WHERE tm.user_id = $1 AND tm.accepted = TRUE AND tm.payouts_split > 0
         ORDER BY m.name
         "#,
         user.id.0 as i64,
@@ -100,7 +100,8 @@ pub async fn my_incentive_overview(
         let team_total = sqlx::query!(
             r#"
             SELECT COALESCE(SUM(payouts_split), 0)::numeric AS "sum!"
-            FROM team_members WHERE team_id = $1 AND payouts_split > 0
+            FROM team_members
+            WHERE team_id = $1 AND accepted = TRUE AND payouts_split > 0
             "#,
             r.team_id,
         )
@@ -217,6 +218,7 @@ pub async fn project_incentive_detail(
     let viewer_is_admin = user.role.is_admin();
     let mut viewer_is_team_member = false;
     let mut viewer_can_manage = false;
+    let mut viewer_can_view_payouts = false;
 
     let project_exists = sqlx::query_scalar!(
         r#"SELECT EXISTS(SELECT 1 FROM mods WHERE id = $1) AS "exists!""#,
@@ -239,13 +241,15 @@ pub async fn project_incentive_detail(
             viewer_is_team_member = true;
             viewer_can_manage =
                 m.permissions.contains(ProjectPermissions::EDIT_DETAILS);
+            viewer_can_view_payouts =
+                m.permissions.contains(ProjectPermissions::VIEW_PAYOUTS);
         }
     }
 
-    // 既不是 admin 也不是已接受的团队成员 → 拒绝
-    if !viewer_is_admin && !viewer_is_team_member {
+    // 激励详情包含财务数据，非 admin 需要项目内可管理或可查看收益权限。
+    if !viewer_is_admin && !(viewer_can_manage || viewer_can_view_payouts) {
         return Err(ApiError::CustomAuthentication(
-            "你不是该项目的成员".to_string(),
+            "你没有查看项目激励的权限".to_string(),
         ));
     }
 
@@ -397,6 +401,49 @@ async fn ensure_member_with_permission(
     {
         return Err(ApiError::CustomAuthentication(
             "你没有执行此操作的权限".to_string(),
+        ));
+    }
+
+    Ok(team_id)
+}
+
+async fn ensure_member_can_view_incentive(
+    project_id: i64,
+    user_id: i64,
+    pool: &PgPool,
+) -> Result<i64, ApiError> {
+    let team_id_row =
+        sqlx::query!("SELECT team_id FROM mods WHERE id = $1", project_id,)
+            .fetch_optional(pool)
+            .await?;
+    let team_id = team_id_row.ok_or(ApiError::NotFound)?.team_id;
+
+    let member = models::TeamMember::get_from_user_id_project(
+        DBProjectId(project_id),
+        DBUserId(user_id),
+        false,
+        pool,
+    )
+    .await?
+    .ok_or_else(|| {
+        ApiError::CustomAuthentication("你不是该项目的成员".to_string())
+    })?;
+
+    if !member.accepted {
+        return Err(ApiError::CustomAuthentication(
+            "你的成员邀请尚未接受".to_string(),
+        ));
+    }
+
+    if !member
+        .permissions
+        .contains(ProjectPermissions::EDIT_DETAILS)
+        && !member
+            .permissions
+            .contains(ProjectPermissions::VIEW_PAYOUTS)
+    {
+        return Err(ApiError::CustomAuthentication(
+            "你没有查看项目激励的权限".to_string(),
         ));
     }
 
@@ -572,12 +619,11 @@ pub async fn get_application(
         .map_err(|_| ApiError::InvalidInput("无效的项目 ID".to_string()))?
         as i64;
 
-    // admin 全局可读；其他用户要求 accepted 团队成员
+    // admin 全局可读；其他用户要求项目内可管理或可查看收益权限
     if !user.role.is_admin() {
-        ensure_member_with_permission(
+        ensure_member_can_view_incentive(
             project_id,
             user.id.0 as i64,
-            None,
             pool.as_ref(),
         )
         .await?;

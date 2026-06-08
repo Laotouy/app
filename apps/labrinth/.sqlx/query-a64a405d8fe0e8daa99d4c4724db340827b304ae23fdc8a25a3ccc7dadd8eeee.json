@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT m.id AS project_id, m.name AS title, m.slug AS slug,\n               m.team_id, tm.payouts_split,\n               EXISTS(SELECT 1 FROM incentive_enabled_projects e WHERE e.project_id = m.id) AS \"enabled!\",\n               c.lifetime_eff_downloads AS \"lifetime_eff_downloads?\"\n        FROM team_members tm\n        JOIN mods m ON m.team_id = tm.team_id\n        LEFT JOIN incentive_project_counters c ON c.project_id = m.id\n        WHERE tm.user_id = $1 AND tm.payouts_split > 0\n        ORDER BY m.name\n        ",
+  "query": "\n        SELECT m.id AS project_id, m.name AS title, m.slug AS slug,\n               m.team_id, tm.payouts_split,\n               EXISTS(SELECT 1 FROM incentive_enabled_projects e WHERE e.project_id = m.id) AS \"enabled!\",\n               c.lifetime_eff_downloads AS \"lifetime_eff_downloads?\"\n        FROM team_members tm\n        JOIN mods m ON m.team_id = tm.team_id\n        LEFT JOIN incentive_project_counters c ON c.project_id = m.id\n        WHERE tm.user_id = $1 AND tm.accepted = TRUE AND tm.payouts_split > 0\n        ORDER BY m.name\n        ",
   "describe": {
     "columns": [
       {
@@ -54,5 +54,5 @@
       false
     ]
   },
-  "hash": "b7de3550adf12bb8769a5f3eb60c9268faccd98cccf410616db439a6aae9f2ef"
+  "hash": "a64a405d8fe0e8daa99d4c4724db340827b304ae23fdc8a25a3ccc7dadd8eeee"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT user_id, payouts_split\n        FROM team_members\n        WHERE team_id = $1 AND payouts_split > 0\n        ",
+  "query": "\n                    SELECT user_id, payouts_split\n                    FROM team_members\n                    WHERE team_id = $1 AND accepted = TRUE AND payouts_split > 0\n                    ",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "b6b62686a76942f5b3f6e1a9e0fd05c4a64094297d816702de299995dec7a023"
+  "hash": "0ef3fec569ba56ff2878618d8b052c19c108bfff23b687eadc9dc179081f3243"
 }

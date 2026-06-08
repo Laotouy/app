@@ -583,12 +583,57 @@ pub async fn toggle_project_incentive(
         )
         .await;
     } else {
+        let mut tx = pool.begin().await?;
+
         sqlx::query!(
             "DELETE FROM incentive_enabled_projects WHERE project_id = $1",
             project_id,
         )
-        .execute(pool.as_ref())
+        .execute(&mut *tx)
         .await?;
+
+        if let Some(thread) = sqlx::query!(
+            r#"
+            SELECT thread_id AS "thread_id!"
+            FROM incentive_applications
+            WHERE project_id = $1 AND thread_id IS NOT NULL
+            ORDER BY created_at DESC
+            LIMIT 1
+            "#,
+            project_id,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        {
+            let body_text = match body.notes.as_deref() {
+                Some(notes) if !notes.trim().is_empty() => format!(
+                    "管理员关闭了该资源的创作者激励。关闭理由：{}\n\n作者可以根据要求调整后重新提交申请。",
+                    notes.trim()
+                ),
+                _ => {
+                    "管理员关闭了该资源的创作者激励。作者可以根据要求调整后重新提交申请。"
+                        .to_string()
+                }
+            };
+
+            crate::database::models::thread_item::ThreadMessageBuilder {
+                author_id: None,
+                body: crate::models::threads::MessageBody::Text {
+                    body: body_text,
+                    private: false,
+                    replying_to: None,
+                    associated_images: vec![],
+                },
+                thread_id: crate::database::models::ids::ThreadId(
+                    thread.thread_id,
+                ),
+                hide_identity: false,
+            }
+            .insert(&mut tx)
+            .await?;
+        }
+
+        tx.commit().await?;
 
         let mut voided_count: i64 = 0;
         if body.void_pending {

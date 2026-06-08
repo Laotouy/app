@@ -102,7 +102,7 @@
             <UsersIcon aria-hidden="true" />
           </NavStackItem>
           <NavStackItem
-            v-if="auth.user && auth.user.role === 'admin'"
+            v-if="canViewIncentiveSettings"
             :link="`/${project.project_type}/${
               project.slug ? project.slug : project.id
             }/settings/incentive`"
@@ -1353,11 +1353,7 @@
           <section v-for="(items, header) in categoriesByHeader" :key="header">
             <h3>{{ header }}</h3>
             <div class="tag-list">
-              <div
-                v-for="item in items"
-                :key="`cat-${header}-${item.name}`"
-                class="tag-list__item"
-              >
+              <div v-for="item in items" :key="`cat-${header}-${item.name}`" class="tag-list__item">
                 <svg v-if="item.icon" v-html="item.icon"></svg>
                 {{ formatCategory(item.name) }}
               </div>
@@ -1656,7 +1652,7 @@
           </div>
         </div>
         <!-- Google AdSense -->
-<!--        <AdUnit slot="7766138161" class="card" />-->
+        <!--        <AdUnit slot="7766138161" class="card" />-->
       </div>
       <div class="normal-page__content">
         <div class="overflow-x-auto">
@@ -1763,7 +1759,6 @@ import {
   formatDateTime,
 } from "@modrinth/utils";
 import dayjs from "dayjs";
-import AdUnit from "~/components/ui/AdUnit.vue";
 import Badge from "~/components/ui/Badge.vue";
 import NavTabs from "~/components/ui/NavTabs.vue";
 import NavStack from "~/components/ui/NavStack.vue";
@@ -2478,6 +2473,24 @@ const currentMember = computed(() => {
   }
 
   return val;
+});
+
+const EDIT_DETAILS = 1 << 2;
+const VIEW_PAYOUTS = 1 << 9;
+const canViewIncentiveSettings = computed(() => {
+  if (auth.value.user?.role === "admin") return true;
+
+  const member =
+    auth.value.user && allMembers?.value
+      ? allMembers.value.find((x) => x.user.id === auth.value.user.id)
+      : null;
+
+  if (!member?.accepted) return false;
+
+  const permissions = member.permissions || 0;
+  return (
+    (permissions & EDIT_DETAILS) === EDIT_DETAILS || (permissions & VIEW_PAYOUTS) === VIEW_PAYOUTS
+  );
 });
 
 // 上游修复: 防止 labrinth 下线时页面崩溃

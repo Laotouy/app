@@ -12,6 +12,7 @@ use crate::models::images::{Image, ImageContext};
 use crate::models::notifications::NotificationBody;
 use crate::models::pats::Scopes;
 use crate::models::projects::ProjectStatus;
+use crate::models::teams::ProjectPermissions;
 use crate::models::threads::{MessageBody, Thread, ThreadId, ThreadType};
 use crate::models::users::User;
 use crate::queue::session::AuthQueue;
@@ -183,12 +184,20 @@ pub async fn is_authorized_thread(
                 SELECT EXISTS(
                     SELECT 1 FROM incentive_applications a
                     JOIN mods m ON m.id = a.project_id
-                    LEFT JOIN team_members tm ON tm.team_id = m.team_id AND tm.user_id = $2 AND tm.accepted = TRUE
+                    LEFT JOIN team_members tm ON tm.team_id = m.team_id
+                        AND tm.user_id = $2
+                        AND tm.accepted = TRUE
+                        AND (
+                            (tm.permissions & $3) = $3
+                            OR (tm.permissions & $4) = $4
+                        )
                     WHERE a.thread_id = $1 AND (a.applicant_user_id = $2 OR tm.user_id IS NOT NULL)
                 ) as "exists!"
                 "#,
                 thread.id.0,
                 user_id.0,
+                ProjectPermissions::EDIT_DETAILS.bits() as i64,
+                ProjectPermissions::VIEW_PAYOUTS.bits() as i64,
             )
             .fetch_one(pool)
             .await?
@@ -209,7 +218,14 @@ pub async fn filter_authorized_threads(
     let mut check_threads = Vec::new();
 
     for thread in threads {
-        if user.role.is_mod()
+        let has_global_access =
+            if thread.type_ == ThreadType::IncentiveApplication {
+                user.role.is_admin()
+            } else {
+                user.role.is_mod()
+            };
+
+        if has_global_access
             || (thread.type_ == ThreadType::DirectMessage
                 && thread.members.contains(&user_id))
         {
@@ -394,13 +410,21 @@ pub async fn filter_authorized_threads(
                 SELECT a.thread_id AS "thread_id!"
                 FROM incentive_applications a
                 JOIN mods m ON m.id = a.project_id
-                LEFT JOIN team_members tm ON tm.team_id = m.team_id AND tm.user_id = $2 AND tm.accepted = TRUE
+                LEFT JOIN team_members tm ON tm.team_id = m.team_id
+                    AND tm.user_id = $2
+                    AND tm.accepted = TRUE
+                    AND (
+                        (tm.permissions & $3) = $3
+                        OR (tm.permissions & $4) = $4
+                    )
                 WHERE a.thread_id = ANY($1)
                   AND a.thread_id IS NOT NULL
                   AND (a.applicant_user_id = $2 OR tm.user_id IS NOT NULL)
                 "#,
                 &incentive_thread_ids[..],
-                user_id as database::models::ids::UserId,
+                user_id.0,
+                ProjectPermissions::EDIT_DETAILS.bits() as i64,
+                ProjectPermissions::VIEW_PAYOUTS.bits() as i64,
             )
             .fetch(&***pool)
             .map_ok(|row| {

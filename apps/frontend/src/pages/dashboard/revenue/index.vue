@@ -255,12 +255,6 @@ useHead({
   meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
-// 预览阶段：收益/提现入口仅 admin 可见
-const auth = await useAuth();
-if (auth.value?.user?.role !== "admin") {
-  await navigateTo("/");
-}
-
 const minWithdraw = ref(5);
 const data = useNuxtApp();
 

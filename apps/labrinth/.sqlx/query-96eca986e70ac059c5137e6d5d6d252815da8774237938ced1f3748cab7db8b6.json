@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS(SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2) AS \"exists!\"",
+  "query": "SELECT EXISTS(SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 AND accepted = TRUE) AS \"exists!\"",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "271c8c49466e63595a3b60428a04ebcca5e48b3384c82176ff47369b1116b17f"
+  "hash": "96eca986e70ac059c5137e6d5d6d252815da8774237938ced1f3748cab7db8b6"
 }

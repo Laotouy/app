@@ -64,11 +64,11 @@
           </div>
           <div>
             <span class="amount">{{ $formatMoney(payout.amount) }}</span>
-            <template v-if="payout.yunzhanghu_details">
-              ⋅ 到账 {{ $formatMoney(payout.yunzhanghu_details.received_amount) }}
+            <template v-if="payout.yunzhanghu_details || hasPositiveAmount(payout.fee)">
+              ⋅ 到账 {{ $formatMoney(receivedAmount(payout)) }}
             </template>
-            <template v-if="hasPositiveAmount(payout.yunzhanghu_details?.service_fee)">
-              ⋅ 服务费 {{ $formatMoney(payout.yunzhanghu_details.service_fee) }}
+            <template v-if="hasPositiveAmount(serviceFee(payout))">
+              ⋅ 服务费 {{ $formatMoney(serviceFee(payout)) }}
             </template>
             <template v-if="hasPositiveAmount(payout.yunzhanghu_details?.tax)">
               ⋅ 税费 {{ $formatMoney(payout.yunzhanghu_details.tax) }}
@@ -124,14 +124,8 @@ useHead({
   meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
-const auth = await useAuth();
 const route = useNativeRoute();
 const router = useNativeRouter();
-
-// 预览阶段：收益/提现入口仅 admin 可见
-if (auth.value?.user?.role !== "admin") {
-  await navigateTo("/");
-}
 
 const { data: payouts, refresh } = await useAsyncData(`payout`, () =>
   useBaseFetch(`payout`, {
@@ -202,6 +196,17 @@ function shouldShowRejectReason(payout) {
 
 function hasPositiveAmount(value) {
   return Number(value || 0) > 0;
+}
+
+function serviceFee(payout) {
+  return Number(payout.yunzhanghu_details?.service_fee ?? payout.fee ?? 0);
+}
+
+function receivedAmount(payout) {
+  if (payout.yunzhanghu_details?.received_amount != null) {
+    return Number(payout.yunzhanghu_details.received_amount);
+  }
+  return Math.max(0, Number(payout.amount || 0) - Number(payout.fee || 0));
 }
 
 function changePage(newPage) {

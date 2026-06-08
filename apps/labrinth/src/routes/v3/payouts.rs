@@ -16,9 +16,7 @@ use crate::models::payouts::{
 use crate::queue::payouts::{PayoutsQueue, make_aditude_request};
 use crate::queue::session::AuthQueue;
 use crate::routes::ApiError;
-use crate::util::yunzhanghu::{
-    NotifyEnvelope, YzhClient, api as yzh_api,
-};
+use crate::util::yunzhanghu::{NotifyEnvelope, YzhClient, api as yzh_api};
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
 use chrono::{DateTime, Datelike, Duration, TimeZone, Utc, Weekday};
 use rust_decimal::{Decimal, RoundingStrategy};
@@ -28,6 +26,8 @@ use std::collections::HashMap;
 
 /// 提现最低额度（人民币元）
 const MIN_WITHDRAW_AMOUNT: Decimal = Decimal::from_parts(5, 0, 0, false, 0);
+const WITHDRAW_SERVICE_FEE_RATE: Decimal =
+    Decimal::from_parts(3, 0, 0, false, 2);
 
 /// 云账户合规要求 - 平台企业名称
 const DEALER_PLATFORM_NAME: &str = "青岛柒兮网络科技";
@@ -136,27 +136,29 @@ pub async fn user_payouts(
     let detail_rows = sqlx::query!(
         "
         SELECT
-            payout_id,
-            COALESCE(user_real_amount, pay) AS received_amount,
+            d.payout_id,
+            COALESCE(d.user_real_amount, d.pay) AS received_amount,
             CASE
-                WHEN received_user_fee <> 0 THEN received_user_fee
-                ELSE user_fee
+                WHEN COALESCE(p.fee, 0) <> 0 THEN p.fee
+                WHEN d.received_user_fee <> 0 THEN d.received_user_fee
+                ELSE d.user_fee
             END AS service_fee,
             CASE
                 WHEN (
-                    user_received_personal_tax
-                    + user_received_additional_tax
+                    d.user_received_personal_tax
+                    + d.user_received_additional_tax
                 ) <> 0 THEN (
-                    user_received_personal_tax
-                    + user_received_additional_tax
+                    d.user_received_personal_tax
+                    + d.user_received_additional_tax
                 )
                 ELSE (
-                    user_personal_tax
-                    + user_additional_tax
+                    d.user_personal_tax
+                    + d.user_additional_tax
                 )
             END AS user_tax
-        FROM payout_yunzhanghu_order_details
-        WHERE payout_id = ANY($1)
+        FROM payout_yunzhanghu_order_details d
+        INNER JOIN payouts p ON p.id = d.payout_id
+        WHERE d.payout_id = ANY($1)
         ",
         &payout_db_ids
     )
@@ -202,6 +204,8 @@ pub struct Withdrawal {
 pub struct PayoutQuote {
     #[serde(with = "rust_decimal::serde::float")]
     pub amount: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub arrival_amount: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     pub user_fee: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -664,12 +668,20 @@ pub async fn admin_confirm_payout(
     let order_id = format!("bbsmc-{}", public_id);
     let admin_id = crate::database::models::UserId::from(admin.id);
 
-    let (amount, user_id, username, real_name, id_card, alipay_account, phone) =
-        prepare_yunzhanghu_submit(&pool, payout_id, &order_id, admin_id).await?;
+    let (
+        pay_amount,
+        user_id,
+        username,
+        real_name,
+        id_card,
+        alipay_account,
+        phone,
+    ) = prepare_yunzhanghu_submit(&pool, payout_id, &order_id, admin_id)
+        .await?;
 
     let resp = match submit_yunzhanghu_alipay_order(
         &order_id,
-        amount,
+        pay_amount,
         user_id,
         &username,
         &real_name,
@@ -834,7 +846,7 @@ async fn prepare_yunzhanghu_submit(
     let mut tx = pool.begin().await?;
     let payout = sqlx::query!(
         "
-        SELECT p.id, p.user_id, p.amount, p.status, p.method, p.method_address,
+        SELECT p.id, p.user_id, p.amount, p.fee, p.status, p.method, p.method_address,
                p.platform_id, p.yunzhanghu_submit_started_at,
                p.yunzhanghu_submit_finished_at, u.username
         FROM payouts p
@@ -913,6 +925,13 @@ async fn prepare_yunzhanghu_submit(
         .ok_or_else(|| {
             ApiError::InvalidInput("KYC 信息异常：缺少身份证号".to_string())
         })?;
+    let pay_amount =
+        truncate_money_to_cents(payout.amount - payout.fee.unwrap_or_default());
+    if pay_amount <= Decimal::ZERO {
+        return Err(ApiError::InvalidInput(
+            "扣除手续费后到账金额必须大于 0".to_string(),
+        ));
+    }
 
     sqlx::query!(
         "
@@ -935,7 +954,7 @@ async fn prepare_yunzhanghu_submit(
     tx.commit().await?;
 
     Ok((
-        payout.amount,
+        pay_amount,
         user_id,
         payout.username,
         real_name,
@@ -1093,15 +1112,25 @@ fn decimal_from_yzh_field(
     })
 }
 
-fn decimal_from_yzh_field_or_zero(
-    value: &str,
-    field: &str,
-) -> Result<Decimal, ApiError> {
-    Ok(decimal_from_yzh_field(value, field)?.unwrap_or(Decimal::ZERO))
-}
-
 fn truncate_money_to_cents(amount: Decimal) -> Decimal {
     amount.round_dp_with_strategy(2, RoundingStrategy::ToZero)
+}
+
+fn calculate_withdraw_service_fee(amount: Decimal) -> Decimal {
+    truncate_money_to_cents(amount * WITHDRAW_SERVICE_FEE_RATE)
+}
+
+fn calculate_yunzhanghu_pay_amount(
+    amount: Decimal,
+) -> Result<Decimal, ApiError> {
+    let fee = calculate_withdraw_service_fee(amount);
+    let pay_amount = truncate_money_to_cents(amount - fee);
+    if pay_amount <= Decimal::ZERO {
+        return Err(ApiError::InvalidInput(
+            "扣除手续费后到账金额必须大于 0".to_string(),
+        ));
+    }
+    Ok(pay_amount)
 }
 
 fn ensure_supported_payout_amount(
@@ -1146,7 +1175,9 @@ async fn quote_yunzhanghu_payout(
         .ok_or_else(|| {
             ApiError::InvalidInput("KYC 信息异常：缺少身份证号".to_string())
         })?;
-    let pay_str = format!("{amount:.2}");
+    let user_fee = calculate_withdraw_service_fee(amount);
+    let arrival_amount = calculate_yunzhanghu_pay_amount(amount)?;
+    let pay_str = format!("{arrival_amount:.2}");
 
     let client = YzhClient::new();
     let resp = yzh_api::calc_tax(
@@ -1158,7 +1189,7 @@ async fn quote_yunzhanghu_payout(
             tax_type: Some("before_tax"),
             before_tax_amount_type: Some("max"),
             include_recovery_amount: Some(1),
-            include_user_service_fee: Some(1),
+            include_user_service_fee: Some(2),
         },
     )
     .await
@@ -1190,20 +1221,17 @@ async fn quote_yunzhanghu_payout(
         }));
     }
 
-    let user_fee = truncate_money_to_cents(decimal_from_yzh_field_or_zero(
-        &resp.user_fee,
-        "user_fee",
-    )?);
     let required_balance = amount;
+    let after_tax_amount =
+        decimal_from_yzh_field(&resp.after_tax_amount, "after_tax_amount")?
+            .or(Some(arrival_amount));
 
     Ok(PayoutQuote {
         amount,
+        arrival_amount,
         user_fee,
         required_balance,
-        after_tax_amount: decimal_from_yzh_field(
-            &resp.after_tax_amount,
-            "after_tax_amount",
-        )?,
+        after_tax_amount,
         tax: decimal_from_yzh_field(&resp.tax, "tax")?,
         user_tax: decimal_from_yzh_field(&resp.user_tax, "user_tax")?,
         dealer_tax: decimal_from_yzh_field(&resp.dealer_tax, "dealer_tax")?,
@@ -1411,8 +1439,8 @@ pub async fn create_payout(
         created: Utc::now(),
         status: PayoutStatus::InTransit,
         amount,
-        // 服务费由云账户试算得出，展示给用户；不作为额外余额扣除项。
-        fee: Some(Decimal::ZERO),
+        // 云账户通道手续费从提现金额内扣，不作为额外余额扣除项。
+        fee: Some(quote.user_fee),
         method: Some(PayoutMethodType::YunzhanghuAlipay),
         method_address: Some(alipay_account.clone()),
         platform_id: None,
@@ -1431,6 +1459,7 @@ pub async fn create_payout(
         "payout_id": crate::models::ids::PayoutId::from(payout_id),
         "order_id": order_id,
         "amount": amount.to_string(),
+        "arrival_amount": quote.arrival_amount.to_string(),
         "fee": quote.user_fee.to_string(),
         "required_balance": quote.required_balance.to_string(),
         "status": PayoutStatus::InTransit.as_str(),
@@ -1493,8 +1522,8 @@ pub async fn payment_methods(
             max: Decimal::from(50000), // 单笔上限，云账户/支付宝实际限额以风控为准
         },
         fee: PayoutMethodFee {
-            // 实际费用由 /payout/quote 调云账户订单税费试算返回。
-            percentage: Decimal::ZERO,
+            // 手续费从提现金额中内扣，实际到账金额由 /payout/quote 返回。
+            percentage: WITHDRAW_SERVICE_FEE_RATE,
             min: Decimal::ZERO,
             max: None,
         },
@@ -1559,7 +1588,14 @@ async fn get_user_balance(
 
     let withdrawn = sqlx::query!(
         "
-        SELECT SUM(amount) amount, SUM(fee) fee
+        SELECT
+            SUM(amount) amount,
+            SUM(
+                CASE
+                    WHEN method = 'yunzhanghu_alipay' THEN 0
+                    ELSE COALESCE(fee, 0)
+                END
+            ) fee
         FROM payouts
         WHERE user_id = $1 AND (status = 'success' OR status = 'in-transit')
         ",
@@ -1745,10 +1781,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn yunzhanghu_quote_fee_truncates_to_cents() {
+    fn money_truncates_to_cents() {
         assert_eq!(
             truncate_money_to_cents(Decimal::from_parts(165, 0, 0, false, 3)),
             Decimal::from_parts(16, 0, 0, false, 2)
+        );
+    }
+
+    #[test]
+    fn withdraw_service_fee_is_three_percent_truncated() {
+        assert_eq!(
+            calculate_withdraw_service_fee(Decimal::from_parts(
+                501, 0, 0, false, 2
+            )),
+            Decimal::from_parts(15, 0, 0, false, 2)
+        );
+    }
+
+    #[test]
+    fn yunzhanghu_pay_amount_deducts_fee_from_requested_amount() {
+        assert_eq!(
+            calculate_yunzhanghu_pay_amount(Decimal::from(100)).unwrap(),
+            Decimal::from(97)
         );
     }
 }

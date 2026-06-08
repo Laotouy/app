@@ -25,7 +25,11 @@
 
         <p class="confirm-note">提交后申请会进入处理中，由管理员核对并确认转账。</p>
         <p class="confirm-note">
-          服务费和税费由云账户订单税费试算返回，预计到账金额以云账户返回的劳动者预计到手金额为准。
+          提现服务费是支付给财税代理公司的服务费，BBSMC 承担约 4%，用户承担
+          3%，用户部分会从本次提现金额中扣除。
+        </p>
+        <p class="confirm-note">
+          使用财税平台是为了完成合规结算、实名签约、税费试算和代扣代缴等流程，让创作者激励可以合规发放。税费以订单税费试算返回为准。
         </p>
 
         <div v-if="visibleTaxDetails.length" class="quote-details">
@@ -123,9 +127,8 @@
           />
         </div>
         <p class="hint">
-          点击确认提现后会向云账户试算本次服务费和税费。最低提现 ¥{{ minWithdraw }}，单笔最高 ¥{{
-            maxWithdraw
-          }}。
+          手续费按提现金额的 3% 从本次提现金额中扣除。点击确认提现后会向云账户试算本次税费。最低提现
+          ¥{{ minWithdraw }}，单笔最高 ¥{{ maxWithdraw }}。
         </p>
         <div class="quick-amounts">
           <button
@@ -150,7 +153,8 @@
           <Checkbox v-model="agreedTransfer" description="确认转账">
             我确认将
             <strong>{{ $formatMoney(parsedAmount) }}</strong>
-            转账至支付宝账号 {{ profile.alipay_account_masked }} （户名 {{ profile.real_name }}）
+            申请提现至支付宝账号 {{ profile.alipay_account_masked }}（户名
+            {{ profile.real_name }}），服务费将从本次提现金额中扣除
           </Checkbox>
           <Checkbox v-model="agreedTerms" description="同意条款">
             我已阅读并同意
@@ -183,12 +187,6 @@ import { TransferIcon, XIcon, CheckIcon, RadioButtonIcon, UserIcon } from "@modr
 import { Breadcrumbs, ButtonStyled, Checkbox, NewModal } from "@modrinth/ui";
 
 const data = useNuxtApp();
-
-// 预览阶段：收益/提现入口仅 admin 可见
-const auth = await useAuth();
-if (auth.value?.user?.role !== "admin") {
-  await navigateTo("/");
-}
 
 const minWithdraw = 5;
 const maxWithdraw = 50000;
@@ -225,7 +223,7 @@ const userServiceFee = computed(() => Number(payoutQuote.value?.user_fee || 0));
 const totalDebit = computed(() => parsedAmount.value);
 const quoteAfterTaxAmount = computed(() =>
   payoutQuote.value?.after_tax_amount == null
-    ? parsedAmount.value
+    ? Number(payoutQuote.value?.arrival_amount || parsedAmount.value - userServiceFee.value)
     : Number(payoutQuote.value.after_tax_amount),
 );
 const quoteTaxTotal = computed(() => Number(payoutQuote.value?.user_tax || 0));

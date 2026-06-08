@@ -114,7 +114,7 @@ async fn process_event(
 
     if evt.user_id != 0 {
         let is_team = sqlx::query_scalar!(
-            r#"SELECT EXISTS(SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2) AS "exists!""#,
+            r#"SELECT EXISTS(SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 AND accepted = TRUE) AS "exists!""#,
             team_id,
             evt.user_id as i64,
         )
@@ -130,7 +130,7 @@ async fn process_event(
         "
         SELECT user_id, payouts_split
         FROM team_members
-        WHERE team_id = $1 AND payouts_split > 0
+        WHERE team_id = $1 AND accepted = TRUE AND payouts_split > 0
         ",
         team_id,
     )
@@ -250,7 +250,7 @@ pub async fn settle_pending(pool: &PgPool) -> Result<u64, sqlx::Error> {
                     "
                     SELECT user_id, payouts_split
                     FROM team_members
-                    WHERE team_id = $1 AND payouts_split > 0
+                    WHERE team_id = $1 AND accepted = TRUE AND payouts_split > 0
                     ",
                     e.team_id,
                 )

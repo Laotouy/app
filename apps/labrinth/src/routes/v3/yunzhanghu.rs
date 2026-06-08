@@ -850,8 +850,8 @@ pub async fn handle_refund_callback(
     if notify.refund_status.eq_ignore_ascii_case("success")
         || notify.refund_status == "1"
     {
-        let pay_for_validation =
-            non_empty_str(&notify.pay).or_else(|| non_empty_str(&notify.refund_amount));
+        let pay_for_validation = non_empty_str(&notify.pay)
+            .or_else(|| non_empty_str(&notify.refund_amount));
         apply_order_status(
             &pool,
             &redis,

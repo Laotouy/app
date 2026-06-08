@@ -14,8 +14,12 @@
             <strong>{{ $formatMoney(active.amount) }}</strong>
           </div>
           <div class="summary-row">
-            <span class="label">用户承担服务费</span>
+            <span class="label">内扣服务费</span>
             <strong>{{ $formatMoney(active.fee || 0) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span class="label">云账户转账</span>
+            <strong>{{ $formatMoney(arrivalAmount(active)) }}</strong>
           </div>
           <div class="summary-row">
             <span class="label">余额扣除</span>
@@ -97,8 +101,12 @@
             <strong>{{ $formatMoney(rejectActive.amount) }}</strong>
           </div>
           <div class="summary-row">
-            <span class="label">用户承担服务费</span>
+            <span class="label">内扣服务费</span>
             <strong>{{ $formatMoney(rejectActive.fee || 0) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span class="label">原到账金额</span>
+            <strong>{{ $formatMoney(arrivalAmount(rejectActive)) }}</strong>
           </div>
           <div class="summary-row">
             <span class="label">余额释放</span>
@@ -172,7 +180,10 @@
             <div class="payout-header">
               <div class="payout-title">
                 <strong>{{ $formatMoney(item.amount) }}</strong>
-                <span v-if="item.fee" class="muted">+ 服务费 {{ $formatMoney(item.fee) }}</span>
+                <span v-if="item.fee" class="muted">
+                  到账 {{ $formatMoney(arrivalAmount(item)) }}，内扣服务费
+                  {{ $formatMoney(item.fee) }}
+                </span>
                 <code>{{ item.order_id }}</code>
               </div>
               <span class="status-pill" :class="payoutStateClass(item)">
@@ -434,6 +445,10 @@ function canConfirm(item) {
 
 function canReject(item) {
   return item.status === "in-transit" && !item.platform_id && !item.submit_started_at;
+}
+
+function arrivalAmount(item) {
+  return Math.max(0, Number(item?.amount || 0) - Number(item?.fee || 0));
 }
 
 function payoutStateLabel(item) {
