@@ -1,9 +1,11 @@
 use crate::util::date::APP_TZ_NAME;
 use log::info;
-use sqlx::Executor;
-use sqlx::migrate::MigrateDatabase;
+use sqlx::migrate::{Migrate, MigrateDatabase, MigrateError, Migrator};
 use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::Executor;
 use sqlx::{Connection, PgConnection, Postgres};
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::time::Duration;
 
 pub async fn connect() -> Result<PgPool, sqlx::Error> {
@@ -51,10 +53,62 @@ pub async fn check_for_migrations() -> Result<(), sqlx::Error> {
     info!("正在检查数据结构版本更新...");
 
     let mut conn: PgConnection = PgConnection::connect(uri).await?;
-    sqlx::migrate!()
-        .run(&mut conn)
-        .await
-        .expect("运行数据库迁移时出错！");
+    let mut migrator = sqlx::migrate!();
+    conn.lock().await?;
+
+    let migration_result =
+        run_migrations_accepting_existing_versions(&mut conn, &mut migrator)
+            .await;
+    let unlock_result = conn.unlock().await;
+    if let Err(unlock_error) = unlock_result {
+        return Err(unlock_error.into());
+    }
+
+    migration_result.expect("运行数据库迁移时出错！");
+
+    Ok(())
+}
+
+async fn run_migrations_accepting_existing_versions(
+    conn: &mut PgConnection,
+    migrator: &mut Migrator,
+) -> Result<(), MigrateError> {
+    accept_existing_migrations_by_version(conn, migrator).await?;
+    migrator.set_locking(false);
+    migrator.run(conn).await
+}
+
+async fn accept_existing_migrations_by_version(
+    conn: &mut PgConnection,
+    migrator: &mut Migrator,
+) -> Result<(), MigrateError> {
+    conn.ensure_migrations_table().await?;
+
+    let applied_migrations: HashMap<i64, Vec<u8>> = conn
+        .list_applied_migrations()
+        .await?
+        .into_iter()
+        .map(|migration| (migration.version, migration.checksum.into_owned()))
+        .collect();
+
+    let mut accepted_versions = 0;
+    let mut replaced_checksums = 0;
+    for migration in migrator.migrations.to_mut() {
+        if let Some(checksum) = applied_migrations.get(&migration.version) {
+            accepted_versions += 1;
+
+            if migration.checksum.as_ref() != checksum {
+                migration.checksum = Cow::Owned(checksum.clone());
+                replaced_checksums += 1;
+            }
+        }
+    }
+
+    if accepted_versions > 0 {
+        info!(
+            "Accepted {accepted_versions} already-applied SQLx migrations by version; replaced {replaced_checksums} local checksums with database checksums"
+        );
+    }
 
     Ok(())
 }
