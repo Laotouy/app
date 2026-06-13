@@ -45,6 +45,7 @@ export const affiliates: Record<string, Affiliate> = {
     projects: [
       "fZSAKVSg", // 脆骨症
       "dL0Tbr7N", // 脆骨症：黯光
+      "DqpQXzc2", // 脆骨症2
     ],
   },
   grannixie: {
