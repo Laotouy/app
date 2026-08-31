@@ -501,6 +501,7 @@ const showSnapshots = ref(false);
 const selectedEnvironments = ref([]);
 const sortTypes = shallowReadonly([
   { display: "相关", name: "relevance" },
+  { display: "热门", name: "trending" },
   { display: "下载数", name: "downloads" },
   { display: "关注度", name: "follows" },
   { display: "最近发布", name: "newest" },
@@ -574,6 +575,9 @@ if (route.query.s) {
   switch (sortType.value.name) {
     case "relevance":
       sortType.value.display = "相关";
+      break;
+    case "trending":
+      sortType.value.display = "热门";
       break;
     case "downloads":
       sortType.value.display = "下载数";
@@ -649,9 +653,13 @@ projectType.value = tags.value.projectTypes.find(
   (x) => x.id === route.path.replaceAll(/^\/|s\/?$/g, ""), // Removes prefix `/` and suffixes `s` and `s/`
 );
 
-// 插件类型默认按更新时间排序
-if (projectType.value.id === "plugin" && !route.query.s) {
-  sortType.value = { display: "最近更新", name: "updated" };
+// 无排序参数时的板块默认排序：
+// 插件类型按更新时间排序，其余板块按热门（最近 72 小时下载量）排序
+if (!route.query.s) {
+  sortType.value =
+    projectType.value.id === "plugin"
+      ? { display: "最近更新", name: "updated" }
+      : { display: "热门", name: "trending" };
 }
 
 const noLoad = ref(false);
