@@ -414,7 +414,7 @@ const bannerItemsConfig = ref({
     },
     {
       image:
-        "https://cdn.bbsmc.net/bbsmc/data/EIrkPpcm/images/7c2ccd747457f54652540972f8f61cc88f24d3a0_350.webp",
+        "https://cdn.bbsmc.net/bbsmc/data/cached_images/a959f776cdae05bbd7084bc605785e0d356eeb7c_0.webp",
       title: "龙之冒险：新征程",
       description: "面对众多怪物的冒险之旅，你做好准备了吗？",
       slug: "/modpack/lzmx",
@@ -432,6 +432,92 @@ const bannerItemsConfig = ref({
       title: "香草纪元:食旅纪行 ",
       description: "农夫乐事全附属与异界冒险",
       slug: "/modpack/vefc",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/aa8zTitm/images/77731030ea51c688974ead8228486bf5bbba38e6_350.webp",
+      title: "沉浸战斗 - Immersive Fight",
+      description: "史诗战斗冒险整合包",
+      slug: "/modpack/immersive-fight",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/KJpwyjn4/images/ea9561e2939d6a0076802e92e8db2c05705b1143_350.webp",
+      title: "终焉决斗NW",
+      description: "战魂不熄，决至终焉",
+      slug: "/modpack/dcnw",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/C6qzOJgo/images/d33efa210924380430a479f308725885d38b899a_350.webp",
+      title: "猎杀：历史 1949",
+      description: "纯 PVE 猎杀对决：搜打撤×枪械成长×Boss 攻坚",
+      slug: "/modpack/mc-1949",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/PRsqHZRu/images/1b1abb2c5198447165de3f72b3c10dab6dc53ce8_350.webp",
+      title: "亡者世界",
+      description: "现代都市僵尸启示录",
+      slug: "/modpack/deceasedcraft",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/cached_images/343f82fc65e0a32ca274b8710c970d0acf1e4b56_0.webp",
+      title: "方可梦：炽白真形",
+      description: "沉浸式宝可梦 RPG，全图鉴收集",
+      slug: "/modpack/incandescent-verity",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/OIIWCwpQ/images/14506df30b5f9568b62fa564f36d2d90e4bcfcc6_350.webp",
+      title: "机械动力:齿轮盛宴",
+      description: "机械动力×农夫乐事大型深度魔改",
+      slug: "/modpack/create-delight",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/q267Hrkj/images/38e31142d27fa04c717af6742b7526b1bfe077e9_350.webp",
+      title: "工匠：技艺革新 - CTI",
+      description: "以匠魂为核心的中高度魔改科技向整包",
+      slug: "/modpack/cti",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/uUD1tysY/images/5080b09e19506cf2583bb0af7af5b51cc8313c92_350.webp",
+      title: "方块宝可梦x纪元",
+      description: "1-9 世代全宝可梦休闲养老整合包",
+      slug: "/modpack/cobblemonxera",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/RJbEfCdK/images/2d4f155c8a5547fb7721b98e706409563a68a1cc_350.webp",
+      title: "伙伴物语整合包",
+      description: "伙伴与成长为主题的冒险整合包",
+      slug: "/modpack/huobanwuyu",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/IwY0MZn5/images/e4702790bff5c4e4418a348945770b398d0a516e_350.webp",
+      title: "奇妙商店物语",
+      description: "城市餐厅经营核心整合包",
+      slug: "/modpack/wss",
+    },
+  ],
+  mod: [
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/sifCoVKG/images/0f9a066a769874f3b706374f40c9d1207bc10f5f_350.webp",
+      title: "伙伴物语ParnterMonogatari",
+      description: "27 位伙伴角色，每位拥有独特的外观、技能与战斗风格",
+      slug: "/mod/parntermonogatari",
+    },
+    {
+      image:
+        "https://cdn.bbsmc.net/bbsmc/data/gBP14yf3/images/10b54d4b8019c693151a39d54f53479d61fdd51b_350.webp",
+      title: "[TaCZ]永恒枪械工坊:零",
+      description: "高度自定义的现代风格 3D 枪械模组",
+      slug: "/mod/timeless-and-classics-zero",
     },
   ],
   language: [

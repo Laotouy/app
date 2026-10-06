@@ -209,6 +209,13 @@
                       ),
                   },
                   {
+                    id: 'duplicate',
+                    hoverFilled: true,
+                    action: () => createVersionModal?.openDuplicateVersionModal(version.id),
+                    // 与页面顶部上传按钮一致：还需 UPLOAD_VERSION 权限位
+                    shown: currentMember && isPermission(currentMember?.permissions, 1 << 0),
+                  },
+                  {
                     id: 'share',
                     action: () => {},
                     shown: false,
@@ -251,6 +258,10 @@
                 <template #copy-link>
                   <LinkIcon aria-hidden="true" />
                   复制URL
+                </template>
+                <template #duplicate>
+                  <UpdatedIcon aria-hidden="true" />
+                  复用信息创建新版本
                 </template>
                 <template #share>
                   <ShareIcon aria-hidden="true" />
@@ -319,6 +330,7 @@ import {
   ReportIcon,
   UploadIcon,
   InfoIcon,
+  UpdatedIcon,
 } from "@modrinth/assets";
 import { formatBytes, formatCategory } from "@modrinth/utils";
 import { formatVersionsForDisplay } from "~/helpers/projects.js";
