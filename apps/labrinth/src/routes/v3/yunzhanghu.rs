@@ -2026,6 +2026,16 @@ pub async fn apply_order_status(
         );
     }
 
+    if should_notify_success {
+        // 异步发送（tokio::spawn），不拖慢云账户回调响应 / 轮询批次
+        crate::util::submail::notify_payout_success(
+            pool,
+            payout_db_id,
+            crate::database::models::UserId(row.user_id),
+            row.amount,
+        );
+    }
+
     if should_notify_terminal_failure
         && let Err(e) = insert_payout_terminal_notification(
             pool,
@@ -2135,6 +2145,8 @@ async fn insert_payout_success_notification(
     Ok(())
 }
 
+/// 云账户结算成功后发送 SUBMAIL 短信通知。
+///
 fn format_payout_amount(amount: rust_decimal::Decimal) -> String {
     format!("¥{:.2}", amount.round_dp(2))
 }
