@@ -96,6 +96,11 @@ pub struct SubmailSmsClient {
     incentive_settle_project: String,
 }
 
+/// 云账户结算成功后给用户发短信通知（异步 fire-and-forget，不阻塞调用方）。
+///
+/// `amount` 应传**实际到账净额**（提现总额 − 手续费），
+/// 与提交云账户的打款金额口径一致（`calculate_yunzhanghu_submitted_pay_amount`）。
+///
 /// 手机号优先取云账户实名手机号（收款人本人），缺失时回退 `users.phone_number`；
 /// 未配置 SUBMAIL 或无可用手机号时静默跳过。发送失败仅记日志，不影响结算主流程。
 pub fn notify_payout_success(
@@ -216,6 +221,7 @@ impl SubmailSmsClient {
 
     /// 激励（云账户）结算成功通知短信。
     ///
+    /// `amount` 为实际到账净额（已扣手续费）。
     /// 模板变量：`@var(money)`（如 `12.34`）、`@var(pay_channel)`（如 `支付宝`）。
     pub async fn send_incentive_settlement_sms(
         &self,

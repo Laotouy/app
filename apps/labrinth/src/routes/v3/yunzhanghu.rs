@@ -2009,12 +2009,20 @@ pub async fn apply_order_status(
     )
     .await?;
 
+    // 实际到账净额（总额 − 手续费），与提交云账户的打款金额口径一致；
+    // 站内通知与短信统一展示净额
+    let settled_amount =
+        super::payouts::calculate_yunzhanghu_submitted_pay_amount(
+            row.amount,
+            row.fee.unwrap_or_default(),
+        );
+
     if should_notify_success
         && let Err(e) = insert_payout_success_notification(
             pool,
             redis,
             crate::database::models::UserId(row.user_id),
-            row.amount,
+            settled_amount,
         )
         .await
     {
@@ -2032,7 +2040,7 @@ pub async fn apply_order_status(
             pool,
             payout_db_id,
             crate::database::models::UserId(row.user_id),
-            row.amount,
+            settled_amount,
         );
     }
 
