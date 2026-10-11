@@ -215,6 +215,12 @@ export const affiliates: Record<string, Affiliate> = {
     link: "https://item.taobao.com/item.htm?ft=t&id=791787996763",
     projects: ["IwY0MZn5"],
   },
+  skyexplorer: {
+    name: "天空开拓者",
+    code: "天空开拓者",
+    link: "https://item.taobao.com/item.htm?ft=t&id=791787996763",
+    projects: ["BpBeTm17"],
+  },
   cfgj: {
     name: "尘封古纪",
     code: "尘封古纪",
